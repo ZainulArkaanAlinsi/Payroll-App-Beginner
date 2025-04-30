@@ -43,7 +43,7 @@
                 <flux:navlist.item icon="cog-6-tooth" :href="route('admin.company-settings')" :current="request()->routeIS('admin.company-settings') " wire:navigate>{{ __('Company
                     Settings') }}</flux:navlist.item>
                 <!-- Departments & Positions -->
-                <flux:navlist.item icon="building-library" :href="`#`" :current="`#`" wire:navigate>{{ __('Departments &
+                <flux:navlist.item icon="building-library" :href="route('admin.departments-and-positions')" :current="request()->routeIS('admin.departments-and-positions')" wire:navigate>{{ __('Departments &
                     Positions') }}</flux:navlist.item>
                 <!-- Salary Component -->
                 <flux:navlist.item icon="currency-dollar" :href="`#`" :current="`#`" wire:navigate>{{ __('Salary

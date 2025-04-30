@@ -29,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
 //Admin Routes
 Route::middleware(['auth', 'admin'])->name('admin.')->group(function () {
     Route::get('company-settings', CompanySetting::class)->name('company-settings');
+    Route::view('departments-and-positions', 'admin.departments-and-positions')->name('departments-and-positions');
 });
 
 require __DIR__ . '/auth.php';
