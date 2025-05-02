@@ -35,12 +35,14 @@ class AddPosition extends Component
             'selectedDepartment' => 'required|exists:departments,id',
         ]);
 
+        // dd($request->all());
+
         Position::create([
             'name' => $this->name,
             'description' => $this->description,
             'department_id' => $this->selectedDepartment,
         ]);
-        $this->dispatch('added');
+        $this->dispatch('added-position');
         $this->close();
     }
 
@@ -49,4 +51,6 @@ class AddPosition extends Component
         $this->reset(['name', 'description', 'selectedDepartment']);
         $this->modal('add-position')->close();
     }
+
+    
 }

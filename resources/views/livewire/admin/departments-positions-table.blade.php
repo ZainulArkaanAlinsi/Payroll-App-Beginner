@@ -35,18 +35,59 @@
                     {{ __('Actions') }}
                 </th>
             </tr>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex justify-end space-x-2">
-                    <x-button variant="primary" size="sm" icon="pencil" type="button"
-                        class="text-indigo-600 hover:bg-indigo-50/70 dark:text-indigo-400 dark:hover:bg-indigo-900/20 transition-all duration-200 hover:scale-105">
-                        {{ __('Edit') }}
-                    </x-button>
-                    <x-button variant="primary" size="sm" icon="trash" type="button"
-                        class="text-rose-600 hover:bg-rose-50/70 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-all duration-200 hover:scale-105">
-                        {{ __('Delete') }}
-                    </x-button>
-                </div>
-            </td>
         </thead>
+        <tbody class="bg-white divide-y divide-slate-200/50 dark:bg-slate-800/70 dark:divide-slate-700/30">
+            @foreach ($positions as $position)
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors duration-200">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {{ $position->department->name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                    {{ $position->name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end space-x-2">
+
+
+
+                        <flux:button variant="primary" size="sm" icon="pencil"
+                            class="text-indigo-600 hover:bg-indigo-50/70 dark:text-indigo-400 dark:hover:bg-indigo-900/20 transition-all duration-200 hover:scale-105">
+                            {{ __('Edit') }}
+                        </flux:button>
+
+
+                        <flux:modal.trigger name="'delete-position' . $position->id" class="inline-flex">
+                            <flux:button variant="primary" size="sm" icon="trash" type="button"
+                                class="text-rose-600 hover:bg-rose-50/70 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-all duration-200 hover:scale-105">
+                                {{ __('Delete') }}
+                            </flux:button>
+                        </flux:modal.trigger>
+                        <flux:modal name="'delete-position' . $position->id" class="min-w-[22rem]">
+                            <div class="space-y-6">
+                                <div>
+                                    <flux:heading size="lg">Delete Position</flux:heading>
+                                    <flux:text class="mt-2">
+                                        <p>You're about to delete this project.</p>
+                                        <p>This action cannot be reversed.</p>
+                                    </flux:text>
+                                </div>
+                                <div class="flex gap-2">
+                                    <flux:spacer />
+                                    <flux:modal.close>
+                                        <flux:button variant="ghost">Cancel</flux:button>
+                                    </flux:modal.close>
+                                    <flux:button type="submit" variant="danger">Delete Now</flux:button>
+                                </div>
+                            </div>
+                        </flux:modal>
+
+                    </div>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
     </table>
+
+
+
 </div>

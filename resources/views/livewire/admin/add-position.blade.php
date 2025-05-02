@@ -11,7 +11,7 @@
             enter="transition ease-out duration-300 transform" enter-start="opacity-0 scale-90"
             enter-end="opacity-100 scale-100" leave="transition ease-in duration-200 transform"
             leave-start="opacity-100 scale-100" leave-end="opacity-0 scale-90">
-            <form wire:submit="add-Department" class="space-y-6">
+            <form wire:submit="addPosition" class="space-y-6">
 
                 <div>
                     <flux:heading size="lg" class="animate-fade-in">New Position</flux:heading>
@@ -23,13 +23,13 @@
 
                 <flux:input wire:model="name" label="Name" placeholder="Position Name" required
                     class="animate-slide-in-left delay-100" />
-                <flux:textarea wire:model="position" label="Position" placeholder="Position Description"
+                <flux:textarea wire:model="description" label="Description" placeholder="Position Description"
                     class="animate-slide-in-left delay-200" />
 
 
 
 
-                <flux:select label="Department" wire:model="department" placeholder="Select Your Department ..."
+                <flux:select label="Department" wire:model="selectedDepartment" placeholder="Select Your Department ..."
                     required>
                     @foreach ($departments as $department)
                     <flux:select.option : value="{{

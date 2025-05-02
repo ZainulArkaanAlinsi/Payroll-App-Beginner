@@ -33,7 +33,7 @@
         </div>
 
         <!-- Enhanced Table -->
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto p-4 bg-white dark:bg-slate-800/70">
             <livewire:departments-positions-table />
         </div>
     </div>
