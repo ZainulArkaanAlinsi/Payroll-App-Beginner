@@ -50,22 +50,23 @@
 
 
 
-                        <flux:button variant="primary" size="sm" icon="pencil"
+                        <flux:button  wire:click="editModal({{ $position->id }})" variant="primary" size="sm" icon="pencil" type="button"
                             class="text-indigo-600 hover:bg-indigo-50/70 dark:text-indigo-400 dark:hover:bg-indigo-900/20 transition-all duration-200 hover:scale-105">
                             {{ __('Edit') }}
                         </flux:button>
 
 
-                        <flux:modal.trigger name="'delete-position' . $position->id" class="inline-flex">
+
+                        <flux:modal.trigger :name="'delete-position-' . $position->id" class="inline-flex">
                             <flux:button variant="primary" size="sm" icon="trash" type="button"
                                 class="text-rose-600 hover:bg-rose-50/70 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-all duration-200 hover:scale-105">
                                 {{ __('Delete') }}
                             </flux:button>
                         </flux:modal.trigger>
-                        <flux:modal name="'delete-position' . $position->id" class="min-w-[22rem]">
+                        <flux:modal :name="'delete-position-' . $position->id" class="min-w-[22rem]">
                             <div class="space-y-6">
                                 <div>
-                                    <flux:heading size="lg">Delete Position</flux:heading>
+                                    <flux:heading size="lg">Delete {{ $position->name }}?</flux:heading>
                                     <flux:text class="mt-2">
                                         <p>You're about to delete this project.</p>
                                         <p>This action cannot be reversed.</p>
@@ -76,7 +77,8 @@
                                     <flux:modal.close>
                                         <flux:button variant="ghost">Cancel</flux:button>
                                     </flux:modal.close>
-                                    <flux:button type="submit" variant="danger">Delete Now</flux:button>
+                                    <flux:button type="submit" variant="danger"
+                                        wire:click="deletePosition({{ $position->id }})">Delete Now</flux:button>
                                 </div>
                             </div>
                         </flux:modal>
@@ -88,6 +90,61 @@
         </tbody>
     </table>
 
+
+
+
+
+
+    {{ $positions->links() }}
+
+
+
+
+
+    <flux:modal wire:close="closeEditModal" name="edit-position" class="min-w-[22rem]">
+        <form wire:submit="updatePosition" class="space-y-6">
+
+            <div>
+                <flux:heading size="lg" class="animate-fade-in">Edit Position</flux:heading>
+                <flux:text class="mt-2 animate-fade-in"> update position to the system. this will allow to manage your
+                    positions more affectively
+                </flux:text>
+            </div>
+
+
+
+            <flux:input wire:model="name" label="Name" placeholder="Position Name" required
+                class="animate-slide-in-left delay-100" />
+            <flux:textarea wire:model="description" label="Description" placeholder="Position Description"
+                class="animate-slide-in-left delay-200" />
+
+
+
+
+            <flux:select label="Department" wire:model="selectedDepartment" placeholder="Choose Your Department ..."
+                required>
+                @foreach ($departments as $department)
+                <flux:select.option : value="{{
+                $department->id }}">
+                    {{ $department->name }}
+                </flux:select.option>
+                @endforeach
+            </flux:select>
+
+
+
+
+            <div class="flex">
+                <flux:spacer />
+                <flux:button type="submit" variant="primary" icon="check"
+                    class="hover:scale-105 transition-transform duration-200 animate-bounce-in delay-300">Save
+                </flux:button>
+            </div>
+
+
+        </form>
+        
+    </flux:modal>
 
 
 </div>

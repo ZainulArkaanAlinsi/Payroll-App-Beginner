@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
     ]);
 
     CompanySetting::factory()->create([
-        'name' => 'PT CKR',
+        'name' => 'PT. Freeport Indonesia',
         'description' => 'Membangun semua bidang usaha yang ada di dunia ini',
         'address' => 'Jl. Raya No. 1 Jakarta Pusat Indonesia 12345 ',
         'phone' => '+62 123 4567 890',

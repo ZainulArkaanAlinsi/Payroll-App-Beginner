@@ -40,16 +40,19 @@
         <flux:navlist variant="outline">
             <flux:navlist.group :heading="__('Configuration')" class="grid">
                 <!--  Company Settings  -->
-                <flux:navlist.item icon="cog-6-tooth" :href="route('admin.company-settings')" :current="request()->routeIS('admin.company-settings') " wire:navigate>{{ __('Company
+                <flux:navlist.item icon="cog-6-tooth" :href="route('admin.company-settings')"
+                    :current="request()->routeIS('admin.company-settings') " wire:navigate>{{ __('Company
                     Settings') }}</flux:navlist.item>
                 <!-- Departments & Positions -->
-                <flux:navlist.item icon="building-library" :href="route('admin.departments-and-positions')" :current="request()->routeIS('admin.departments-and-positions')" wire:navigate>{{ __('Departments &
+                <flux:navlist.item icon="building-library" :href="route('admin.departments-and-positions')"
+                    :current="request()->routeIS('admin.departments-and-positions')" wire:navigate>{{ __('Departments &
                     Positions') }}</flux:navlist.item>
                 <!-- Salary Component -->
-                <flux:navlist.item icon="currency-dollar" :href="`#`" :current="`#`" wire:navigate>{{ __('Salary
+                <flux:navlist.item icon="currency-dollar" :href="route('admin.salary-components')"
+                    :current="request()->routeIS('admin.salary-components')" wire:navigate>{{ __('Salary
                     Components') }}</flux:navlist.item>
                 <!-- Tax Setting -->
-                <flux:navlist.item icon="document-currency-dollar" :href="`#`" :current="`#`" wire:navigate>{{ __('Tax
+                <flux:navlist.item icon="document-currency-dollar" :href="route('admin.tax-settings')" :current="request()->routeIS('admin.tax-settings')" wire:navigate>{{ __('Tax
                     Settings') }}</flux:navlist.item>
             </flux:navlist.group>
         </flux:navlist>
@@ -160,6 +163,7 @@
 
     {{ $slot }}
 
+    <x-toaster-hub />
     @fluxScripts
 </body>
 

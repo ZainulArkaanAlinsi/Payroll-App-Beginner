@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->longText('description')->nullable();
-            $table->decimal('amount', 10, 2)->default(0);
+            $table->decimal('amount', 15, 2)->default(0);
             $table->timestamps();
         });
     }

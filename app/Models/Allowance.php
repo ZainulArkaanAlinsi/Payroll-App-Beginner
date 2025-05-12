@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Allowance extends Model
 {
     protected $guarded = [];
+    protected $table = 'allowances';
 
     public function employeeAllowances()
     {

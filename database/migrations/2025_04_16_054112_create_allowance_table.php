@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->longText('description')->nullable();
             $table->decimal('amount', 10, 2)->default(0);
-            $table->enum('role', ['fixed', 'percentage'])->default('fixed');
+            $table->enum('rule', ['fixed', 'percentage'])->default('fixed');
             $table->timestamps();
         });
     }

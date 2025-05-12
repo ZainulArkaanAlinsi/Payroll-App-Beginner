@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Livewire\CompanySetting;
-
+use App\Livewire\SalaryComponent;
+use App\Livewire\TaxSetting;
 
 
 
@@ -30,6 +31,8 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'admin'])->name('admin.')->group(function () {
     Route::get('company-settings', CompanySetting::class)->name('company-settings');
     Route::view('departments-and-positions', 'admin.departments-and-positions')->name('departments-and-positions');
+    Route::get('salary-component', SalaryComponent::class)->name('salary-components');
+    Route::get('tax-setting',TaxSetting::class)->name('tax-settings');
 });
 
 require __DIR__ . '/auth.php';
