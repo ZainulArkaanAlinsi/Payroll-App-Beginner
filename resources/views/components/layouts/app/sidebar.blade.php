@@ -19,7 +19,8 @@
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                 <!--Employee Management    -->
-                <flux:navlist.item icon="user-group" :href="`#`" :current="`#`" wire:navigate>{{ __('Employee
+                <flux:navlist.item icon="user-group" :href="route('admin.employee-management')"
+                    :current="request()->routeIS('admin.employee-management')" wire:navigate>{{ __('Employee
                     Management') }}</flux:navlist.item>
                 <!-- Payroll -->
                 <flux:navlist.item icon="circle-stack" :href="`#`" :current="`#`" wire:navigate>{{ __('Payroll') }}
@@ -52,7 +53,8 @@
                     :current="request()->routeIS('admin.salary-components')" wire:navigate>{{ __('Salary
                     Components') }}</flux:navlist.item>
                 <!-- Tax Setting -->
-                <flux:navlist.item icon="document-currency-dollar" :href="route('admin.tax-settings')" :current="request()->routeIS('admin.tax-settings')" wire:navigate>{{ __('Tax
+                <flux:navlist.item icon="document-currency-dollar" :href="route('admin.tax-settings')"
+                    :current="request()->routeIS('admin.tax-settings')" wire:navigate>{{ __('Tax
                     Settings') }}</flux:navlist.item>
             </flux:navlist.group>
         </flux:navlist>

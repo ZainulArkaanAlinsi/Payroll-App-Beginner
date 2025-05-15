@@ -9,11 +9,13 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 
+
+
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-
     /**
      * The attributes that are mass assignable.
      *
@@ -66,4 +68,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Employee::class, 'employee_id');
     }
+
+
 }
+
