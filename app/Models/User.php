@@ -69,6 +69,8 @@ class User extends Authenticatable
         return $this->belongsTo(Employee::class, 'employee_id');
     }
 
-
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
 }
-

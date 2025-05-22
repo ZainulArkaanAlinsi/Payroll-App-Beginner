@@ -6,6 +6,8 @@ use App\Livewire\CompanySetting;
 use App\Livewire\SalaryComponent;
 use App\Livewire\TaxSetting;
 use App\Livewire\EmployeeManagement;
+use App\Livewire\PayrollEmployee;
+use App\Livewire\TimeAttendanceManagement;
 
 Route::redirect('/', 'dashboard')->name('home');
 
@@ -28,10 +30,18 @@ Route::middleware(['auth', 'admin'])->name('admin.')->group(function () {
     Route::view('departments-and-positions', 'admin.departments-and-positions')->name('departments-and-positions');
     Route::get('salary-components', SalaryComponent::class)->name('salary-components');
     Route::get('tax-settings', TaxSetting::class)->name('tax-settings');
-
-
-    // Employee Management - Single Page
     Route::get('employee-management', EmployeeManagement::class)->name('employee-management');
+    Route::get('payroll-employee', PayrollEmployee::class)->name('payroll-employee');
+    Route::get('time-attendance-management',   TimeAttendanceManagement::class)->name('time-attendance-management');
 });
+
+
+// // Employee Routes
+// Route::middleware(['auth', 'user-employee'])->name('employee.')->group(function () {
+//     Route::get('time-attendance-management', TimeAttendanceManagement::class)->name('time-attendance-management');
+// });
+
+
+
 
 require __DIR__ . '/auth.php';

@@ -9,6 +9,7 @@ class Department extends Model
 
     protected $guarded = [];
 
+    
     public function positions()
     {
         return $this->hasMany(Position::class);

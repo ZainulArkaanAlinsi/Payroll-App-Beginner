@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 
 // app/Models/Tax.php
 class Tax extends Model
@@ -21,4 +22,3 @@ class Tax extends Model
         'rate' => 'decimal:2',
     ];
 }
-

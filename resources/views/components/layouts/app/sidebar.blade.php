@@ -18,15 +18,19 @@
                 <!--Dasboard-->
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+
+                @if (Auth::user()->role == 'admin')
                 <!--Employee Management    -->
                 <flux:navlist.item icon="user-group" :href="route('admin.employee-management')"
                     :current="request()->routeIS('admin.employee-management')" wire:navigate>{{ __('Employee
                     Management') }}</flux:navlist.item>
                 <!-- Payroll -->
-                <flux:navlist.item icon="circle-stack" :href="`#`" :current="`#`" wire:navigate>{{ __('Payroll') }}
+                <flux:navlist.item icon="circle-stack" :href="route('admin.payroll-employee')"
+                    :current="request()->routeIS('admin.payroll-employee')" wire:navigate>{{ __('Payroll') }}
                 </flux:navlist.item>
                 <!-- Time & Attendance -->
-                <flux:navlist.item icon="calendar-date-range" :href="`#`" :current="`#`" wire:navigate>{{ __('Time &
+                <flux:navlist.item icon="calendar-date-range" :href="route('admin.time-attendance-management')"
+                    :current="request()->routeIS('admin.time-attendance-management')" wire:navigate>{{ __('Time &
                     Attendance') }}</flux:navlist.item>
                 <!-- Leave Management -->
                 <flux:navlist.item icon="inbox-arrow-down" :href="`#`" :current="`#`" wire:navigate>{{ __('Leave
@@ -34,10 +38,16 @@
                 <!-- Reports  -->
                 <flux:navbar.item icon="chart-bar" :href="`#`" :current="`#`" wire:navigate>{{ __('Reports') }}
                     </flux:navlist.item>
+
+                    @else
+                    <flux:navlist.item icon="calendar-date-range" :href="`#`" :current="`#`" wire:navigate>{{
+                        __('Request Leave') }}</flux:navlist.item>
+                    @endif
             </flux:navlist.group>
         </flux:navlist>
 
 
+        @if (Auth::user()->role == 'admin')
         <flux:navlist variant="outline">
             <flux:navlist.group :heading="__('Configuration')" class="grid">
                 <!--  Company Settings  -->
@@ -58,6 +68,7 @@
                     Settings') }}</flux:navlist.item>
             </flux:navlist.group>
         </flux:navlist>
+        @endif
 
         <flux:spacer />
 
