@@ -9,11 +9,13 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 
+
+
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-
     /**
      * The attributes that are mass assignable.
      *
@@ -65,5 +67,10 @@ class User extends Authenticatable
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
     }
 }

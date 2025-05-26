@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Department;
 use App\Models\Position;
+use App\Models\Employee;
 
 class AddPosition extends Component
 {
@@ -38,7 +39,7 @@ class AddPosition extends Component
         // dd($request->all());
 
         Position::create([
-            'name' => $this->name,
+            'name' => $this->name ,
             'description' => $this->description,
             'department_id' => $this->selectedDepartment,
         ]);
@@ -52,5 +53,7 @@ class AddPosition extends Component
         $this->modal('add-position')->close();
     }
 
-    
+
+
+
 }

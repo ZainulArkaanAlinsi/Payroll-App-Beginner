@@ -8,6 +8,17 @@ class Employee extends Model
 {
     protected $guarded = [];
 
+    protected $fillable = [
+        'full_name',
+        'phone',
+        'hire_date',
+        'position_id',
+        'bank_name',
+        'bank_account_number',
+        'npmp',
+        'address',
+    ];
+
 
     public function user()
     {
@@ -43,5 +54,10 @@ class Employee extends Model
     public function leaveRequests()
     {
         return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(Position::class);
     }
 }

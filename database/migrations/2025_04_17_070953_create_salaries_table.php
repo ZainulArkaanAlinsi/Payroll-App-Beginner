@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('salaries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->decimal('month' , 15, 2);
-            $table->string( 'pay_frequency' )->default('monthly');
-            $table->date( 'efective_date' );
+            $table->decimal('amount', 15, 2); // Ganti 'month' menjadi 'base_salary'
+            $table->string('pay_frequency')->default('monthly', 'weekly', 'daily'); // Ganti 'month' menjadi 'base_salary'
+            $table->date('effective_date'); // Ganti typo 'efective_date' menjadi 'effective_date'
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

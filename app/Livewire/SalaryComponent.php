@@ -119,11 +119,11 @@ class SalaryComponent extends Component
             'description' => ['required', 'string', 'max:1000'],
             'amount' => ['required', 'numeric','gt:100'],
         ]);
-        
+
         Deduction::create($validated);
         Toaster::success('Deduction added successfully');
         $this->closeModal();
         $this->modal('main-modal')->close();
-        $this->resetPage(); 
+        $this->resetPage();
     }
 }
