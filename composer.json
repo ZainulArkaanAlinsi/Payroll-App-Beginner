@@ -15,10 +15,12 @@
         "livewire/flux": "^2.1",
         "livewire/volt": "^1.7.0",
         "masmerise/livewire-toaster": "^2.8",
+        "spatie/laravel-permission": "^6.18",
         "wireui/wireui": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "laravel/breeze": "^2.3",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
         "laravel/sail": "^1.41",

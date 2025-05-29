@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
-    protected $guarded = [];
 
     protected $fillable = [
         'full_name',
@@ -22,7 +21,7 @@ class Employee extends Model
 
     public function user()
     {
-        return $this->hasOne(User::class, 'employee_id', 'id');
+        return $this->belongsTo(User::class);
     }
 
     public function salary()

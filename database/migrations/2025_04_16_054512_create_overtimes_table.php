@@ -20,6 +20,7 @@ return new class extends Migration
             $table->time('end_time');
             $table->integer('duration')->default(0);
             $table->string('reason')->nullable();
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

@@ -29,17 +29,20 @@
                     :current="request()->routeIS('admin.payroll-employee')" wire:navigate>{{ __('Payroll') }}
                 </flux:navlist.item>
                 <!-- Time & Attendance -->
-                <flux:navlist.item icon="calendar-date-range" :href="route('admin.leave-requests-admin')" :current="request()->routeIs('admin.leave-requests-admin')" wire:navigate>{{ __('Time &
+                <flux:navlist.item icon="calendar-date-range" :href="route('admin.time-attendance')"
+                    :current="request()->routeIs('admin.time-attendance')" wire:navigate>{{ __('Time &
                     Attendance') }}</flux:navlist.item>
                 <!-- Leave Management -->
-                <flux:navlist.item icon="inbox-arrow-down" :href="route('admin.leave-requests-admin')" :current="request()->routeIs('admin.leave-requests-admin')" wire:navigate>{{ __('Leave
+                <flux:navlist.item icon="inbox-arrow-down" :href="route('admin.leave-requests-admin')"
+                    :current="request()->routeIs('admin.leave-requests-admin')" wire:navigate>{{ __('Leave
                     Management') }}</flux:navlist.item>
                 <!-- Reports  -->
                 <flux:navbar.item icon="chart-bar" :href="`#`" :current="`#`" wire:navigate>{{ __('Reports') }}
                     </flux:navlist.item>
 
                     @else
-                    <flux:navlist.item icon="calendar-date-range" :href="`#`" :current="`#`" wire:navigate>{{
+                    <flux:navlist.item icon="calendar-date-range" :href="route('leave-requests')"
+                        :current="request()->routeIs('leave-requests')" wire:navigate>{{
                         __('Request Leave') }}</flux:navlist.item>
                     @endif
             </flux:navlist.group>

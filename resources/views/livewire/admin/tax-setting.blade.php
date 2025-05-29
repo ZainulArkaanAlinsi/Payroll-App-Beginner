@@ -11,18 +11,19 @@
                     class="!border-indigo-100 focus:!ring-2 focus:!ring-indigo-500" />
             </div>
             <div class="w-full md:w-auto flex justify-end">
-                <flux:button icon="plus" label="Add New Tax" wire:click="openTaxModal"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md px-6 py-2 rounded-lg transition duration-150 w-full md:w-auto" />
+                <flux:button icon="plus" label="Add New Tax" wire:click="openTaxModal" variant="primary"
+                    class="bg-indigo-600 hover:bg-orange-700 text-white font-semibold shadow-md px-6 py-2 rounded-lg transition duration-150 w-full md:w-auto" />
             </div>
         </div>
 
         <!-- Notification -->
         @if(session('message'))
         <div class="mb-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-            <p class="text-emerald-700 flex items-center">
-                <x-icon name="check-circle" class="w-5 h-5 mr-2 text-emerald-600" />
-                {{ session('message') }}
-            </p>
+            <div class="text-emerald-700 flex items-center">
+                <span name="check-circle" class="w-5 h-5 mr-2 text-emerald-600">
+                    {{ session('message') }}
+                </span>
+            </div>
         </div>
         @endif
 
