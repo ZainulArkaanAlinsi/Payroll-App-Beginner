@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PayrollDetail extends Model
 {
-    protected $guarded = [];
+    protected $table = 'payroll_details';
 
     public function payroll()
     {

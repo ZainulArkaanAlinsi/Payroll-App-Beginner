@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payroll extends Model
 {
-    protected $guarded = [];
+    protected $table = 'payrolls';
 
-    public function payrollDetails()
+    public function payroll_details()
     {
         return $this->hasMany(PayrollDetail::class);
     }

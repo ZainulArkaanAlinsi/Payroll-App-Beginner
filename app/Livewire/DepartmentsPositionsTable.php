@@ -53,7 +53,7 @@ class DepartmentsPositionsTable extends Component
         }
     }
 
-    
+
     public function editModal($positionId)
     {
         $position = Position::find($positionId);
@@ -91,7 +91,6 @@ class DepartmentsPositionsTable extends Component
             ]);
             $this->dispatch('updated-position');
             $this->closeEditModal();
-
         }
     }
 }

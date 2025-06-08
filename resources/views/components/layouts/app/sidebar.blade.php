@@ -41,8 +41,7 @@
                     </flux:navlist.item>
 
                     @else
-                    <flux:navlist.item icon="calendar-date-range" :href="route('leave-requests')"
-                        :current="request()->routeIs('leave-requests')" wire:navigate>{{
+                    <flux:navlist.item icon="calendar-date-range" :href="`#`" :current="`#`" wire:navigate>{{
                         __('Request Leave') }}</flux:navlist.item>
                     @endif
             </flux:navlist.group>
@@ -52,22 +51,27 @@
         @if (Auth::user()->role == 'admin')
         <flux:navlist variant="outline">
             <flux:navlist.group :heading="__('Configuration')" class="grid">
-                <!--  Company Settings  -->
-                <flux:navlist.item icon="cog-6-tooth" :href="route('admin.company-settings')"
-                    :current="request()->routeIS('admin.company-settings') " wire:navigate>{{ __('Company
-                    Settings') }}</flux:navlist.item>
+                <!-- Company Settings -->
+                <flux:navlist.item icon="cog-6-tooth" :href="route('admin.company-setting')"
+                    :current="request()->routeIS('admin.company-setting')" wire:navigate>
+                    {{ __('Company Settings') }}
+                </flux:navlist.item>
                 <!-- Departments & Positions -->
                 <flux:navlist.item icon="building-library" :href="route('admin.departments-and-positions')"
-                    :current="request()->routeIS('admin.departments-and-positions')" wire:navigate>{{ __('Departments &
-                    Positions') }}</flux:navlist.item>
+                    :current="request()->routeIS('admin.departments-and-positions')" wire:navigate>
+                    {{ __('Departments & Positions') }}
+                </flux:navlist.item>
                 <!-- Salary Component -->
-                <flux:navlist.item icon="currency-dollar" :href="route('admin.salary-components')"
-                    :current="request()->routeIS('admin.salary-components')" wire:navigate>{{ __('Salary
-                    Components') }}</flux:navlist.item>
+                <flux:navlist.item icon="currency-dollar" :href="route('admin.salary-component')"
+                    :current="request()->routeIS('admin.salary-component')" wire:navigate>
+                    {{ __('Salary Components') }}
+                </flux:navlist.item>
                 <!-- Tax Setting -->
-                <flux:navlist.item icon="document-currency-dollar" :href="route('admin.tax-settings')"
-                    :current="request()->routeIS('admin.tax-settings')" wire:navigate>{{ __('Tax
-                    Settings') }}</flux:navlist.item>
+                <flux:navlist.item icon="document-currency-dollar" :href="route('admin.tax-setting')"
+                    :current="request()->routeIS('admin.tax-setting')" wire:navigate>
+                    {{ __('Tax Settings') }}
+                </flux:navlist.item>
+
             </flux:navlist.group>
         </flux:navlist>
         @endif
