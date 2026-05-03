@@ -2,15 +2,23 @@
     <x-page-heading :pageHeading="__('Time Attendance Management')"
         :pageDesc="__('Manage your time attendance here')" />
 
-    <div class="px-4 sm:px-6 lg:px-8 py-6">
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
         <!-- Header Section -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 animate-[fadeIn_0.5s_ease-out]">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Overtime Management</h2>
-                <p class="mt-1 text-sm text-gray-500">Total {{ $overtimes->count() }} records found</p>
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    Overtime Management
+                </h2>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <span class="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 px-2.5 py-0.5 rounded-full text-xs font-bold">{{ $overtimes->count() }} records</span>
+                    found in the system
+                </p>
             </div>
             <flux:button wire:click="$toggle('showCreateModal')"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-300 rounded-xl px-5 border-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
                         d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -21,58 +29,71 @@
         </div>
 
         <!-- Overtime Table -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-white dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-slate-200/60 dark:border-slate-700/60 overflow-hidden animate-[fadeInUp_0.5s_ease-out_0.2s_both]">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700/50">
+                    <thead class="bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 Date</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 Employee</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 Duration</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 Reason</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 bg-transparent">
                         @forelse($overtimes as $overtime)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ \Carbon\Carbon::parse($overtime->overtime_date)->format('d M Y') }}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors duration-200 group">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-200">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    {{ \Carbon\Carbon::parse($overtime->overtime_date)->format('d M Y') }}
+                                </div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ $overtime->employee->full_name }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shadow-sm ring-1 ring-blue-200 dark:ring-blue-800/50">
+                                        {{ substr($overtime->employee->full_name, 0, 1) }}
+                                    </div>
+                                    <span class="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        {{ $overtime->employee->full_name }}
+                                    </span>
+                                </div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                                <div
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50 shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     {{ $overtime->duration }} hours
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-600 max-w-[300px] truncate">
-                                {{ $overtime->reason }}
+                            <td class="px-6 py-4">
+                                <p class="text-sm text-slate-600 dark:text-slate-400 max-w-[300px] truncate" title="{{ $overtime->reason }}">
+                                    {{ $overtime->reason }}
+                                </p>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <flux:button wire:click="showOvertimeDetail({{ $overtime->id }})"
-                                    class="text-indigo-600 hover:text-indigo-900 bg-transparent shadow-none">
+                                    class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-xl px-4 py-1.5 shadow-sm transition-all duration-200 border-none">
                                     View Details
                                 </flux:button>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-6 text-center text-gray-500">
-                                <div class="flex flex-col items-center justify-center gap-2">
-                                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <p class="text-sm">No overtime records found</p>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center justify-center">
+                                    <div class="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-5 ring-1 ring-slate-200 dark:ring-slate-700">
+                                        <svg class="w-10 h-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">No overtime records</h3>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">There are no overtime requests found in the system right now.</p>
                                 </div>
                             </td>
                         </tr>
@@ -83,22 +104,26 @@
         </div>
 
         <!-- Create Overtime Modal -->
-        <flux:modal wire:model="showCreateModal" max-width="2xl">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
-                    <h3 class="text-xl font-semibold text-gray-900">New Overtime Request</h3>
+        <flux:modal wire:model="showCreateModal" max-width="2xl" class="backdrop-blur-sm">
+            <div class="p-8 bg-white dark:bg-slate-900 rounded-3xl">
+                <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <div class="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </div>
+                        New Overtime Request
+                    </h3>
                     <flux:button type="button" wire:click="$set('showCreateModal', false)" variant="ghost" size="sm"
-                        class="text-gray-400 hover:text-gray-500" icon="x-mark">
-                        Close
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full" icon="x-mark">
                     </flux:button>
                 </div>
 
                 <form wire:submit.prevent="createOvertime" class="space-y-6">
                     @if($isAdmin)
                     <div>
-                        <flux:label class="block text-sm font-medium text-gray-700 mb-2">Employee</flux:label>
+                        <flux:label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Employee</flux:label>
                         <flux:select wire:model="employeeId"
-                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-800 shadow-sm">
                             <option value="">Select Employee</option>
                             @foreach(\App\Models\Employee::all() as $emp)
                             <option value="{{ $emp->id }}">{{ $emp->full_name }}</option>
@@ -107,38 +132,38 @@
                     </div>
                     @endif
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <flux:label class="block text-sm font-medium text-gray-700 mb-2">Date</flux:label>
+                            <flux:label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Date</flux:label>
                             <flux:input type="date" wire:model="overtimeDate"
-                                class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
+                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-800 shadow-sm" />
                         </div>
 
                         <div>
-                            <flux:label class="block text-sm font-medium text-gray-700 mb-2">Time Range</flux:label>
-                            <div class="flex items-center gap-2">
+                            <flux:label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Time Range</flux:label>
+                            <div class="flex items-center gap-3">
                                 <flux:input type="time" wire:model="startTime"
-                                    class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
-                                <span class="text-gray-400">to</span>
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-800 shadow-sm" />
+                                <span class="text-slate-400 font-medium text-sm">to</span>
                                 <flux:input type="time" wire:model="endTime"
-                                    class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-800 shadow-sm" />
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <flux:label class="block text-sm font-medium text-gray-700 mb-2">Reason</flux:label>
+                        <flux:label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Reason</flux:label>
                         <flux:textarea wire:model="reason" rows="3"
-                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-800 shadow-sm resize-none"
                             placeholder="Enter reason for overtime..." />
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                    <div class="flex justify-end gap-3 pt-8 border-t border-slate-100 dark:border-slate-800">
                         <flux:button type="button" wire:click="$set('showCreateModal', false)"
-                            class="bg-gray-100 hover:bg-gray-200 text-gray-700">
+                            class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl px-6 border-none">
                             Cancel
                         </flux:button>
-                        <flux:button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <flux:button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl px-6 shadow-md shadow-indigo-500/20 border-none">
                             Submit Request
                         </flux:button>
                     </div>
@@ -147,44 +172,65 @@
         </flux:modal>
 
         <!-- Detail Modal -->
-        <flux:modal wire:model="showingDetailModal" max-width="lg">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
-                    <h3 class="text-xl font-semibold text-gray-900">Overtime Details</h3>
+        <flux:modal wire:model="showingDetailModal" max-width="lg" class="backdrop-blur-sm">
+            <div class="p-8 bg-white dark:bg-slate-900 rounded-3xl">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <div class="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        Overtime Details
+                    </h3>
                     <flux:button type="button" wire:click="$set('showingDetailModal', false)" variant="ghost" size="sm"
-                        class="text-gray-400 hover:text-gray-500">
-                        Close
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full" icon="x-mark">
                     </flux:button>
                 </div>
 
                 @if($selectedOvertime)
-                <div class="space-y-4 text-sm">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500">Employee Name:</span>
-                        <span class="font-medium text-gray-900">{{ $selectedOvertime->employee->full_name }}</span>
+                <div class="space-y-5 text-sm">
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
+                        <span class="text-slate-500 dark:text-slate-400 font-medium">Employee Name:</span>
+                        <span class="font-bold text-slate-900 dark:text-white text-base">{{ $selectedOvertime->employee->full_name }}</span>
                     </div>
 
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500">Date:</span>
-                        <span class="font-medium text-gray-900">{{ $selectedOvertime->overtime_date->format('d F Y')
-                            }}</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+                            <span class="block text-indigo-500 dark:text-indigo-400 font-medium mb-1">Date</span>
+                            <span class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                {{ $selectedOvertime->overtime_date->format('d M Y') }}
+                            </span>
+                        </div>
+                        <div class="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-2xl border border-purple-100 dark:border-purple-900/30">
+                            <span class="block text-purple-500 dark:text-purple-400 font-medium mb-1">Time Range</span>
+                            <span class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                {{ date('H:i', strtotime($selectedOvertime->start_time)) }} -
+                                {{ date('H:i', strtotime($selectedOvertime->end_time)) }}
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500">Time Range:</span>
-                        <span class="font-medium text-gray-900">
-                            {{ date('H:i', strtotime($selectedOvertime->start_time)) }} -
-                            {{ date('H:i', strtotime($selectedOvertime->end_time)) }}
-                        </span>
-                    </div>
-
-                    <div class="mt-4 pt-4 border-t border-gray-100">
-                        <p class="text-gray-500 mb-2">Reason:</p>
-                        <p class="text-gray-700 bg-gray-50 p-3 rounded-lg">{{ $selectedOvertime->reason }}</p>
+                    <div class="pt-2">
+                        <p class="text-slate-500 dark:text-slate-400 font-medium mb-2">Reason:</p>
+                        <p class="text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700/50 leading-relaxed italic">
+                            "{{ $selectedOvertime->reason }}"
+                        </p>
                     </div>
                 </div>
                 @endif
             </div>
         </flux:modal>
     </div>
+
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </div>

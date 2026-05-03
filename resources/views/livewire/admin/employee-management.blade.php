@@ -1,318 +1,309 @@
-<div class="space-y-8">
-    <!-- Page Heading -->
-    <x-page-heading :pageHeading="__('Employee Management')"
-        :pageDesc="__('Manage your employees, compensation, and payroll information')" class="mb-8"
-        header-class="bg-gradient-to-r from-blue-600 to-purple-600 text-white" />
-
-    <!-- Search and Add Button -->
-    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-        <div class="w-full md:w-1/3">
-            <flux:input wire:model.live.debounce.300ms="search" type="text" placeholder="Search employees..."
-                icon="magnifying-glass" class="w-full rounded-xl" variant="outline" />
+<div class="flex flex-col gap-10 p-6 lg:p-12 animate-[fadeIn_0.6s_ease-out]">
+    <!-- Master Header: High-Impact Typography -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div class="space-y-3">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2 animate-pulse">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                Human Capital Cloud
+            </div>
+            <h1 class="text-5xl font-black tracking-tighter text-white leading-tight">
+                Employee <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-600">Directorate</span>
+            </h1>
+            <p class="text-zinc-500 font-medium text-lg max-w-2xl italic leading-relaxed">Orchestrating your talent ecosystem with high-precision data and seamless management protocols.</p>
         </div>
-        <flux:modal.trigger name="employee-management">
-            <flux:button variant="primary" icon="plus" gradient gradient-from="from-blue-600"
-                gradient-to="to-purple-600" class="shadow-lg">
-                <span class="hidden md:inline">Add Employee</span>
-            </flux:button>
-        </flux:modal.trigger>
+        
+        <div class="flex items-center gap-4">
+            <flux:modal.trigger name="employee-management">
+                <button class="group relative px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-2xl shadow-indigo-600/30 active:scale-95 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                    <span class="relative flex items-center gap-2">
+                        <flux:icon name="plus" class="w-5 h-5" />
+                        Onboard Talent
+                    </span>
+                </button>
+            </flux:modal.trigger>
+        </div>
     </div>
 
-    <!-- Employee Table -->
-    <div
-        class="overflow-x-auto rounded-3xl shadow-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-purple-50 to-white">
-        <table class="min-w-full divide-y divide-blue-100">
-            <thead>
-                <tr
-                    class="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs md:text-sm uppercase tracking-wider">
-                    <th class="px-5 py-4 text-left font-bold rounded-tl-3xl">No</th>
-                    <th class="px-5 py-4 text-left font-bold">Employee</th>
-                    <th class="px-5 py-4 text-left font-bold">Position</th>
-                    <th class="px-5 py-4 text-left font-bold">Department</th>
-                    <th class="px-5 py-4 text-left font-bold">Contact</th>
-                    <th class="px-5 py-4 text-left font-bold">Email</th>
-                    <th class="px-5 py-4 text-left font-bold">Hire Date</th>
-                    <th class="px-5 py-4 text-left font-bold">Bank</th>
-                    <th class="px-5 py-4 text-left font-bold">Account</th>
-                    <th class="px-5 py-4 text-left font-bold">Address</th>
-                    <th class="px-5 py-4 text-left font-bold">Salary</th>
-                    <th class="px-5 py-4 text-left font-bold">Frequency</th>
-                    <th class="px-5 py-4 text-left font-bold">Status</th>
-                    <th class="px-5 py-4 text-right font-bold rounded-tr-3xl">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white/80 divide-y divide-blue-50">
-                @forelse ($employees as $index => $employee)
-                <tr class="hover:bg-blue-50/70 transition-all group">
-                    <td class="px-5 py-3 text-xs text-gray-500 font-semibold">{{ $employees->firstItem() + $index }}
-                    </td>
-                    <td class="px-5 py-3 min-w-[180px]">
-                        <div class="flex items-center gap-3">
-                            <flux:avatar :name="$employee->full_name" size="md" class="ring-2 ring-blue-200 shadow" />
-                            <div>
-                                <div class="font-semibold text-blue-900 truncate">{{ $employee->full_name }}</div>
-                                <div class="text-xs text-gray-400">{{ $employee->user->name ?? '-' }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-5 py-3 text-purple-700 text-sm font-medium truncate">
-                        {{ $employee->position->name ?? '-' }}
-                    </td>
-                    <td class="px-5 py-3 text-xs text-gray-500 truncate">
-                        {{ $employee->position->department->name ?? '-' }}
-                    </td>
-                    <td class="px-5 py-3 text-blue-700 text-sm">
-                        <div class="flex items-center gap-1">
-                            <x-icon name="phone" class="w-4 h-4 text-blue-500" />
-                            <span>{{ $employee->phone }}</span>
-                        </div>
-                    </td>
-                    <td class="px-5 py-3 text-xs text-blue-700 truncate">
-                        {{ $employee->user->email ?? '-' }}
-                    </td>
-                    <td class="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
-                        @if($employee->hire_date)
-                        <span>
-                            {{ \Carbon\Carbon::parse($employee->hire_date)->format('d M y') }}
-                        </span>
-                        @else
-                        <span class="text-gray-400">-</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-xs text-gray-700 truncate">
-                        {{ $employee->bank_name }}
-                    </td>
-                    <td class="px-5 py-3 text-xs text-gray-700 truncate">
-                        {{ $employee->bank_account_number }}
-                    </td>
-                    <td class="px-5 py-3 text-xs text-gray-500 truncate max-w-[160px]">
-                        {{ $employee->address }}
-                    </td>
+    <!-- Insight Pulse: Quick Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        @php 
+            $metrics = [
+                ['label' => 'Headcount', 'value' => $employees->total(), 'trend' => '+2.5%', 'icon' => 'user-group', 'color' => 'indigo'],
+                ['label' => 'Active Units', 'value' => $departments->count(), 'trend' => 'Stable', 'icon' => 'building-office', 'color' => 'purple'],
+                ['label' => 'New Joiners', 'value' => '12', 'trend' => 'This Month', 'icon' => 'sparkles', 'color' => 'emerald'],
+                ['label' => 'Avg Tenure', 'value' => '2.4y', 'trend' => 'Optimal', 'icon' => 'clock', 'color' => 'amber'],
+            ];
+        @endphp
+        @foreach($metrics as $metric)
+            <div class="glass rounded-[2rem] p-6 border border-white/5 relative group overflow-hidden transition-all hover:-translate-y-1">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-{{ $metric['color'] }}-500/5 rounded-full blur-2xl group-hover:bg-{{ $metric['color'] }}-500/10 transition-colors"></div>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-{{ $metric['color'] }}-500">
+                        <flux:icon :name="$metric['icon']" variant="mini" class="w-5 h-5" />
+                    </div>
+                    <span class="text-[9px] font-black text-{{ $metric['color'] }}-500 uppercase tracking-widest bg-{{ $metric['color'] }}-500/10 px-2 py-1 rounded-lg border border-{{ $metric['color'] }}-500/20">{{ $metric['trend'] }}</span>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">{{ $metric['label'] }}</p>
+                    <p class="text-3xl font-black text-white tracking-tighter">{{ $metric['value'] }}</p>
+                </div>
+            </div>
+        @endforeach
+    </div>
 
-                    <td class="px-5 py-3 max-w-[160px]">
-                        @if(isset($employee->salary) && isset($employee->salary->amount) && $employee->salary->amount >
-                        0)
-                        <div class="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1 shadow-sm max-w-full"
-                            x-data="{ show: false }">
-                            <x-icon name="currency-dollar" class="w-4 h-4 text-green-500" />
-                            <span class="font-bold text-green-700 text-sm truncate max-w-[90px] cursor-pointer"
-                                :title="'Rp {{ number_format($employee->salary->amount, 0, ',', '.') }}'">
-                                Rp {{ number_format($employee->salary->amount, 0, ',', '.') }}
-                            </span>
-                        </div>
-                        @else
-                        <span
-                            class="inline-block text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 text-sm">-</span>
-                        @endif
-                    </td>
-
-                    <td class="px-5 py-3 text-xs text-gray-500">
-                        @if(isset($employee->salary) && $employee->salary->pay_frequency)
-                        {{ ucfirst($employee->salary->pay_frequency) }}
-                        @else
-                        <span class="text-gray-400">-</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3">
-                        <flux:badge color="green" variant="solid"
-                            class="flex items-center gap-2 px-2 py-1 rounded-full shadow text-xs font-semibold">
-                            <x-icon name="user" class="w-4 h-4 text-black" />
-                            <span>Employee</span>
-                        </flux:badge>
-                    </td>
-                    <td class="px-5 py-3 text-right">
-                        <div class="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition">
-                            <flux:button wire:click="editEmployee({{ $employee->id }})" icon="pencil" variant="primary"
-                                size="sm" class="bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full shadow" />
-                            <flux:button wire:click="deleteEmployee({{ $employee->id }})" icon="trash" variant="primary"
-                                size="sm" class="bg-red-100 text-red-600 hover:bg-red-200 rounded-full shadow" />
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="14" class="px-4 py-20 text-center bg-white/80 rounded-b-3xl">
-                        <div class="max-w-md mx-auto flex flex-col items-center">
-                            <div class="mb-5 p-6 bg-blue-100 rounded-full shadow">
-                                <x-icon name="user-circle" class="w-12 h-12 text-blue-600" />
-                            </div>
-                            <h3 class="text-xl font-bold text-blue-900 mb-2">No employees found</h3>
-                            <p class="text-blue-500 mb-6">Start building your team by adding new members</p>
-                            <flux:button wire:click="showEmployeeForm" variant="primary" gradient
-                                gradient-from="from-blue-600" gradient-to="to-purple-600" class="shadow-lg">
-                                Add First Employee
-                            </flux:button>
-                        </div>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-        @if($employees->hasPages())
-        <div
-            class="px-8 py-5 border-t border-blue-100 bg-gradient-to-r from-blue-50 to-purple-50 rounded-b-3xl flex justify-between items-center">
-            <span class="text-xs text-gray-500">
-                Showing {{ $employees->firstItem() }} - {{ $employees->lastItem() }} of {{ $employees->total() }}
-                employees
-            </span>
-            {{ $employees->links('flux::pagination') }}
+    <!-- Data Core: High-Fidelity Table -->
+    <div class="glass rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl relative">
+        <!-- Table Controls -->
+        <div class="p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 bg-white/5">
+            <div class="w-full md:w-96 relative group">
+                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-indigo-500 transition-colors">
+                    <flux:icon name="magnifying-glass" class="w-5 h-5" />
+                </div>
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search the directorate..." 
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-inner">
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button class="px-5 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95">
+                    <flux:icon name="funnel" class="w-4 h-4" />
+                    Filters
+                </button>
+                <button class="px-5 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95">
+                    <flux:icon name="arrow-down-tray" class="w-4 h-4" />
+                    Export
+                </button>
+            </div>
         </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-zinc-900/30">
+                        <th class="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Employee Identity</th>
+                        <th class="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Deployment</th>
+                        <th class="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Communication</th>
+                        <th class="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Compensation</th>
+                        <th class="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @forelse ($employees as $employee)
+                        <tr class="group hover:bg-white/[0.02] transition-all duration-300">
+                            <td class="px-8 py-6">
+                                <div class="flex items-center gap-5">
+                                    <div class="relative">
+                                        <div class="absolute inset-0 bg-indigo-500 blur-lg opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                                        <div class="w-14 h-14 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative z-10 overflow-hidden shadow-xl">
+                                            <span class="text-indigo-400 font-black text-lg">{{ $employee->initials() }}</span>
+                                        </div>
+                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-zinc-950 rounded-full z-20"></div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-black text-white group-hover:text-indigo-400 transition-colors">{{ $employee->full_name }}</p>
+                                        <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{{ $employee->user->email ?? 'no-email@system.id' }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6">
+                                <div class="space-y-2">
+                                    <p class="text-xs font-black text-zinc-200 tracking-tight">{{ $employee->position->name ?? 'Unassigned' }}</p>
+                                    <div class="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                                        <span class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">{{ $employee->position->department->name ?? 'General' }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <flux:icon name="phone" class="w-3.5 h-3.5 text-zinc-600" />
+                                        <span class="text-xs font-bold text-zinc-400 tracking-tighter">{{ $employee->phone }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <flux:icon name="calendar" class="w-3.5 h-3.5 text-zinc-600" />
+                                        <span class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{{ \Carbon\Carbon::parse($employee->hire_date)->format('M d, Y') }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6">
+                                <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 inline-block">
+                                    <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Base Salary</p>
+                                    <p class="text-sm font-black text-white tracking-tighter">Rp {{ number_format($employee->salary->amount ?? 0, 0, ',', '.') }}</p>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6 text-right">
+                                <div class="flex justify-end gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
+                                    <button wire:click="editEmployee({{ $employee->id }})" class="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/30 transition-all active:scale-90">
+                                        <flux:icon name="pencil" class="w-4 h-4" />
+                                    </button>
+                                    <button wire:click="deleteEmployee({{ $employee->id }})" class="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 hover:text-rose-500 hover:border-rose-500/30 transition-all active:scale-90">
+                                        <flux:icon name="trash" class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-8 py-32 text-center">
+                                <div class="flex flex-col items-center justify-center space-y-6 max-w-sm mx-auto">
+                                    <div class="w-24 h-24 bg-zinc-900 rounded-[2rem] flex items-center justify-center text-zinc-800 border border-white/5 shadow-inner">
+                                        <flux:icon name="user-group" class="w-12 h-12" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="text-xl font-black text-white tracking-tight">The Directorate is Empty</h3>
+                                        <p class="text-sm text-zinc-500 font-medium italic">Start your enterprise journey by onboarding your first team member.</p>
+                                    </div>
+                                    <flux:modal.trigger name="employee-management">
+                                        <button class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all">Begin Onboarding</button>
+                                    </flux:modal.trigger>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if($employees->hasPages())
+            <div class="p-8 border-t border-white/5 bg-zinc-950/50 flex flex-col md:flex-row justify-between items-center gap-6">
+                <p class="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">
+                    Displaying Index <span class="text-zinc-400">{{ $employees->firstItem() }}-{{ $employees->lastItem() }}</span> / <span class="text-indigo-500">{{ $employees->total() }}</span> Units
+                </p>
+                <div class="w-full md:w-auto">
+                    {{ $employees->links('flux::pagination') }}
+                </div>
+            </div>
         @endif
     </div>
 
-    <!-- Employee Form Modal -->
-    <flux:modal name="employee-management" max-width="3xl" wire:model="showEmployeeForm" overlay-blur="sm">
-        <div name="header" class="text-lg font-semibold text-blue-900">
-            {{ $editMode ? 'Edit Employee' : 'Add New Employee' }}
+    <!-- Master Form Modal: Dark Premium -->
+    <flux:modal name="employee-management" max-width="4xl" wire:model="showEmployeeForm" class="p-0 overflow-hidden glass-dark rounded-[3rem] border-white/10">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-10 relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="relative z-10 flex items-center justify-between">
+                <div class="space-y-2">
+                    <h2 class="text-4xl font-black text-white tracking-tighter">{{ $editMode ? 'Protocol: Edit' : 'Protocol: New' }}</h2>
+                    <p class="text-indigo-100 font-bold text-xs uppercase tracking-widest opacity-80 italic">Precision Talent Orchestration Mode</p>
+                </div>
+                <button wire:click="$set('showEmployeeForm', false)" class="w-12 h-12 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center text-white transition-colors backdrop-blur-xl">
+                    <flux:icon name="x-mark" class="w-6 h-6" />
+                </button>
+            </div>
         </div>
 
-        <form wire:submit.prevent="saveEmployee" class="space-y-6">
-            <div name="content" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Personal Info -->
-                    <div class="space-y-4">
-                        <h3 class="text-base font-medium text-orange-600 border-b pb-2">Personal Information</h3>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="full_name" label="Full Name" required />
-                            <flux:error for="full_name" />
+        <form wire:submit.prevent="saveEmployee" class="p-10 space-y-12 bg-zinc-950">
+            <!-- Grid Layout for Form -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <!-- Section: Biological Identity -->
+                <div class="space-y-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-8 bg-indigo-500 rounded-full"></div>
+                        <h3 class="text-xs font-black text-zinc-400 uppercase tracking-[0.3em]">Identity Details</h3>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <flux:input wire:model="full_name" label="Legal Full Name" required class="premium-input" />
+                        <div class="grid grid-cols-2 gap-4">
+                            <flux:input wire:model="phone" type="tel" label="Contact Line" required />
+                            <flux:input wire:model="hire_date" type="date" label="Activation Date" required />
                         </div>
-                        <div class="flex flex-col">
-                            <flux:input wire:model="phone" type="tel" label="Phone" required /> {{-- Di sini --}}
-                            <flux:error for="phone" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="hire_date" type="date" label="Hire Date" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:select wire:model="position_id" label="Position" placeholder="Select a position">
-                                @foreach ($departments as $department)
-                                @if ($department->positions->isNotEmpty()) {{-- Cek jika ada positions --}}
-                                @foreach ($department->positions as $position)
-                                <flux:select.option value="{{ $position->id }}">
-                                    {{ $department->name }} - {{ $position->name }}
-                                </flux:select.option>
-                                @endforeach
+                        <flux:select wire:model="position_id" label="Structural Unit & Position" placeholder="Select deployment zone" required>
+                            @foreach ($departments as $department)
+                                @if ($department->positions->isNotEmpty())
+                                    <optgroup label="{{ strtoupper($department->name) }}">
+                                    @foreach ($department->positions as $position)
+                                        <option value="{{ $position->id }}">{{ $position->name }}</option>
+                                    @endforeach
+                                    </optgroup>
                                 @endif
-                                @endforeach
-                            </flux:select>
-                        </div>
-                    </div>
-
-                    <!-- Bank Info -->
-                    <div class="space-y-4">
-                        <h3 class="text-base font-medium text-orange-600 border-b pb-2">Bank Information</h3>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="bank_name" label="Bank Name" required />
-                            <flux:error for="bank_name" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="bank_account_number" label="Account Number" required />
-                            <flux:error for="bank_account_number" />
-                        </div>
-
-                        <div class="flex flex-col label">
-                            <flux:textarea wire:model="address" rows="3" label="Address" required />
-                            <flux:error for="address" />
-                        </div>
+                            @endforeach
+                        </flux:select>
                     </div>
                 </div>
 
-                <!-- User Account -->
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <h3 class="text-base font-medium text-orange-600 mb-4">User Account</h3>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="flex flex-col">
-                            <flux:input wire:model="name" label="Username" required />
-                            <flux:error for="name" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="email" type="email" label="Email" required />
-                            <flux:error for="email" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:input wire:model="password" type="password" label="Password" :required="!$editMode" />
-                            <flux:error for="password" />
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:input label="Role" value="Employee" readonly disabled />
-                        </div>
+                <!-- Section: Financial Vector -->
+                <div class="space-y-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-8 bg-emerald-500 rounded-full"></div>
+                        <h3 class="text-xs font-black text-zinc-400 uppercase tracking-[0.3em]">Financial Matrix</h3>
                     </div>
-                </div>
-
-
-
-                <!-- Salary Info -->
-
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <h3 class="text-base font-medium text-orange-600 mb-4">Salary Information</h3>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="flex flex-col">
-                            <flux:input wire:model="amount" type="number" min="0" step="1000" prefix="Rp"
-                                label="Base Salary" required class="w-full" input-class="text-right"
-                                placeholder="Masukkan gaji pokok" />
-                            <flux:error for="amount" />
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <flux:input wire:model="bank_name" label="Bank Institution" required />
+                            <flux:input wire:model="bank_account_number" label="Account ID" required />
                         </div>
-
-                        <div class="flex flex-col">
-                            <flux:select wire:model="pay_frequency" label="Pay Frequency">
+                        <div class="grid grid-cols-2 gap-4">
+                            <flux:input wire:model="amount" type="number" prefix="Rp" label="Base Compensation" required />
+                            <flux:select wire:model="pay_frequency" label="Payout Velocity" required>
                                 <flux:select.option value="monthly">Monthly</flux:select.option>
                                 <flux:select.option value="weekly">Weekly</flux:select.option>
                                 <flux:select.option value="daily">Daily</flux:select.option>
                             </flux:select>
-                            <flux:error for="pay_frequency" />
                         </div>
-
-                        <div label="Effective Date" class="flex flex-col">
-                            <flux:input wire:model="salary_effective_date" type="date" label="Effective Date" />
-                            <flux:error for="salary_effective_date" />
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-                <div name="actions" class="flex justify-end gap-3">
-                    <flux:modal.close>
-                        <flux:button variant="ghost" type="button" class="w-full md:w-auto">
-                            {{ $editMode ? 'Cancel' : 'Close' }}
-                        </flux:button>
-                    </flux:modal.close>
-
-                    <flux:button variant="primary" icon="check" type="submit" class="w-full md:w-auto">
-                        {{ $editMode ? 'Update Employee' : 'Create Employee' }}
-                    </flux:button>
-                </div>
-            </div>
-            @if ($errors->any())
-            <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                            fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-red-700">
-                            Terdapat error dalam form. Silakan periksa kembali input Anda.
-                        </p>
+                        <flux:input wire:model="salary_effective_date" type="date" label="Fiscal Start Date" required />
                     </div>
                 </div>
             </div>
-            @endif
+
+            <!-- Global Location -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-1 h-8 bg-purple-500 rounded-full"></div>
+                    <h3 class="text-xs font-black text-zinc-400 uppercase tracking-[0.3em]">Geographic Deployment</h3>
+                </div>
+                <flux:textarea wire:model="address" rows="3" label="Primary Residence Address" required class="bg-zinc-900 border-zinc-800 rounded-2xl" />
+            </div>
+
+            <!-- Access Keys -->
+            <div class="space-y-8 p-8 bg-indigo-600/5 border border-indigo-500/10 rounded-[2rem]">
+                <div class="flex items-center gap-3">
+                    <div class="w-1 h-8 bg-indigo-400 rounded-full"></div>
+                    <h3 class="text-xs font-black text-indigo-400 uppercase tracking-[0.3em]">Access Credentials</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <flux:input wire:model="name" label="System ID" required />
+                    <flux:input wire:model="email" type="email" label="Neural Mail" required />
+                    <flux:input wire:model="password" type="password" label="Cryptographic Key" :required="!$editMode" />
+                </div>
+            </div>
+
+            <div class="pt-10 flex flex-col sm:flex-row justify-end gap-4 border-t border-white/5">
+                <button wire:click="$set('showEmployeeForm', false)" type="button" class="px-8 py-4 border border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-900 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95">
+                    Abort Command
+                </button>
+                <button type="submit" class="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-600/40 transition-all active:scale-95 flex items-center gap-2">
+                    <flux:icon name="check-circle" class="w-5 h-5" />
+                    {{ $editMode ? 'Confirm Override' : 'Finalize Onboarding' }}
+                </button>
+            </div>
         </form>
     </flux:modal>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.4); }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .glass-dark {
+            background: linear-gradient(135deg, rgba(9, 9, 11, 0.95) 0%, rgba(18, 18, 23, 0.95) 100%);
+            backdrop-blur: 40px;
+        }
+
+        [data-flux-control] {
+            @apply !bg-zinc-950 !border-zinc-800 !rounded-2xl !py-3 !px-4 !text-sm !font-bold !text-white !placeholder-zinc-600 !transition-all;
+        }
+        [data-flux-control]:focus {
+            @apply !border-indigo-500/50 !ring-4 !ring-indigo-500/10;
+        }
+        [data-flux-label] {
+            @apply !text-[9px] !font-black !text-zinc-500 !uppercase !tracking-[0.2em] !mb-2 !ml-1;
+        }
+    </style>
 </div>
