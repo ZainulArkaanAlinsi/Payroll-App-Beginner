@@ -76,7 +76,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="page">
       <Link
         href="/payroll"
         className="inline-flex items-center gap-1.5 t-label"
@@ -107,7 +107,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="page-head-actions">
           {run.status !== 'PAID' && (
             <ActionButton
               action={calculateRun.bind(null, run.id)}
@@ -270,17 +270,17 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
               title="Rincian per karyawan"
               subtitle={`${items.length} baris · klik untuk membuka slip gaji`}
             />
-            <div className="scroll-slim -mx-1 overflow-x-auto">
-              <table className="w-full min-w-[1000px] t-body">
+            <div className="tbl-scroll scroll-slim">
+              <table className="tbl" style={{ minWidth: 1000 }}>
                 <thead>
-                  <tr style={{ color: 'var(--text-muted)' }}>
+                  <tr>
                     {[
                       'Karyawan', 'Gaji pokok', 'Tunjangan', 'Lembur', 'Bruto',
                       'BPJS', 'PPh 21', 'Potongan lain', 'Diterima', '',
                     ].map((h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                        className={`${
                           i > 0 && i < 9 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -296,10 +296,8 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                     return (
                       <tr
                         key={it.id}
-                        className="transition-colors hover:bg-[var(--field-bg)]"
-                        style={{ borderTop: '1px solid var(--hairline)' }}
                       >
-                        <td className="px-2 py-2.5">
+                        <td>
                           <Link href={`/employees/${it.employee.id}`} className="flex items-center gap-2.5">
                             <Avatar name={it.employee.fullName} size={28} />
                             <span className="min-w-0">
@@ -319,23 +317,23 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                             </span>
                           </Link>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(it.baseSalary)}</td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">
+                        <td className="tnum text-right t-small">{rupiah(it.baseSalary)}</td>
+                        <td className="tnum text-right t-small">
                           {rupiah(it.allowanceTaxable + it.allowanceNonTax)}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">
+                        <td className="tnum text-right t-small">
                           {it.overtimePay > 0 ? rupiah(it.overtimePay) : '—'}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small font-medium"
+                          className="tnum text-right t-small font-medium"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(it.grossPay)}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
+                        <td className="tnum text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
                           −{rupiah(bpjs)}
                         </td>
-                        <td className="px-2 py-2.5 text-right">
+                        <td className="text-right">
                           <span className="tnum block t-small" style={{ color: 'var(--color-clay-500)' }}>
                             −{rupiah(it.pph21)}
                           </span>
@@ -343,16 +341,16 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                             {it.taxMethod === 'TER' ? `TER ${it.terRate}%` : 'progresif'}
                           </span>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
+                        <td className="tnum text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
                           {lain > 0 ? `−${rupiah(lain)}` : '—'}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
+                          className="tnum text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(it.netPay)}
                         </td>
-                        <td className="px-2 py-2.5 text-right">
+                        <td className="text-right">
                           <Link href={`/payslip/${it.id}`} className="btn btn-ghost btn-sm">
                             Slip
                           </Link>
@@ -362,16 +360,16 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid var(--hairline)' }}>
-                    <td className="px-2 pt-3 t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
+                  <tr>
+                    <td className="t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                       Total {items.length} karyawan
                     </td>
                     <td colSpan={3} />
-                    <td className="tnum px-2 pt-3 text-right t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
+                    <td className="tnum text-right t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                       {rupiah(run.totalGross)}
                     </td>
                     <td colSpan={3} />
-                    <td className="tnum px-2 pt-3 text-right t-body font-bold" style={{ color: 'var(--accent)' }}>
+                    <td className="tnum text-right t-body font-bold" style={{ color: 'var(--accent)' }}>
                       {rupiah(run.totalNet)}
                     </td>
                     <td />

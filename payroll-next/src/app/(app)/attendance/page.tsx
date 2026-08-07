@@ -111,8 +111,8 @@ export default async function AttendancePage({
   const hariKerja = cells.filter((c) => !c.label.includes('(Min)') && !c.label.includes('(Sab)')).length;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Kehadiran
@@ -170,15 +170,15 @@ export default async function AttendancePage({
               title="Rekap per karyawan"
               subtitle="Diurutkan dari yang paling banyak mangkir dan terlambat"
             />
-            <div className="scroll-slim -mx-1 overflow-x-auto">
-              <table className="w-full min-w-[840px] t-body">
+            <div className="tbl-scroll scroll-slim">
+              <table className="tbl" style={{ minWidth: 840 }}>
                 <thead>
-                  <tr style={{ color: 'var(--text-muted)' }}>
+                  <tr>
                     {['Karyawan', 'Hadir', 'Jarak jauh', 'Terlambat', 'Cuti', 'Mangkir', 'Akumulasi telat', 'Kedisiplinan'].map(
                       (h, i) => (
                         <th
                           key={h}
-                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                          className={`${
                             i === 0 || i === 7 ? 'text-left' : 'text-right'
                           }`}
                         >
@@ -196,10 +196,8 @@ export default async function AttendancePage({
                     return (
                       <tr
                         key={e.id}
-                        className="transition-colors hover:bg-[var(--field-bg)]"
-                        style={{ borderTop: '1px solid var(--hairline)' }}
                       >
-                        <td className="px-2 py-2.5">
+                        <td>
                           <Link href={`/employees/${e.id}`} className="flex items-center gap-2.5">
                             <Avatar name={e.fullName} size={28} />
                             <span className="min-w-0">
@@ -218,25 +216,25 @@ export default async function AttendancePage({
                             </span>
                           </Link>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{a.hadir}</td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{a.wfh}</td>
+                        <td className="tnum text-right t-small">{a.hadir}</td>
+                        <td className="tnum text-right t-small">{a.wfh}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small"
+                          className="tnum text-right t-small"
                           style={{ color: a.telat > 0 ? 'var(--color-brass-500)' : undefined }}
                         >
                           {a.telat}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{a.cuti}</td>
+                        <td className="tnum text-right t-small">{a.cuti}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small"
+                          className="tnum text-right t-small"
                           style={{ color: a.mangkir > 0 ? 'var(--color-clay-500)' : undefined }}
                         >
                           {a.mangkir}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-label">
+                        <td className="tnum text-right t-label">
                           {a.menitTelat > 0 ? jamMenit(a.menitTelat) : '—'}
                         </td>
-                        <td className="px-2 py-2.5">
+                        <td>
                           <div className="flex items-center gap-2">
                             <span className="w-24">
                               <MiniBar

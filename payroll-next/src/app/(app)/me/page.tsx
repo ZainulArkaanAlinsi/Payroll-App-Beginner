@@ -22,7 +22,7 @@ export default async function MePage() {
 
   if (!session.employeeId) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="page">
         <GlassCard>
           <EmptyState
             icon={<TriangleAlert size={18} />}
@@ -76,7 +76,7 @@ export default async function MePage() {
 
   if (!employee) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="page">
         <GlassCard>
           <EmptyState icon={<CircleUser size={18} />} title="Data karyawan tidak ditemukan" />
         </GlassCard>
@@ -105,7 +105,7 @@ export default async function MePage() {
   const nilaiLembur = lemburDisetujui.reduce((s, o) => s + o.amount, 0);
 
   return (
-    <div className="mx-auto max-w-[1200px] space-y-4">
+    <div className="page">
       {/* ── kepala ── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -126,7 +126,7 @@ export default async function MePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="page-head-actions">
           <LeaveDialog fixedEmployeeId={id} />
           <OvertimeDialog fixedEmployeeId={id} baseSalary={employee.baseSalary} />
         </div>
@@ -185,14 +185,14 @@ export default async function MePage() {
                 hint="Slip terbit setelah proses gaji periode berjalan disetujui."
               />
             ) : (
-              <div className="scroll-slim -mx-1 overflow-x-auto">
-                <table className="w-full min-w-[600px] t-body">
+              <div className="tbl-scroll scroll-slim">
+                <table className="tbl" style={{ minWidth: 600 }}>
                   <thead>
-                    <tr style={{ color: 'var(--text-muted)' }}>
+                    <tr>
                       {['Periode', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map((h, i) => (
                         <th
                           key={h || i}
-                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                          className={`${
                             i >= 1 && i <= 4 ? 'text-right' : 'text-left'
                           }`}
                         >
@@ -205,10 +205,8 @@ export default async function MePage() {
                     {slips.map((s) => (
                       <tr
                         key={s.id}
-                        className="transition-colors hover:bg-[var(--field-bg)]"
-                        style={{ borderTop: '1px solid var(--hairline)' }}
                       >
-                        <td className="px-2 py-2.5">
+                        <td>
                           <span className="t-small font-medium" style={{ color: 'var(--text-strong)' }}>
                             {labelPeriode(s.run.period)}
                           </span>
@@ -216,26 +214,26 @@ export default async function MePage() {
                             dibayar {tanggal(s.run.payDate)}
                           </span>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(s.grossPay)}</td>
+                        <td className="tnum text-right t-small">{rupiah(s.grossPay)}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small"
+                          className="tnum text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(s.pph21)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small"
+                          className="tnum text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(s.totalDeduction)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
+                          className="tnum text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(s.netPay)}
                         </td>
-                        <td className="px-2 py-2.5 text-right">
+                        <td className="text-right">
                           <Link href={`/payslip/${s.id}`} className="btn btn-ghost btn-sm">
                             Buka
                           </Link>

@@ -33,8 +33,11 @@ export default function Sidebar({
   const [open, setOpen] = useState(false);
   const groups = groupedNavFor(role);
 
+  // min-h-0 wajib pada nav: tanpa itu item flex tidak boleh mengecil di bawah
+  // tinggi isinya, sehingga daftar menu memanjangkan panel melewati bawah
+  // layar dan kartu pengguna di bagian bawah ikut terpotong.
   const nav = (
-    <nav className="scroll-slim flex-1 space-y-5 overflow-y-auto px-3 py-4">
+    <nav className="scroll-slim min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {groups.map((g) => (
         <div key={g.name}>
           <p className="label !mb-1.5 px-2.5">{g.name}</p>
@@ -127,8 +130,14 @@ export default function Sidebar({
             >
               {name}
             </span>
-            <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
-              {statusLabel(role)} · {email}
+            {/* Surel tidak muat di lebar 236px dan hanya menghasilkan teks
+                terpotong yang tidak berguna — dipindah ke tooltip. */}
+            <span
+              className="block truncate t-micro"
+              style={{ color: 'var(--text-muted)' }}
+              title={email}
+            >
+              {statusLabel(role)}
             </span>
           </span>
         </Link>
@@ -156,7 +165,7 @@ export default function Sidebar({
 
       {/* rel tetap di layar lebar */}
       <aside
-        className="glass fixed top-3 bottom-3 left-3 z-30 hidden w-[236px] lg:flex"
+        className="glass fixed top-3 bottom-3 left-3 z-30 hidden w-[236px] overflow-hidden lg:flex"
         style={{ borderRadius: 20 }}
       >
         {panel}
@@ -171,7 +180,7 @@ export default function Sidebar({
             onClick={() => setOpen(false)}
           />
           <aside
-            className="glass rise absolute top-3 bottom-3 left-3 flex w-[248px]"
+            className="glass rise absolute top-3 bottom-3 left-3 flex w-[248px] overflow-hidden"
             style={{ borderRadius: 20, animationDuration: '.3s' }}
           >
             {panel}

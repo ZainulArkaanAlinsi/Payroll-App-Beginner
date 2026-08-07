@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './prisma';
-import { labelPeriode, periodeSekarang } from './format';
+import { labelPeriode, periodeSekarang, rupiahRingkas } from './format';
 
 /** Ringkasan yang dipakai dasbor & laporan. Satu tempat agar angkanya konsisten. */
 export async function companyOverview() {
@@ -132,6 +132,105 @@ export async function costTerrain(limitPeriods = 4) {
   };
 }
 
+/**
+ * Perbandingan biaya per departemen antara dua periode.
+ *
+ * Angka mutlak saja tidak cukup untuk mengambil keputusan — yang dicari
+ * manajemen biasanya "naiknya dari mana", jadi selisih terhadap periode
+ * sebelumnya dihitung berdampingan.
+ */
+export async function departmentComparison(runId: string, prevRunId?: string | null) {
+  const [sekarang, sebelum] = await Promise.all([
+    costByDepartment(runId),
+    prevRunId ? costByDepartment(prevRunId) : Promise.resolve([]),
+  ]);
+
+  const petaLalu = new Map(sebelum.map((d) => [d.id, d]));
+  const total = sekarang.reduce((s, d) => s + d.cost, 0) || 1;
+
+  return sekarang.map((d) => {
+    const lalu = petaLalu.get(d.id);
+    const delta = lalu && lalu.cost > 0 ? ((d.cost - lalu.cost) / lalu.cost) * 100 : null;
+    return {
+      ...d,
+      pangsa: (d.cost / total) * 100,
+      perKaryawan: d.count > 0 ? Math.round(d.cost / d.count) : 0,
+      costLalu: lalu?.cost ?? null,
+      delta,
+      selisih: lalu ? d.cost - lalu.cost : null,
+    };
+  });
+}
+
+export interface Sorotan {
+  nada: 'jade' | 'brass' | 'clay' | 'info';
+  teks: string;
+}
+
+/**
+ * Ringkasan yang ditulis dari angkanya sendiri.
+ * Tujuannya menghemat langkah pertama pembaca laporan: menemukan
+ * apa yang berubah, sebelum menelusuri tabelnya.
+ */
+export function susunSorotan(input: {
+  periode: string;
+  totalEmployerCost: number;
+  totalNet: number;
+  totalTax: number;
+  headcount: number;
+  prevCost: number | null;
+  departemen: { name: string; delta: number | null; selisih: number | null; pangsa: number }[];
+  tanpaNpwp: number;
+}): Sorotan[] {
+  const out: Sorotan[] = [];
+
+  if (input.prevCost && input.prevCost > 0) {
+    const d = ((input.totalEmployerCost - input.prevCost) / input.prevCost) * 100;
+    const naik = d >= 0;
+    out.push({
+      nada: Math.abs(d) < 1 ? 'info' : naik ? 'brass' : 'jade',
+      teks:
+        Math.abs(d) < 1
+          ? `Biaya tenaga kerja praktis datar dibanding periode lalu (${d >= 0 ? '+' : ''}${d.toFixed(1)}%).`
+          : `Biaya tenaga kerja ${naik ? 'naik' : 'turun'} ${Math.abs(d).toFixed(1)}% dibanding periode lalu.`,
+    });
+  }
+
+  // penyumbang kenaikan terbesar
+  const penggerak = [...input.departemen]
+    .filter((d) => d.selisih !== null)
+    .sort((a, b) => Math.abs(b.selisih!) - Math.abs(a.selisih!))[0];
+  if (penggerak && penggerak.selisih && Math.abs(penggerak.selisih) > 0) {
+    out.push({
+      nada: penggerak.selisih > 0 ? 'brass' : 'jade',
+      teks: `Perubahan terbesar dari ${penggerak.name}: ${penggerak.selisih > 0 ? 'bertambah' : 'berkurang'} ${rupiahRingkas(Math.abs(penggerak.selisih))}.`,
+    });
+  }
+
+  const terbesar = [...input.departemen].sort((a, b) => b.pangsa - a.pangsa)[0];
+  if (terbesar) {
+    out.push({
+      nada: 'info',
+      teks: `${terbesar.name} menyerap ${terbesar.pangsa.toFixed(0)}% dari seluruh biaya tenaga kerja.`,
+    });
+  }
+
+  const rasioPajak = input.totalEmployerCost > 0 ? (input.totalTax / input.totalEmployerCost) * 100 : 0;
+  out.push({
+    nada: 'info',
+    teks: `${rasioPajak.toFixed(1)}% dari biaya tenaga kerja disetor sebagai PPh 21.`,
+  });
+
+  if (input.tanpaNpwp > 0) {
+    out.push({
+      nada: 'clay',
+      teks: `${input.tanpaNpwp} karyawan belum punya NPWP dan membayar pajak 20% lebih tinggi dari seharusnya.`,
+    });
+  }
+
+  return out;
+}
+
 /** Komposisi potongan pada satu proses gaji. */
 export async function deductionBreakdown(runId: string) {
   const a = await prisma.payrollItem.aggregate({
@@ -149,11 +248,13 @@ export async function deductionBreakdown(runId: string) {
   });
   const s = a._sum;
   return [
+    // Label dijaga pendek: legenda donat hidup di kolom sempit, dan nama
+    // panjang akan terpotong menjadi "BP…" yang tidak berarti apa-apa.
     { label: 'PPh 21', value: s.pph21 ?? 0 },
     { label: 'BPJS JHT', value: s.bpjsJhtEmployee ?? 0 },
-    { label: 'BPJS Kesehatan', value: s.bpjsKesEmployee ?? 0 },
-    { label: 'BPJS Jaminan Pensiun', value: s.bpjsJpEmployee ?? 0 },
+    { label: 'BPJS Kes', value: s.bpjsKesEmployee ?? 0 },
+    { label: 'BPJS JP', value: s.bpjsJpEmployee ?? 0 },
     { label: 'Potongan lain', value: (s.otherDeduction ?? 0) + (s.lateCut ?? 0) + (s.unpaidLeaveCut ?? 0) },
-    { label: 'Cicilan pinjaman', value: s.loanDeduction ?? 0 },
+    { label: 'Cicilan', value: s.loanDeduction ?? 0 },
   ].filter((x) => x.value > 0);
 }

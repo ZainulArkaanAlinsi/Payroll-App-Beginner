@@ -141,8 +141,8 @@ export default async function CompensationPage() {
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Komponen gaji
@@ -152,7 +152,7 @@ export default async function CompensationPage() {
             berjalan
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="page-head-actions">
           <LoanDialog employees={employees} currentPeriod={periodeSekarang()} />
           <ComponentDialog />
         </div>
@@ -199,15 +199,15 @@ export default async function CompensationPage() {
             hint="Cicilan yang dicatat di sini otomatis memotong gaji tiap periode."
           />
         ) : (
-          <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[760px] t-body">
+          <div className="tbl-scroll scroll-slim">
+            <table className="tbl" style={{ minWidth: 760 }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)' }}>
+                <tr>
                   {['Karyawan', 'Pokok', 'Tenor', 'Cicilan/bulan', 'Terbayar', 'Sisa', 'Status', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                        className={`${
                           i >= 1 && i <= 5 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -223,10 +223,8 @@ export default async function CompensationPage() {
                   return (
                     <tr
                       key={l.id}
-                      className="transition-colors hover:bg-[var(--field-bg)]"
-                      style={{ borderTop: '1px solid var(--hairline)' }}
                     >
-                      <td className="px-2 py-2.5">
+                      <td>
                         <Link
                           href={`/employees/${l.employee.id}`}
                           className="flex items-center gap-2.5"
@@ -248,24 +246,24 @@ export default async function CompensationPage() {
                           </span>
                         </Link>
                       </td>
-                      <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(l.principal)}</td>
-                      <td className="tnum px-2 py-2.5 text-right t-small">{l.tenorMonths} bln</td>
-                      <td className="tnum px-2 py-2.5 text-right t-small">
+                      <td className="tnum text-right t-small">{rupiah(l.principal)}</td>
+                      <td className="tnum text-right t-small">{l.tenorMonths} bln</td>
+                      <td className="tnum text-right t-small">
                         {rupiah(l.monthlyDeduction)}
                       </td>
-                      <td className="px-2 py-2.5 text-right">
+                      <td className="text-right">
                         <span className="tnum block t-small">{rupiah(terbayar)}</span>
                         <span className="mt-1 block w-24 justify-self-end">
                           <MiniBar value={terbayar} max={l.principal} />
                         </span>
                       </td>
                       <td
-                        className="tnum px-2 py-2.5 text-right t-small font-semibold"
+                        className="tnum text-right t-small font-semibold"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {rupiah(l.remaining)}
                       </td>
-                      <td className="px-2 py-2.5">
+                      <td>
                         {l.status === 'ACTIVE' ? (
                           <Chip tone="brass" dot>
                             berjalan
@@ -276,7 +274,7 @@ export default async function CompensationPage() {
                           </Chip>
                         )}
                       </td>
-                      <td className="px-2 py-2.5 text-right">
+                      <td className="text-right">
                         {l.status === 'ACTIVE' && (
                           <ActionButton
                             action={settleLoan.bind(null, l.id)}

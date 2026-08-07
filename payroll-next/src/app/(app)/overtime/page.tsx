@@ -62,8 +62,8 @@ export default async function OvertimePage({
   const jam = (s: string) => ringkas.find((r) => r.status === s)?._sum.hours ?? 0;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Lembur
@@ -179,14 +179,14 @@ export default async function OvertimePage({
         {riwayat.length === 0 ? (
           <EmptyState title="Tidak ada data yang cocok" />
         ) : (
-          <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[780px] t-body">
+          <div className="tbl-scroll scroll-slim">
+            <table className="tbl" style={{ minWidth: 780 }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)' }}>
+                <tr>
                   {['Karyawan', 'Tanggal', 'Jam', 'Alasan', 'Nilai', 'Peninjau', 'Status'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                      className={`${
                         i === 2 || i === 4 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -199,10 +199,8 @@ export default async function OvertimePage({
                 {riwayat.map((r) => (
                   <tr
                     key={r.id}
-                    className="transition-colors hover:bg-[var(--field-bg)]"
-                    style={{ borderTop: '1px solid var(--hairline)' }}
                   >
-                    <td className="px-2 py-2.5">
+                    <td>
                       <Link
                         href={`/employees/${r.employee.id}`}
                         className="t-small font-medium"
@@ -214,7 +212,7 @@ export default async function OvertimePage({
                         {r.employee.department?.name ?? '—'}
                       </span>
                     </td>
-                    <td className="px-2 py-2.5 t-small">
+                    <td className="t-small">
                       {tanggal(r.date)}
                       {r.isHoliday && (
                         <span className="ml-1.5">
@@ -222,20 +220,20 @@ export default async function OvertimePage({
                         </span>
                       )}
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right t-small">{r.hours}</td>
-                    <td className="max-w-[18rem] px-2 py-2.5 t-label">
+                    <td className="tnum text-right t-small">{r.hours}</td>
+                    <td className="max-w-[18rem] t-label">
                       <span className="line-clamp-2">{r.reason}</span>
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right t-small font-medium"
+                      className="tnum text-right t-small font-medium"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {r.amount > 0 ? rupiah(r.amount) : '—'}
                     </td>
-                    <td className="px-2 py-2.5 t-label" style={{ color: 'var(--text-muted)' }}>
+                    <td className="t-label" style={{ color: 'var(--text-muted)' }}>
                       {r.reviewedBy ?? '—'}
                     </td>
-                    <td className="px-2 py-2.5">
+                    <td>
                       <StatusChip status={r.status} />
                     </td>
                   </tr>

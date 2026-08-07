@@ -50,9 +50,9 @@ export default async function DashboardPage() {
   const pendingTotal = o.pendingLeave + o.pendingOvertime;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5">
+    <div className="page">
       {/* ── kepala halaman ── */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="page-head">
         <div>
           <p className="label !mb-1">
             {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="page-head-actions">
           {pendingTotal > 0 && (
             <Link href="/leave" className="btn btn-ghost btn-sm">
               <CircleAlert size={14} style={{ color: 'var(--color-brass-500)' }} />
@@ -245,7 +245,7 @@ export default async function DashboardPage() {
                 <li key={t.id}>
                   <Link
                     href={`/employees/${t.employee.id}`}
-                    className="flex items-center gap-3 rounded-[10px] px-2 py-2 transition-colors hover:bg-[var(--field-bg)]"
+                    className="flex items-center gap-3 rounded-[10px] transition-colors hover:bg-[var(--field-bg)]"
                   >
                     <Avatar name={t.employee.fullName} size={30} />
                     <span className="min-w-0 flex-1">
@@ -344,14 +344,14 @@ export default async function DashboardPage() {
             </Link>
           }
         />
-        <div className="scroll-slim -mx-1 overflow-x-auto">
-          <table className="w-full min-w-[640px] t-body">
+        <div className="tbl-scroll scroll-slim">
+          <table className="tbl" style={{ minWidth: 640 }}>
             <thead>
-              <tr style={{ color: 'var(--text-muted)' }}>
+              <tr>
                 {['Periode', 'Status', 'Karyawan', 'Bruto', 'Potongan', 'Bersih', 'Tanggal bayar'].map((h, i) => (
                   <th
                     key={h}
-                    className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                    className={`${
                       i > 1 && i < 6 ? 'text-right' : 'text-left'
                     }`}
                   >
@@ -364,10 +364,8 @@ export default async function DashboardPage() {
               {[...o.runs].reverse().map((r) => (
                 <tr
                   key={r.id}
-                  className="transition-colors hover:bg-[var(--field-bg)]"
-                  style={{ borderTop: '1px solid var(--hairline)' }}
                 >
-                  <td className="px-2 py-2.5">
+                  <td>
                     <Link
                       href={`/payroll/${r.id}`}
                       className="font-medium"
@@ -376,21 +374,21 @@ export default async function DashboardPage() {
                       {labelPeriode(r.period)}
                     </Link>
                   </td>
-                  <td className="px-2 py-2.5">
+                  <td>
                     <StatusChip status={r.status} />
                   </td>
-                  <td className="tnum px-2 py-2.5 text-right">{r.headcount}</td>
-                  <td className="tnum px-2 py-2.5 text-right">{rupiah(r.totalGross)}</td>
-                  <td className="tnum px-2 py-2.5 text-right" style={{ color: 'var(--color-clay-500)' }}>
+                  <td className="tnum text-right">{r.headcount}</td>
+                  <td className="tnum text-right">{rupiah(r.totalGross)}</td>
+                  <td className="tnum text-right" style={{ color: 'var(--color-clay-500)' }}>
                     −{rupiah(r.totalDeduction)}
                   </td>
                   <td
-                    className="tnum px-2 py-2.5 text-right font-semibold"
+                    className="tnum text-right font-semibold"
                     style={{ color: 'var(--text-strong)' }}
                   >
                     {rupiah(r.totalNet)}
                   </td>
-                  <td className="px-2 py-2.5 t-small">{tanggal(r.payDate)}</td>
+                  <td className="t-small">{tanggal(r.payDate)}</td>
                 </tr>
               ))}
             </tbody>

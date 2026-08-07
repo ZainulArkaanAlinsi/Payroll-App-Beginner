@@ -39,8 +39,8 @@ export default async function PayrollPage() {
     .reduce((s, r) => s + r.totalEmployerCost, 0);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Proses gaji

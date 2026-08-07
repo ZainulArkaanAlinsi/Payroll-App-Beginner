@@ -12,17 +12,18 @@ export default async function SettingsPage() {
     (await prisma.companySetting.create({ data: { id: 'singleton' } }));
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <div>
-        <h1 className="t-display">
-          Pengaturan
-        </h1>
-        <p className="mt-1 t-small">
-          Perubahan tarif baru berlaku pada perhitungan payroll berikutnya. Periode yang sudah
-          dibayarkan tidak terpengaruh.
-        </p>
+    <div className="page">
+      <div className="page-head">
+        <div className="min-w-0">
+          <h1 className="t-display">Pengaturan</h1>
+          <p className="mt-1 t-small">
+            Perubahan tarif baru berlaku pada perhitungan payroll berikutnya. Periode yang sudah
+            dibayarkan tidak terpengaruh.
+          </p>
+        </div>
       </div>
 
+      <div className="page-narrow">
       <SettingsForm
         data={{
           name: setting.name,
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
           absentCutPerDay: setting.absentCutPerDay,
         }}
       />
+      </div>
     </div>
   );
 }

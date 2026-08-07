@@ -67,7 +67,7 @@ export default async function PayslipsPage({
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="page">
       <div>
         <h1 className="t-display">
           Slip gaji
@@ -95,15 +95,15 @@ export default async function PayslipsPage({
             hint="Slip terbit setelah proses gaji dihitung."
           />
         ) : (
-          <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[880px] t-body">
+          <div className="tbl-scroll scroll-slim">
+            <table className="tbl" style={{ minWidth: 880 }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)' }}>
+                <tr>
                   {['Karyawan', 'Periode', 'Status', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                        className={`${
                           i >= 3 && i <= 6 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -117,10 +117,8 @@ export default async function PayslipsPage({
                 {items.map((it) => (
                   <tr
                     key={it.id}
-                    className="transition-colors hover:bg-[var(--field-bg)]"
-                    style={{ borderTop: '1px solid var(--hairline)' }}
                   >
-                    <td className="px-2 py-2.5">
+                    <td>
                       <Link href={`/employees/${it.employee.id}`} className="flex items-center gap-2.5">
                         <Avatar name={it.employee.fullName} size={28} />
                         <span className="min-w-0">
@@ -139,30 +137,30 @@ export default async function PayslipsPage({
                         </span>
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 t-small">{labelPeriode(it.run.period)}</td>
-                    <td className="px-2 py-2.5">
+                    <td className="t-small">{labelPeriode(it.run.period)}</td>
+                    <td>
                       <StatusChip status={it.run.status} />
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(it.grossPay)}</td>
+                    <td className="tnum text-right t-small">{rupiah(it.grossPay)}</td>
                     <td
-                      className="tnum px-2 py-2.5 text-right t-small"
+                      className="tnum text-right t-small"
                       style={{ color: 'var(--color-clay-500)' }}
                     >
                       −{rupiah(it.pph21)}
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right t-small"
+                      className="tnum text-right t-small"
                       style={{ color: 'var(--color-clay-500)' }}
                     >
                       −{rupiah(it.totalDeduction)}
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right t-small font-semibold"
+                      className="tnum text-right t-small font-semibold"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {rupiah(it.netPay)}
                     </td>
-                    <td className="px-2 py-2.5 text-right">
+                    <td className="text-right">
                       <Link href={`/payslip/${it.id}`} className="btn btn-ghost btn-sm">
                         Buka slip
                       </Link>
@@ -182,7 +180,7 @@ export default async function PayslipsPage({
             <span style={{ color: 'var(--text-muted)' }}>
               Halaman {page} dari {pages}
             </span>
-            <div className="flex gap-2">
+            <div className="page-head-actions">
               <Link
                 href={qs(page - 1)}
                 className="btn btn-ghost btn-sm"

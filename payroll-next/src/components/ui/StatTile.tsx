@@ -3,8 +3,16 @@ import { TrendingDown, TrendingUp } from 'lucide-react';
 import { GlassCard } from './Glass';
 
 /**
- * Kartu angka utama. Angka besar adalah pahlawannya — label dan delta
- * mengambil peran pendukung, tidak bersaing dengan nilainya.
+ * Kartu angka utama.
+ *
+ * Susunannya sengaja bertingkat ke bawah, bukan berdampingan: keterangan
+ * seperti "termasuk BPJS pemberi kerja" terlalu panjang untuk diapit
+ * sparkline, dan sebelumnya pecah menjadi empat baris sempit.
+ *
+ *   LABEL                    [ikon]
+ *   Rp 491 jt                        ← angka sebagai pahlawan
+ *   ↗ +0,5%            ▁▂▃▅          ← perubahan & tren sejajar
+ *   termasuk BPJS pemberi kerja       ← keterangan selebar kartu
  */
 export default function StatTile({
   label,
@@ -27,11 +35,12 @@ export default function StatTile({
 }) {
   const naik = (delta ?? 0) >= 0;
   const bagus = invertDelta ? !naik : naik;
+  const adaDelta = delta !== undefined && delta !== null;
 
   return (
-    <GlassCard hover className="flex flex-col justify-between gap-3">
+    <GlassCard hover className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-3">
-        <span className="label !mb-0">{label}</span>
+        <span className="label !mb-0 truncate">{label}</span>
         {icon && (
           <span
             className="grid size-7 shrink-0 place-items-center rounded-lg"
@@ -42,35 +51,33 @@ export default function StatTile({
         )}
       </div>
 
-      <div>
-        <p
-          className="tnum t-money-lg leading-none font-semibold"
-          style={{ color: 'var(--text-strong)', letterSpacing: '-0.02em' }}
-        >
-          {value}
-        </p>
+      <p className="t-money-lg" style={{ fontSize: '1.5rem', lineHeight: '1.875rem' }}>
+        {value}
+      </p>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5">
-            {delta !== undefined && delta !== null && (
-              <span
-                className="tnum inline-flex items-center gap-0.5 t-micro font-semibold"
-                style={{ color: bagus ? 'var(--color-jade-500)' : 'var(--color-clay-500)' }}
-              >
-                {naik ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {naik ? '+' : ''}
-                {delta.toFixed(1)}%
-              </span>
-            )}
-            {sub && (
-              <span className="t-micro" style={{ color: 'var(--text-muted)' }}>
-                {sub}
-              </span>
-            )}
-          </span>
+      {(adaDelta || chart) && (
+        <div className="flex min-h-[26px] items-center justify-between gap-2">
+          {adaDelta ? (
+            <span
+              className="tnum inline-flex items-center gap-0.5 t-label font-semibold"
+              style={{ color: bagus ? 'var(--color-jade-500)' : 'var(--color-clay-500)' }}
+            >
+              {naik ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {naik ? '+' : ''}
+              {delta.toFixed(1)}%
+            </span>
+          ) : (
+            <span />
+          )}
           {chart}
         </div>
-      </div>
+      )}
+
+      {sub && (
+        <p className="t-micro leading-snug" style={{ marginTop: adaDelta || chart ? 0 : '0.25rem' }}>
+          {sub}
+        </p>
+      )}
     </GlassCard>
   );
 }

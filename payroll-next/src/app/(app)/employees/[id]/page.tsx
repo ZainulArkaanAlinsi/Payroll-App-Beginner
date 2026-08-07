@@ -165,7 +165,7 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
     .reduce((s, l) => s + l.days, 0);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="page">
       <Link
         href="/employees"
         className="inline-flex items-center gap-1.5 t-label"
@@ -196,7 +196,7 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="page-head-actions">
           <EmployeeDialog
             employee={formData}
             departments={departments}
@@ -340,14 +340,14 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
             {payslips.length === 0 ? (
               <EmptyState icon={<Receipt size={18} />} title="Belum ada slip gaji" />
             ) : (
-              <div className="scroll-slim -mx-1 overflow-x-auto">
-                <table className="w-full min-w-[620px] t-body">
+              <div className="tbl-scroll scroll-slim">
+                <table className="tbl" style={{ minWidth: 620 }}>
                   <thead>
-                    <tr style={{ color: 'var(--text-muted)' }}>
+                    <tr>
                       {['Periode', 'Status', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map((h, i) => (
                         <th
                           key={h || i}
-                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                          className={`${
                             i >= 2 && i <= 5 ? 'text-right' : 'text-left'
                           }`}
                         >
@@ -360,30 +360,28 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                     {payslips.map((p) => (
                       <tr
                         key={p.id}
-                        className="transition-colors hover:bg-[var(--field-bg)]"
-                        style={{ borderTop: '1px solid var(--hairline)' }}
                       >
-                        <td className="px-2 py-2.5 font-medium" style={{ color: 'var(--text-strong)' }}>
+                        <td className="font-medium" style={{ color: 'var(--text-strong)' }}>
                           {labelPeriode(p.run.period)}
                         </td>
-                        <td className="px-2 py-2.5">
+                        <td>
                           <StatusChip status={p.run.status} />
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(p.grossPay)}</td>
-                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(p.pph21)}</td>
+                        <td className="tnum text-right t-small">{rupiah(p.grossPay)}</td>
+                        <td className="tnum text-right t-small">{rupiah(p.pph21)}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small"
+                          className="tnum text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(p.totalDeduction)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
+                          className="tnum text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(p.netPay)}
                         </td>
-                        <td className="px-2 py-2.5 text-right">
+                        <td className="text-right">
                           <Link href={`/payslip/${p.id}`} className="btn btn-ghost btn-sm">
                             Slip
                           </Link>

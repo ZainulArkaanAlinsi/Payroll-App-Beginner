@@ -71,8 +71,8 @@ export default async function EmployeesPage({
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Karyawan
@@ -83,7 +83,7 @@ export default async function EmployeesPage({
             {jml('RESIGNED') > 0 && <Chip tone="clay">{jml('RESIGNED')} keluar</Chip>}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="page-head-actions">
           <a href="/api/export/employees" className="btn btn-ghost btn-sm">
             <Download size={14} />
             Ekspor CSV
@@ -121,15 +121,15 @@ export default async function EmployeesPage({
             hint="Coba ubah kata kunci atau bersihkan penyaring."
           />
         ) : (
-          <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[820px] t-body">
+          <div className="tbl-scroll scroll-slim">
+            <table className="tbl" style={{ minWidth: 820 }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)' }}>
+                <tr>
                   {['Karyawan', 'Departemen', 'Posisi', 'Bergabung', 'Gaji pokok', 'PTKP', 'Status', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                        className={`${
                           i === 4 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -143,10 +143,8 @@ export default async function EmployeesPage({
                 {employees.map((e) => (
                   <tr
                     key={e.id}
-                    className="transition-colors hover:bg-[var(--field-bg)]"
-                    style={{ borderTop: '1px solid var(--hairline)' }}
                   >
-                    <td className="px-2 py-2.5">
+                    <td>
                       <Link href={`/employees/${e.id}`} className="flex items-center gap-2.5">
                         <Avatar name={e.fullName} size={32} />
                         <span className="min-w-0">
@@ -165,16 +163,16 @@ export default async function EmployeesPage({
                         </span>
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 t-small">{e.department?.name ?? '—'}</td>
-                    <td className="px-2 py-2.5 t-small">{e.position?.title ?? '—'}</td>
-                    <td className="px-2 py-2.5 t-small">{tanggal(e.joinDate)}</td>
+                    <td className="t-small">{e.department?.name ?? '—'}</td>
+                    <td className="t-small">{e.position?.title ?? '—'}</td>
+                    <td className="t-small">{tanggal(e.joinDate)}</td>
                     <td
-                      className="tnum px-2 py-2.5 text-right t-small font-medium"
+                      className="tnum text-right t-small font-medium"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {rupiah(e.baseSalary)}
                     </td>
-                    <td className="px-2 py-2.5">
+                    <td>
                       <span className="tnum t-label">{e.ptkpStatus}</span>
                       {!e.npwp && (
                         <span className="ml-1.5">
@@ -182,10 +180,10 @@ export default async function EmployeesPage({
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-2.5">
+                    <td>
                       <StatusChip status={e.status} />
                     </td>
-                    <td className="px-2 py-2.5 text-right">
+                    <td className="text-right">
                       <Link
                         href={`/employees/${e.id}`}
                         className="inline-flex items-center"
@@ -210,7 +208,7 @@ export default async function EmployeesPage({
             <span style={{ color: 'var(--text-muted)' }}>
               Halaman {page} dari {pages}
             </span>
-            <div className="flex gap-2">
+            <div className="page-head-actions">
               <Link
                 href={qs({ page: String(page - 1) })}
                 className="btn btn-ghost btn-sm"

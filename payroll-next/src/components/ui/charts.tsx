@@ -13,6 +13,7 @@
 
 import { useId, useMemo, useState } from 'react';
 import { angka, rupiah, rupiahRingkas } from '@/lib/format';
+import { seriesColor } from '@/lib/series';
 
 /**
  * Fungsi tidak bisa dioper dari Server Component ke Client Component,
@@ -32,16 +33,8 @@ const FORMATTERS: Record<FormatKey, (n: number) => string> = {
 
 const fmt = (key: FormatKey) => FORMATTERS[key] ?? rupiah;
 
-export const SERIES = [
-  'var(--series-1)',
-  'var(--series-2)',
-  'var(--series-3)',
-  'var(--series-4)',
-  'var(--series-5)',
-  'var(--series-6)',
-] as const;
-
-export const seriesColor = (i: number) => SERIES[i % SERIES.length];
+// Palet hidup di modul netral supaya halaman server bisa memakainya juga.
+export { SERIES, seriesColor } from '@/lib/series';
 
 const SEQ = ['var(--seq-1)', 'var(--seq-2)', 'var(--seq-3)', 'var(--seq-4)', 'var(--seq-5)'];
 
@@ -103,7 +96,10 @@ export function LineChart({
   height = 190,
   format = 'ringkas',
   tooltipFormat = 'rupiah',
-  area = true,
+  // Bidang arsir menyiratkan besaran diukur dari nol. Karena sumbu di sini
+  // sengaja tidak mulai dari nol agar perubahannya terlihat, arsirnya
+  // dimatikan — kalau tidak, luas bidangnya membohongi pembaca.
+  area = false,
 }: {
   data: LinePoint[];
   height?: number;
@@ -124,9 +120,13 @@ export function LineChart({
   const { pts, ticks, min, max } = useMemo(() => {
     const vals = data.map((d) => d.value);
     const rawMax = Math.max(...vals, 1);
-    const rawMin = Math.min(...vals, 0);
-    // beri ruang 8% di atas & bawah supaya garis tidak menempel bingkai
-    const pad = (rawMax - rawMin) * 0.12 || rawMax * 0.12;
+    // Jangan sertakan 0 di sini. Sebelumnya sumbu selalu mulai dari nol,
+    // sehingga tren 378→385 juta tergambar sebagai garis datar mepet atas —
+    // perubahannya tidak terlihat sama sekali.
+    const rawMin = Math.min(...vals);
+    const rentang = rawMax - rawMin;
+    // beri ruang di atas & bawah supaya garis tidak menempel bingkai
+    const pad = rentang > 0 ? rentang * 0.25 : Math.max(1, rawMax * 0.1);
     const max = rawMax + pad;
     const min = Math.max(0, rawMin - pad);
     const iw = W - P.l - P.r;
@@ -433,8 +433,8 @@ export function Donut({
       <div className="mb-1 flex justify-end">
         <TableToggle open={false} onToggle={() => setTable(true)} />
       </div>
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-        <svg viewBox="0 0 140 140" className="size-[140px] shrink-0" role="img" aria-label="Komposisi">
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <svg viewBox="0 0 140 140" className="size-[124px] shrink-0" role="img" aria-label="Komposisi">
           <g transform="translate(70,70) rotate(-90)">
             <circle r={R} fill="none" stroke="var(--grid-line)" strokeWidth={STROKE} />
             {arcs.map((a) => (
@@ -470,8 +470,9 @@ export function Donut({
           </text>
         </svg>
 
-        {/* legenda selalu ada untuk ≥2 seri */}
-        <ul className="min-w-0 flex-1 space-y-1.5">
+        {/* Legenda selalu ada untuk ≥2 seri. Lebar minimumnya dijaga agar
+            nama komponen tidak pernah terpotong menjadi singkatan buntung. */}
+        <ul className="min-w-[9.5rem] flex-1 space-y-1">
           {data.map((d, i) => (
             <li
               key={d.label}
@@ -486,9 +487,7 @@ export function Donut({
                   style={{ background: seriesColor(i) }}
                   aria-hidden
                 />
-                <span className="truncate" style={{ color: 'var(--text-body)' }}>
-                  {d.label}
-                </span>
+                <span style={{ color: 'var(--text-body)' }}>{d.label}</span>
               </span>
               <span className="tnum shrink-0 font-medium" style={{ color: 'var(--text-strong)' }}>
                 {formatter(d.value)}

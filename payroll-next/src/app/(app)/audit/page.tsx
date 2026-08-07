@@ -81,7 +81,7 @@ export default async function AuditPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="page">
       <div>
         <h1 className="t-display">
           Jejak audit
@@ -91,6 +91,7 @@ export default async function AuditPage({
         </p>
       </div>
 
+      <div className="page-narrow">
       <GlassCard>
         <SectionTitle title="Riwayat aktivitas" />
         <TableToolbar
@@ -176,7 +177,7 @@ export default async function AuditPage({
             <span style={{ color: 'var(--text-muted)' }}>
               Halaman {page} dari {pages}
             </span>
-            <div className="flex gap-2">
+            <div className="page-head-actions">
               <Link
                 href={qs(page - 1)}
                 className="btn btn-ghost btn-sm"
@@ -198,6 +199,7 @@ export default async function AuditPage({
           </div>
         )}
       </GlassCard>
+      </div>
     </div>
   );
 }

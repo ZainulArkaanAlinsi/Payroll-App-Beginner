@@ -37,8 +37,8 @@ export default async function OrgPage() {
   const totalPosisi = departments.reduce((s, d) => s + d.positions.length, 0);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Organisasi

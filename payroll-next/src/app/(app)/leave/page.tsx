@@ -76,8 +76,8 @@ export default async function LeavePage({
   const pakaiMap = new Map(terpakai.map((t) => [t.employeeId, t._sum.days ?? 0]));
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="page">
+      <div className="page-head">
         <div>
           <h1 className="t-display">
             Cuti
@@ -188,14 +188,14 @@ export default async function LeavePage({
         {riwayat.length === 0 ? (
           <EmptyState title="Tidak ada data yang cocok" />
         ) : (
-          <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[820px] t-body">
+          <div className="tbl-scroll scroll-slim">
+            <table className="tbl" style={{ minWidth: 820 }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)' }}>
+                <tr>
                   {['Karyawan', 'Jenis', 'Tanggal', 'Hari', 'Alasan', 'Peninjau', 'Status'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
+                      className={`${
                         i === 3 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -208,10 +208,8 @@ export default async function LeavePage({
                 {riwayat.map((r) => (
                   <tr
                     key={r.id}
-                    className="transition-colors hover:bg-[var(--field-bg)]"
-                    style={{ borderTop: '1px solid var(--hairline)' }}
                   >
-                    <td className="px-2 py-2.5">
+                    <td>
                       <Link
                         href={`/employees/${r.employee.id}`}
                         className="t-small font-medium"
@@ -223,12 +221,12 @@ export default async function LeavePage({
                         {r.employee.department?.name ?? '—'}
                       </span>
                     </td>
-                    <td className="px-2 py-2.5 t-small">{statusLabel(r.type)}</td>
-                    <td className="px-2 py-2.5 t-small">
+                    <td className="t-small">{statusLabel(r.type)}</td>
+                    <td className="t-small">
                       {tanggal(r.startDate)} – {tanggal(r.endDate)}
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right t-small">{r.days}</td>
-                    <td className="max-w-[16rem] px-2 py-2.5 t-label">
+                    <td className="tnum text-right t-small">{r.days}</td>
+                    <td className="max-w-[16rem] t-label">
                       <span className="line-clamp-2">{r.reason}</span>
                       {r.reviewNote && (
                         <span className="block t-micro" style={{ color: 'var(--color-clay-500)' }}>
@@ -236,10 +234,10 @@ export default async function LeavePage({
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-2.5 t-label" style={{ color: 'var(--text-muted)' }}>
+                    <td className="t-label" style={{ color: 'var(--text-muted)' }}>
                       {r.reviewedBy ?? '—'}
                     </td>
-                    <td className="px-2 py-2.5">
+                    <td>
                       <StatusChip status={r.status} />
                     </td>
                   </tr>
