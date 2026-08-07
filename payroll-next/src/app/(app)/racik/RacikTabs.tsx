@@ -4,10 +4,30 @@ import { useState, type ReactNode } from 'react';
 import { FileSpreadsheet, GitBranch, Receipt, SlidersHorizontal } from 'lucide-react';
 
 const TAB = [
-  { key: 'aturan', label: 'Aturan divisi', icon: SlidersHorizontal, hint: 'Denda telat & tarif lembur per departemen' },
-  { key: 'alur', label: 'Alur persetujuan', icon: GitBranch, hint: 'Siapa menyetujui, dalam urutan apa' },
-  { key: 'slip', label: 'Susunan slip', icon: Receipt, hint: 'Baris apa saja yang tampil di slip gaji' },
-  { key: 'bank', label: 'Format bank', icon: FileSpreadsheet, hint: 'Susunan kolom berkas transfer' },
+  {
+    key: 'aturan',
+    label: 'Aturan divisi',
+    icon: SlidersHorizontal,
+    hint: 'Toleransi telat, denda, dan tarif lembur boleh berbeda antar departemen atau tingkat jabatan. Aturan paling spesifik yang menang.',
+  },
+  {
+    key: 'alur',
+    label: 'Alur persetujuan',
+    icon: GitBranch,
+    hint: 'Susun sendiri siapa menyetujui dan dalam urutan apa. Tahap berikutnya terkunci sampai tahap sebelumnya selesai.',
+  },
+  {
+    key: 'slip',
+    label: 'Susunan slip',
+    icon: Receipt,
+    hint: 'Pilih baris apa saja yang tampil di slip karyawan dan atur urutannya. Berlaku juga pada slip periode lampau.',
+  },
+  {
+    key: 'bank',
+    label: 'Format bank',
+    icon: FileSpreadsheet,
+    hint: 'Petakan sendiri kolom berkas transfer agar cocok dengan format bank mana pun, tanpa menunggu pembaruan sistem.',
+  },
 ] as const;
 
 export type TabKey = (typeof TAB)[number]['key'];
@@ -46,7 +66,10 @@ export default function RacikTabs({
         })}
       </div>
 
-      <p className="t-small -mt-1 px-1">{info.hint}</p>
+      <div className="glass-thin flex items-start gap-2.5 px-4 py-2.5">
+        <info.icon size={15} className="mt-px shrink-0" style={{ color: 'var(--accent)' }} />
+        <p className="t-small">{info.hint}</p>
+      </div>
 
       {panels[aktif]}
     </>

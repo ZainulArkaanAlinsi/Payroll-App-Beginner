@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sejak, tanggal } from '@/lib/format';
 import {
-  Avatar, Chip, EmptyState, GlassCard, SectionTitle, StatusChip, statusLabel,
+  Avatar, Chip, EmptyState, GlassCard, MiniBar, SectionTitle, StatusChip, statusLabel,
 } from '@/components/ui/Glass';
 import StatTile from '@/components/ui/StatTile';
 import TableToolbar from '@/components/ui/TableToolbar';
@@ -75,6 +75,10 @@ export default async function LeavePage({
   });
   const pakaiMap = new Map(terpakai.map((t) => [t.employeeId, t._sum.days ?? 0]));
 
+  const melebihiKuota = pending.filter(
+    (r) => r.type === 'ANNUAL' && r.days > r.employee.annualLeaveQuota - (pakaiMap.get(r.employeeId) ?? 0),
+  ).length;
+
   return (
     <div className="page">
       <div className="page-head">
@@ -100,7 +104,11 @@ export default async function LeavePage({
       <GlassCard>
         <SectionTitle
           title="Menunggu persetujuan"
-          subtitle="Diurutkan dari pengajuan paling lama"
+          subtitle={
+            pending.length === 0
+              ? undefined
+              : `Diurutkan dari yang paling lama menunggu${melebihiKuota > 0 ? ` · ${melebihiKuota} pengajuan melebihi sisa kuota` : ''}`
+          }
         />
         {pending.length === 0 ? (
           <EmptyState
@@ -109,43 +117,76 @@ export default async function LeavePage({
             hint="Semua pengajuan cuti sudah ditinjau."
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {pending.map((r) => {
               const sisa = r.employee.annualLeaveQuota - (pakaiMap.get(r.employeeId) ?? 0);
               const melebihi = r.type === 'ANNUAL' && r.days > sisa;
+              const lama = Math.floor((Date.now() - r.createdAt.getTime()) / 86_400_000);
+
               return (
-                <li key={r.id}>
-                  <div className="glass-thin flex flex-wrap items-center gap-4 px-4 py-3">
-                    <Link href={`/employees/${r.employee.id}`} className="flex min-w-[13rem] items-center gap-2.5">
-                      <Avatar name={r.employee.fullName} size={34} />
+                <li
+                  key={r.id}
+                  className="glass-thin px-4 py-3.5"
+                  style={{
+                    borderColor: melebihi
+                      ? 'color-mix(in srgb, var(--color-clay-500) 32%, transparent)'
+                      : undefined,
+                  }}
+                >
+                  {/* Tiga zona tetap: siapa · apa yang diminta · keputusan.
+                      Sebelumnya semuanya satu baris flex-wrap sehingga
+                      susunannya berubah-ubah tergantung panjang alasan. */}
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto] lg:items-center">
+                    <Link href={`/employees/${r.employee.id}`} className="flex items-center gap-2.5">
+                      <Avatar name={r.employee.fullName} size={36} />
                       <span className="min-w-0">
-                        <span
-                          className="block truncate t-body font-medium"
-                          style={{ color: 'var(--text-strong)' }}
-                        >
+                        <span className="block truncate t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                           {r.employee.fullName}
                         </span>
-                        <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
-                          {r.employee.department?.name ?? '—'} · diajukan {sejak(r.createdAt)}
+                        <span className="block truncate t-micro">
+                          {r.employee.department?.name ?? '—'}
+                        </span>
+                        <span
+                          className="block t-micro"
+                          style={{ color: lama >= 3 ? 'var(--color-brass-500)' : undefined }}
+                        >
+                          menunggu {sejak(r.createdAt)}
                         </span>
                       </span>
                     </Link>
 
-                    <div className="min-w-[11rem]">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Chip tone="info">{statusLabel(r.type)}</Chip>
                         <span className="tnum t-label font-semibold" style={{ color: 'var(--text-strong)' }}>
-                          {r.days} hari
+                          {r.days} hari kerja
                         </span>
-                        {melebihi && <Chip tone="clay">melebihi kuota</Chip>}
+                        <span className="t-micro">
+                          {tanggal(r.startDate)} – {tanggal(r.endDate)}
+                        </span>
                       </div>
-                      <p className="mt-0.5 t-micro" style={{ color: 'var(--text-muted)' }}>
-                        {tanggal(r.startDate)} – {tanggal(r.endDate)}
-                        {r.type === 'ANNUAL' && ` · sisa kuota ${sisa} hari`}
-                      </p>
-                    </div>
 
-                    <p className="min-w-[12rem] flex-1 t-label">{r.reason}</p>
+                      <p className="mt-1.5 t-small">{r.reason}</p>
+
+                      {/* Konteks pengambilan keputusan ditaruh berdampingan
+                          dengan permintaannya, bukan di halaman lain. */}
+                      {r.type === 'ANNUAL' && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="w-28">
+                            <MiniBar
+                              value={pakaiMap.get(r.employeeId) ?? 0}
+                              max={r.employee.annualLeaveQuota}
+                              tone={melebihi ? 'clay' : 'brass'}
+                            />
+                          </span>
+                          <span className="t-micro" style={{ color: melebihi ? 'var(--color-clay-500)' : undefined }}>
+                            {melebihi
+                              ? `Sisa kuota ${sisa} hari — kurang ${r.days - sisa} hari`
+                              : `Sisa kuota ${sisa} dari ${r.employee.annualLeaveQuota} hari`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
                     <ReviewLeave id={r.id} name={r.employee.fullName} />
                   </div>

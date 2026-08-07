@@ -792,8 +792,22 @@ h4 {
     border: none !important;
     background: #fff !important;
     backdrop-filter: none !important;
-    padding: 0 !important;
     max-width: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Kop dan kaki dokumen tidak boleh terbelah di antara dua halaman. */
+  .slip-kop,
+  .print-sheet section,
+  .print-sheet footer {
+    break-inside: avoid;
+  }
+
+  /* Margin halaman sudah diatur @page, jadi bantalan dalam dikurangi
+     agar isi tidak terdorong terlalu jauh ke tengah kertas. */
+  .print-sheet > * {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .atmosphere {

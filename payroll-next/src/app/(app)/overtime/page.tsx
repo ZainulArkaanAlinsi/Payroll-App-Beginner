@@ -61,6 +61,15 @@ export default async function OvertimePage({
   const jml = (s: string) => ringkas.find((r) => r.status === s)?._count ?? 0;
   const jam = (s: string) => ringkas.find((r) => r.status === s)?._sum.hours ?? 0;
 
+  // Total perkiraan biaya bila seluruh antrean disetujui — angka yang
+  // ingin diketahui atasan sebelum mulai menyetujui satu per satu.
+  const perkiraanTotal = pending.reduce(
+    (t, r) =>
+      t +
+      overtimePay(r.employee.baseSalary, r.isHoliday ? 0 : r.hours, r.isHoliday ? r.hours : 0).amount,
+    0,
+  );
+
   return (
     <div className="page">
       <div className="page-head">
@@ -87,7 +96,11 @@ export default async function OvertimePage({
       <GlassCard>
         <SectionTitle
           title="Menunggu persetujuan"
-          subtitle="Nilai rupiah dikunci saat disetujui, memakai upah yang berlaku hari itu"
+          subtitle={
+            pending.length === 0
+              ? undefined
+              : `Nilai rupiah dikunci saat disetujui, memakai upah yang berlaku hari itu · perkiraan total ${rupiah(perkiraanTotal)}`
+          }
         />
         {pending.length === 0 ? (
           <EmptyState
@@ -96,61 +109,59 @@ export default async function OvertimePage({
             hint="Semua pengajuan lembur sudah ditinjau."
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {pending.map((r) => {
               const perkiraan = overtimePay(
                 r.employee.baseSalary,
                 r.isHoliday ? 0 : r.hours,
                 r.isHoliday ? r.hours : 0,
-              ).amount;
+              );
+              const lama = Math.floor((Date.now() - r.createdAt.getTime()) / 86_400_000);
+
               return (
-                <li key={r.id}>
-                  <div className="glass-thin flex flex-wrap items-center gap-4 px-4 py-3">
-                    <Link
-                      href={`/employees/${r.employee.id}`}
-                      className="flex min-w-[13rem] items-center gap-2.5"
-                    >
-                      <Avatar name={r.employee.fullName} size={34} />
+                <li key={r.id} className="glass-thin px-4 py-3.5">
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto_auto] lg:items-center">
+                    <Link href={`/employees/${r.employee.id}`} className="flex items-center gap-2.5">
+                      <Avatar name={r.employee.fullName} size={36} />
                       <span className="min-w-0">
-                        <span
-                          className="block truncate t-body font-medium"
-                          style={{ color: 'var(--text-strong)' }}
-                        >
+                        <span className="block truncate t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                           {r.employee.fullName}
                         </span>
-                        <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
-                          {r.employee.department?.name ?? '—'} · diajukan {sejak(r.createdAt)}
+                        <span className="block truncate t-micro">
+                          {r.employee.department?.name ?? '—'}
+                        </span>
+                        <span
+                          className="block t-micro"
+                          style={{ color: lama >= 3 ? 'var(--color-brass-500)' : undefined }}
+                        >
+                          menunggu {sejak(r.createdAt)}
                         </span>
                       </span>
                     </Link>
 
-                    <div className="min-w-[10rem]">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
+                        <span className="tnum t-label font-semibold" style={{ color: 'var(--text-strong)' }}>
                           {r.hours} jam
                         </span>
                         {r.isHoliday && <Chip tone="brass">hari libur</Chip>}
+                        <span className="t-micro">{tanggal(r.date)}</span>
                       </div>
-                      <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
-                        {tanggal(r.date)}
-                      </p>
+                      <p className="mt-1.5 t-small">{r.reason}</p>
+                      {/* Rincian pengganda ditampilkan supaya angkanya bisa
+                          diperiksa, bukan diterima begitu saja. */}
+                      <p className="mt-1 t-micro">{perkiraan.detail.join(' · ')}</p>
                     </div>
 
-                    <p className="min-w-[11rem] flex-1 t-label">{r.reason}</p>
-
-                    <div className="text-right">
-                      <p className="t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
-                        Perkiraan
-                      </p>
-                      <p className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
-                        {rupiah(perkiraan)}
-                      </p>
+                    <div className="lg:text-right">
+                      <p className="label !mb-0.5">Perkiraan upah</p>
+                      <p className="t-money">{rupiah(perkiraan.amount)}</p>
                     </div>
 
                     <ReviewOvertime
                       id={r.id}
                       name={r.employee.fullName}
-                      estimate={rupiah(perkiraan)}
+                      estimate={rupiah(perkiraan.amount)}
                     />
                   </div>
                 </li>

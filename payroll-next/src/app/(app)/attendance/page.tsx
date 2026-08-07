@@ -108,6 +108,13 @@ export default async function AttendancePage({
     .map((e) => ({ e, a: perOrang.get(e.id)! }))
     .sort((x, ymm) => ymm.a.mangkir - x.a.mangkir || ymm.a.menitTelat - x.a.menitTelat);
 
+  // Ambang sengaja ditetapkan: mangkir sama sekali, atau akumulasi telat
+  // lebih dari satu jam sebulan. Menampilkan semua orang membuat daftarnya
+  // tidak berarti apa-apa.
+  const perluPerhatian = daftar
+    .filter(({ a }) => a.mangkir > 0 || a.menitTelat > 60)
+    .slice(0, 6);
+
   const hariKerja = cells.filter((c) => !c.label.includes('(Min)') && !c.label.includes('(Sab)')).length;
 
   return (
@@ -145,6 +152,46 @@ export default async function AttendancePage({
         </GlassCard>
       ) : (
         <>
+          {perluPerhatian.length > 0 && (
+            <GlassCard>
+              <SectionTitle
+                title="Perlu ditindaklanjuti"
+                subtitle="Karyawan dengan mangkir atau keterlambatan menonjol pada periode ini"
+                action={<Chip tone="brass">{perluPerhatian.length} orang</Chip>}
+              />
+              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {perluPerhatian.map(({ e, a }) => (
+                  <li key={e.id}>
+                    <Link
+                      href={`/employees/${e.id}`}
+                      className="glass-thin flex items-center gap-2.5 px-3.5 py-2.5 transition-colors hover:border-[color-mix(in_srgb,var(--accent)_35%,transparent)]"
+                    >
+                      <Avatar name={e.fullName} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate t-small font-medium" style={{ color: 'var(--text-strong)' }}>
+                          {e.fullName}
+                        </span>
+                        <span className="block truncate t-micro">{e.department?.name ?? '—'}</span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        {a.mangkir > 0 && (
+                          <span className="block t-micro" style={{ color: 'var(--color-clay-500)' }}>
+                            {a.mangkir} hari mangkir
+                          </span>
+                        )}
+                        {a.menitTelat > 0 && (
+                          <span className="block t-micro" style={{ color: 'var(--color-brass-500)' }}>
+                            telat {jamMenit(a.menitTelat)}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </GlassCard>
+          )}
+
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <GlassCard>
               <SectionTitle

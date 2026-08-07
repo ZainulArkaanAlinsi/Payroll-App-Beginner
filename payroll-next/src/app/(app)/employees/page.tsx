@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { ChevronRight, Download, Users } from 'lucide-react';
+import { ChevronRight, Download, TriangleAlert, Users } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { rupiah, tanggal } from '@/lib/format';
+import { rupiah, rupiahRingkas, tanggal } from '@/lib/format';
 import { Avatar, Chip, EmptyState, GlassCard, StatusChip } from '@/components/ui/Glass';
 import TableToolbar from '@/components/ui/TableToolbar';
+import StatTile from '@/components/ui/StatTile';
 import EmployeeDialog from './EmployeeDialog';
 
 export const metadata = { title: 'Karyawan' };
@@ -61,6 +62,17 @@ export default async function EmployeesPage({
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const jml = (s: string) => ringkas.find((r) => r.status === s)?._count ?? 0;
 
+  const [gajiAktif, tanpaNpwp, kontrak, barusanMasuk] = await Promise.all([
+    prisma.employee.aggregate({ where: { status: 'ACTIVE' }, _avg: { baseSalary: true }, _sum: { baseSalary: true } }),
+    prisma.employee.count({ where: { status: 'ACTIVE', npwp: null } }),
+    prisma.employee.count({ where: { status: 'ACTIVE', employmentType: 'CONTRACT' } }),
+    // Karyawan yang baru bergabung 90 hari terakhir — biasanya yang datanya
+    // masih perlu dilengkapi HR.
+    prisma.employee.count({
+      where: { status: 'ACTIVE', joinDate: { gte: new Date(Date.now() - 90 * 86_400_000) } },
+    }),
+  ]);
+
   const qs = (patch: Record<string, string>) => {
     const p = new URLSearchParams();
     if (q) p.set('q', q);
@@ -77,10 +89,9 @@ export default async function EmployeesPage({
           <h1 className="t-display">
             Karyawan
           </h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 t-small">
-            <span>{total} data ditemukan</span>
-            <Chip tone="jade">{jml('ACTIVE')} aktif</Chip>
-            {jml('RESIGNED') > 0 && <Chip tone="clay">{jml('RESIGNED')} keluar</Chip>}
+          <p className="mt-1 t-small">
+            {total} data ditemukan
+            {jml('RESIGNED') > 0 && ` · ${jml('RESIGNED')} sudah tidak aktif`}
           </p>
         </div>
         <div className="page-head-actions">
@@ -90,6 +101,31 @@ export default async function EmployeesPage({
           </a>
           <EmployeeDialog departments={departments} positions={positions} />
         </div>
+      </div>
+
+      <div className="tiles">
+        <StatTile
+          label="Karyawan aktif"
+          value={String(jml('ACTIVE'))}
+          sub={kontrak > 0 ? `${kontrak} di antaranya kontrak` : 'seluruhnya karyawan tetap'}
+          icon={<Users size={14} />}
+        />
+        <StatTile
+          label="Beban gaji pokok"
+          value={rupiahRingkas(gajiAktif._sum.baseSalary ?? 0)}
+          sub={`rata-rata ${rupiahRingkas(gajiAktif._avg.baseSalary ?? 0)} per orang`}
+        />
+        <StatTile
+          label="Belum punya NPWP"
+          value={String(tanpaNpwp)}
+          sub={tanpaNpwp > 0 ? 'membayar PPh 21 20% lebih tinggi' : 'seluruh karyawan terdaftar'}
+          icon={<TriangleAlert size={14} />}
+        />
+        <StatTile
+          label="Bergabung 90 hari terakhir"
+          value={String(barusanMasuk)}
+          sub={barusanMasuk > 0 ? 'periksa kelengkapan datanya' : 'tidak ada karyawan baru'}
+        />
       </div>
 
       <GlassCard>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import { CircleAlert, CircleCheck, LoaderCircle, X } from 'lucide-react';
 import type { ActionState } from '@/lib/types';
+import ConfirmDialog from './ConfirmDialog';
 
 /** Pesan hasil aksi yang menghilang sendiri. */
 export function Toast({
@@ -99,6 +100,8 @@ export function ActionButton({
   children,
   className = 'btn btn-ghost btn-sm',
   confirm,
+  confirmTitle,
+  confirmLabel,
   pendingLabel,
   onDone,
 }: {
@@ -106,6 +109,10 @@ export function ActionButton({
   children: ReactNode;
   className?: string;
   confirm?: string;
+  /** judul dialog; bila kosong disusun dari nada aksinya */
+  confirmTitle?: string;
+  /** label tombol utama di dialog, mis. "Hapus permanen" */
+  confirmLabel?: string;
   pendingLabel?: string;
   onDone?: (s: ActionState) => void;
 }) {
@@ -142,29 +149,18 @@ export function ActionButton({
         )}
       </button>
 
-      {asking && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0"
-            style={{ background: 'rgb(0 0 0 / .45)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setAsking(false)}
-          />
-          <div className="glass rise relative w-full max-w-sm" style={{ animationDuration: '.24s' }}>
-            <p className="t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
-              Konfirmasi
-            </p>
-            <p className="mt-1.5 t-small">{confirm}</p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAsking(false)}>
-                Batal
-              </button>
-              <button type="button" className="btn btn-primary btn-sm" onClick={run}>
-                Lanjutkan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Nada dialog dibaca dari gaya tombolnya: tombol merah berarti
+          aksinya merusak, jadi dialognya ikut memperingatkan. */}
+      <ConfirmDialog
+        open={asking}
+        message={confirm ?? ''}
+        title={confirmTitle}
+        confirmLabel={confirmLabel}
+        tone={className.includes('btn-danger') ? 'danger' : 'normal'}
+        pending={pending}
+        onConfirm={run}
+        onCancel={() => setAsking(false)}
+      />
 
       <Toast state={result} onDismiss={() => setResult(null)} />
     </>

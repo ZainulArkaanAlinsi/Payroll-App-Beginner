@@ -15,6 +15,7 @@ import { BarRank, Donut } from '@/components/ui/charts';
 import StatTile from '@/components/ui/StatTile';
 import { approveRun, calculateRun, deleteRun, payRun, reopenRun } from '@/actions/payroll';
 import ApprovalChain, { type StepView } from './ApprovalChain';
+import Stepper from '@/components/ui/Stepper';
 
 export const metadata = { title: 'Detail Proses Gaji' };
 
@@ -86,107 +87,148 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
         Kembali ke daftar periode
       </Link>
 
-      {/* ── kepala & aksi alur ── */}
-      <GlassCard className="flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="t-display">
-              {labelPeriode(run.period)}
-            </h1>
-            <StatusChip status={run.status} />
-          </div>
-          <p className="mt-1.5 t-small">
-            Tanggal bayar {tanggalPanjang(run.payDate)}
-            {run.calculatedAt && ` · dihitung ${tanggal(run.calculatedAt)}`}
-            {run.approvedBy && ` · disetujui ${run.approvedBy}`}
-          </p>
-          {run.note && (
-            <p className="mt-1 t-label" style={{ color: 'var(--text-muted)' }}>
-              Catatan: {run.note}
+      {/* ── kepala: identitas periode & posisi tahapnya ── */}
+      <GlassCard className="!p-0">
+        <div className="flex flex-wrap items-start justify-between gap-5 px-6 pt-6 pb-5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="t-display" style={{ fontSize: '1.5rem' }}>
+                {labelPeriode(run.period)}
+              </h1>
+              <StatusChip status={run.status} />
+            </div>
+            <p className="mt-1 t-small">
+              Tanggal bayar {tanggalPanjang(run.payDate)}
+              {run.calculatedAt && ` · dihitung ${tanggal(run.calculatedAt)}`}
+              {run.approvedBy && ` · disetujui ${run.approvedBy}`}
             </p>
-          )}
-        </div>
+            {run.note && <p className="mt-0.5 t-micro">Catatan: {run.note}</p>}
+          </div>
 
-        <div className="page-head-actions">
-          {run.status !== 'PAID' && (
-            <ActionButton
-              action={calculateRun.bind(null, run.id)}
-              className="btn btn-primary btn-sm"
-              pendingLabel="Menghitung…"
-              confirm={
-                run.status === 'DRAFT'
-                  ? undefined
-                  : 'Hitung ulang akan menimpa seluruh baris gaji periode ini. Lanjutkan?'
-              }
-            >
-              <Calculator size={13} />
-              {run.status === 'DRAFT' ? 'Hitung gaji' : 'Hitung ulang'}
-            </ActionButton>
-          )}
-
-          {run.status === 'CALCULATED' && isAdmin && !pakaiAlur && (
-            <ActionButton
-              action={approveRun.bind(null, run.id)}
-              className="btn btn-primary btn-sm"
-              confirm="Setujui periode ini? Angkanya akan dikunci."
-            >
-              <BadgeCheck size={13} />
-              Setujui
-            </ActionButton>
-          )}
-
-          {run.status === 'APPROVED' && isAdmin && (
-            <>
+          {/* Hanya satu tombol utama pada satu waktu — sisanya sekunder,
+              supaya tidak ada keraguan tentang langkah berikutnya. */}
+          <div className="page-head-actions">
+            {run.status !== 'PAID' && (
               <ActionButton
-                action={payRun.bind(null, run.id)}
+                action={calculateRun.bind(null, run.id)}
+                className={run.status === 'DRAFT' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}
+                pendingLabel="Menghitung…"
+                confirmTitle={run.status === 'DRAFT' ? undefined : 'Hitung ulang seluruh periode?'}
+                confirmLabel="Hitung ulang"
+                confirm={
+                  run.status === 'DRAFT'
+                    ? undefined
+                    : 'Seluruh baris gaji ditulis ulang dari data terbaru, dan persetujuan yang sudah diberikan dibatalkan.'
+                }
+              >
+                <Calculator size={13} />
+                {run.status === 'DRAFT' ? 'Hitung gaji' : 'Hitung ulang'}
+              </ActionButton>
+            )}
+
+            {run.status === 'CALCULATED' && isAdmin && !pakaiAlur && (
+              <ActionButton
+                action={approveRun.bind(null, run.id)}
                 className="btn btn-primary btn-sm"
-                confirm="Tandai sudah dibayarkan? Slip gaji akan terbit dan cicilan pinjaman berkurang."
+                confirmTitle="Setujui periode ini?"
+                confirmLabel="Setujui"
+                confirm="Angka periode ini akan dikunci dan siap dibayarkan."
               >
-                <Wallet size={13} />
-                Tandai dibayar
+                <BadgeCheck size={13} />
+                Setujui
               </ActionButton>
-              <ActionButton
-                action={reopenRun.bind(null, run.id)}
-                className="btn btn-ghost btn-sm"
-                confirm="Cabut persetujuan agar periode bisa dihitung ulang?"
-              >
-                <RotateCcw size={13} />
-                Cabut persetujuan
-              </ActionButton>
-            </>
-          )}
+            )}
 
-          {items.length > 0 && (
-            <>
-              <a href={`/api/export/payroll/${run.id}`} className="btn btn-ghost btn-sm">
-                <Download size={13} />
-                CSV rinci
-              </a>
-              {bankFormats.map((f) => (
-                <a
-                  key={f.id}
-                  href={`/api/export/bank/${run.id}?format=${f.id}`}
-                  className="btn btn-ghost btn-sm"
-                  title={`Susunan kolom mengikuti format ${f.name}`}
+            {run.status === 'APPROVED' && isAdmin && (
+              <>
+                <ActionButton
+                  action={payRun.bind(null, run.id)}
+                  className="btn btn-primary btn-sm"
+                  confirmTitle="Tandai sudah dibayarkan?"
+                  confirmLabel="Tandai dibayar"
+                  confirm={`Slip gaji ${items.length} karyawan akan terbit dan cicilan pinjaman berkurang. Setelah ini periode terkunci sepenuhnya.`}
                 >
-                  <Download size={13} />
-                  {f.name}
-                </a>
-              ))}
-            </>
-          )}
+                  <Wallet size={13} />
+                  Tandai dibayar
+                </ActionButton>
+                <ActionButton
+                  action={reopenRun.bind(null, run.id)}
+                  className="btn btn-ghost btn-sm"
+                  confirmTitle="Cabut persetujuan?"
+                  confirm="Periode kembali ke status terhitung sehingga bisa diperbaiki dan dihitung ulang."
+                >
+                  <RotateCcw size={13} />
+                  Cabut persetujuan
+                </ActionButton>
+              </>
+            )}
 
-          {run.status !== 'PAID' && isAdmin && (
-            <ActionButton
-              action={deleteRun.bind(null, run.id)}
-              className="btn btn-danger btn-sm"
-              confirm={`Hapus proses gaji ${labelPeriode(run.period)} beserta seluruh baris perhitungannya?`}
-            >
-              <Trash2 size={13} />
-              Hapus
-            </ActionButton>
-          )}
+            {run.status !== 'PAID' && isAdmin && (
+              <ActionButton
+                action={deleteRun.bind(null, run.id)}
+                className="btn btn-danger btn-sm"
+                confirmTitle={`Hapus proses gaji ${labelPeriode(run.period)}?`}
+                confirmLabel="Hapus periode"
+                confirm="Seluruh baris perhitungan periode ini ikut terhapus dan tidak bisa dikembalikan."
+              >
+                <Trash2 size={13} />
+                Hapus
+              </ActionButton>
+            )}
+          </div>
         </div>
+
+        <div className="border-t px-6 py-4" style={{ borderColor: 'var(--hairline)' }}>
+          <Stepper
+            aktifIndex={['DRAFT', 'CALCULATED', 'APPROVED', 'PAID'].indexOf(run.status)}
+            langkah={[
+              { key: 'draft', label: 'Draf', catatan: 'periode dibuat' },
+              {
+                key: 'calc',
+                label: 'Terhitung',
+                catatan: run.calculatedAt ? tanggal(run.calculatedAt) : `${items.length || 0} baris`,
+              },
+              {
+                key: 'appr',
+                label: 'Disetujui',
+                catatan: pakaiAlur ? `${rantai.filter((r) => r.decision === 'APPROVED').length}/${rantai.length} tahap` : run.approvedBy ?? 'menunggu',
+              },
+              {
+                key: 'paid',
+                label: 'Dibayarkan',
+                catatan: run.paidAt ? tanggal(run.paidAt) : 'belum',
+              },
+            ]}
+          />
+        </div>
+
+        {items.length > 0 && (
+          <div
+            className="flex flex-wrap items-center gap-2 border-t px-6 py-3"
+            style={{ borderColor: 'var(--hairline)', background: 'var(--field-bg)' }}
+          >
+            <span className="label !mb-0 mr-1">Unduh</span>
+            <a href={`/api/export/payroll/${run.id}`} className="btn btn-ghost btn-sm">
+              <Download size={13} />
+              Rincian payroll
+            </a>
+            <a href={`/api/export/tax/${run.id}`} className="btn btn-ghost btn-sm">
+              <Download size={13} />
+              Rekap PPh 21
+            </a>
+            {bankFormats.map((f) => (
+              <a
+                key={f.id}
+                href={`/api/export/bank/${run.id}?format=${f.id}`}
+                className="btn btn-ghost btn-sm"
+                title={`Susunan kolom mengikuti format ${f.name}`}
+              >
+                <Download size={13} />
+                {f.name}
+              </a>
+            ))}
+          </div>
+        )}
       </GlassCard>
 
       {run.status === 'DRAFT' && items.length === 0 ? (
@@ -219,7 +261,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
           )}
 
           {/* ── ringkasan angka ── */}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="tiles">
             <StatTile label="Bruto" value={rupiahRingkas(run.totalGross)} sub={`${run.headcount} karyawan`} />
             <StatTile
               label="Total potongan"

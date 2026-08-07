@@ -450,6 +450,36 @@ async function main() {
   }
   await prisma.overtime.createMany({ data: overtimeRows });
 
+  // Pastikan antrean persetujuan lembur selalu terisi pada data demo.
+  // Tanpa ini, bulan berjalan yang baru berumur beberapa hari sering tidak
+  // menghasilkan satu pun pengajuan menunggu, sehingga halamannya terlihat
+  // kosong dan fiturnya tidak terlihat sama sekali.
+  const hariIni = new Date();
+  for (let n = 0; n < 5; n++) {
+    const e = employees[between(0, employees.length - 1)];
+    const d = new Date(hariIni);
+    d.setDate(d.getDate() - between(1, 9));
+    if (d < e.joinDate) continue;
+    const sudahAda = await prisma.overtime.findFirst({ where: { employeeId: e.id, date: d } });
+    if (sudahAda) continue;
+    await prisma.overtime.create({
+      data: {
+        employeeId: e.id,
+        date: d,
+        hours: between(2, 8) / 2 + 1,
+        isHoliday: d.getDay() === 0 || d.getDay() === 6,
+        reason: pick([
+          'Menyelesaikan rilis fitur ke produksi',
+          'Perbaikan insiden produksi malam hari',
+          'Menutup laporan keuangan bulanan',
+          'Menyiapkan data untuk audit internal',
+          'Migrasi basis data akhir pekan',
+        ]),
+        status: 'PENDING',
+      },
+    });
+  }
+
   console.log('› Pengajuan cuti…');
   const leaveRows: any[] = [];
   for (let back = 3; back >= 0; back--) {
