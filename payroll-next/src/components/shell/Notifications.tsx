@@ -41,7 +41,7 @@ export default function Notifications({ items }: { items: NotifItem[] }) {
         <Bell size={15} />
         {unread > 0 && (
           <span
-            className="tnum absolute -top-1 -right-1 grid min-w-[16px] place-items-center rounded-full px-1 text-[0.5625rem] font-bold"
+            className="tnum absolute -top-1 -right-1 grid min-w-[16px] place-items-center rounded-full px-1 t-micro font-bold"
             style={{ background: 'var(--color-jade-600)', color: '#fff' }}
           >
             {unread}
@@ -60,7 +60,7 @@ export default function Notifications({ items }: { items: NotifItem[] }) {
               className="flex items-center justify-between border-b px-4 py-2.5"
               style={{ borderColor: 'var(--hairline)' }}
             >
-              <span className="text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <span className="t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                 Notifikasi
               </span>
               {unread > 0 && (
@@ -70,7 +70,7 @@ export default function Notifications({ items }: { items: NotifItem[] }) {
                     await markAllRead();
                     router.refresh();
                   }}
-                  className="flex items-center gap-1 text-[0.6875rem]"
+                  className="flex items-center gap-1 t-micro"
                   style={{ color: 'var(--accent)' }}
                 >
                   <CheckCheck size={12} />
@@ -81,7 +81,7 @@ export default function Notifications({ items }: { items: NotifItem[] }) {
 
             <ul className="scroll-slim max-h-80 overflow-y-auto">
               {items.length === 0 && (
-                <li className="px-4 py-10 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                <li className="px-4 py-10 text-center t-label" style={{ color: 'var(--text-muted)' }}>
                   Belum ada notifikasi.
                 </li>
               )}
@@ -97,11 +97,11 @@ export default function Notifications({ items }: { items: NotifItem[] }) {
                   >
                     <Icon size={15} className="mt-px shrink-0" style={{ color: TONE[n.kind] }} />
                     <div className="min-w-0">
-                      <p className="text-[0.8125rem] font-medium" style={{ color: 'var(--text-strong)' }}>
+                      <p className="t-small font-medium" style={{ color: 'var(--text-strong)' }}>
                         {n.title}
                       </p>
-                      <p className="mt-0.5 text-[0.75rem] leading-snug">{n.body}</p>
-                      <p className="mt-1 text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <p className="mt-0.5 t-label leading-snug">{n.body}</p>
+                      <p className="mt-1 t-micro" style={{ color: 'var(--text-muted)' }}>
                         {sejak(n.createdAt)}
                       </p>
                     </div>

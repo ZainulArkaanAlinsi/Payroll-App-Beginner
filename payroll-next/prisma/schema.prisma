@@ -1,4 +1,4 @@
-// NusaPay — Payroll Engine Indonesia
+// Racik — mesin penggajian yang bisa diracik sendiri
 // SQLite + Prisma. Angka uang disimpan sebagai Int (rupiah penuh, tanpa sen)
 // supaya tidak ada floating point drift pada perhitungan gaji.
 
@@ -118,6 +118,10 @@ model Employee {
 
   baseSalary   Int      @default(0) // gaji pokok bulanan
   ptkpStatus   String   @default("TK/0") // TK/0..TK/3, K/0..K/3
+  // NETT  = pajak ditanggung karyawan (dipotong dari gaji)
+  // GROSS = pajak ditanggung perusahaan sebagai tunjangan, tidak digross-up
+  // GROSS_UP = perusahaan menanggung sekaligus pajak atas tunjangan pajaknya
+  taxMethod    String   @default("NETT")
   bankName     String?
   bankAccount  String?
   bankHolder   String?
@@ -156,16 +160,102 @@ model SalaryComponent {
   code      String   @unique
   name      String
   type      String   // ALLOWANCE | DEDUCTION
-  calcType  String   @default("FIXED") // FIXED | PERCENT_OF_BASE
+  calcType  String   @default("FIXED") // FIXED | PERCENT_OF_BASE | FORMULA
   amount    Int      @default(0)  // rupiah bila FIXED
   percent   Float    @default(0)  // persen bila PERCENT_OF_BASE
+  formula   String?  // ekspresi bila FORMULA — lihat src/lib/formula.ts
   taxable   Boolean  @default(true)
-  isDefault Boolean  @default(false) // otomatis diberikan ke karyawan baru
+  countsForBpjs Boolean @default(false) // ikut menambah dasar pengali BPJS
+  prorate   Boolean  @default(false)    // dipotong proporsional bila masuk/keluar tengah bulan
+  isDefault Boolean  @default(false)    // otomatis diberikan ke karyawan baru
   active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+
+  // Cakupan: kosong berarti berlaku untuk semua. Disimpan sebagai JSON
+  // berisi daftar id departemen / tingkat jabatan.
+  scopeDepartments String?
+  scopeLevels      String?
+
   note      String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   assignments EmployeeComponent[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// Racik: aturan, alur persetujuan, slip, dan format bank
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Aturan kerja yang bisa berbeda antar departemen atau tingkat jabatan.
+ * Yang paling spesifik menang; bila seri, prioritas tertinggi yang dipakai.
+ */
+model PolicyRule {
+  id        String  @id @default(cuid())
+  name      String
+  kind      String  // LATE | OVERTIME | ABSENCE
+  config    String  // JSON, bentuknya bergantung kind
+  priority  Int     @default(0)
+  active    Boolean @default(true)
+
+  scopeDepartmentId String?
+  scopeLevel        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kind, active])
+}
+
+/** Satu tahap pada jalur persetujuan payroll yang disusun sendiri oleh HR. */
+model ApprovalStep {
+  id        String  @id @default(cuid())
+  sortOrder Int
+  name      String
+  role      String  // ADMIN | HR
+  note      String?
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  approvals RunApproval[]
+}
+
+/** Jejak persetujuan sebuah proses gaji pada satu tahap. */
+model RunApproval {
+  id        String   @id @default(cuid())
+  runId     String
+  stepId    String
+  decidedBy String
+  decision  String   // APPROVED | REJECTED
+  note      String?
+  decidedAt DateTime @default(now())
+
+  run  PayrollRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  step ApprovalStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, stepId])
+}
+
+/** Baris pada slip gaji yang bisa ditampilkan atau disembunyikan HR. */
+model PayslipField {
+  id        String  @id @default(cuid())
+  key       String  @unique
+  label     String
+  section   String  // IDENTITAS | PENERIMAAN | POTONGAN | PAJAK | PERUSAHAAN | CATATAN
+  visible   Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+/** Susunan kolom berkas transfer, agar cocok dengan format bank mana pun. */
+model BankFormat {
+  id            String  @id @default(cuid())
+  name          String
+  delimiter     String  @default(";")
+  includeHeader Boolean @default(true)
+  columns       String  // JSON: [{ header, source, prefix }]
+  isDefault     Boolean @default(false)
+  createdAt     DateTime @default(now())
 }
 
 model EmployeeComponent {
@@ -282,7 +372,8 @@ model PayrollRun {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  items PayrollItem[]
+  items     PayrollItem[]
+  approvals RunApproval[]
 }
 
 model PayrollItem {
@@ -309,6 +400,9 @@ model PayrollItem {
   loanDeduction    Int @default(0)
   unpaidLeaveCut   Int @default(0)
   lateCut          Int @default(0)
+
+  taxAllowance     Int @default(0) // tunjangan pajak bila metode GROSS / GROSS_UP
+  prorateDays      Int @default(0)  // hari dibayar bila masuk/keluar tengah bulan
 
   taxableIncome    Int @default(0)
   terRate          Float @default(0)

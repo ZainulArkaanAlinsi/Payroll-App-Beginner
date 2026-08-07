@@ -69,7 +69,7 @@ export default function ClockCard({
                 })
               : '--:--:--'}
           </p>
-          <p className="mt-1.5 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+          <p className="mt-1.5 t-label" style={{ color: 'var(--text-muted)' }}>
             {now
               ? now.toLocaleDateString('id-ID', {
                   weekday: 'long',
@@ -86,7 +86,7 @@ export default function ClockCard({
         <div className="flex flex-wrap items-center gap-6">
           <div className="text-center">
             <p className="label !mb-1">Masuk</p>
-            <p className="tnum text-lg font-semibold" style={{ color: 'var(--text-strong)' }}>
+            <p className="tnum t-title" style={{ color: 'var(--text-strong)' }}>
               {fmt(clockIn)}
             </p>
             {lateMinutes > 0 && (
@@ -98,11 +98,11 @@ export default function ClockCard({
 
           <div className="text-center">
             <p className="label !mb-1">Pulang</p>
-            <p className="tnum text-lg font-semibold" style={{ color: 'var(--text-strong)' }}>
+            <p className="tnum t-title" style={{ color: 'var(--text-strong)' }}>
               {fmt(clockOut)}
             </p>
             {durasi > 0 && (
-              <span className="mt-1 block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+              <span className="mt-1 block t-micro" style={{ color: 'var(--text-muted)' }}>
                 {Math.floor(durasi / 60)}j {durasi % 60}m
               </span>
             )}

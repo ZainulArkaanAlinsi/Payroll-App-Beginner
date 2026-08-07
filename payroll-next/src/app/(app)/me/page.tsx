@@ -111,10 +111,10 @@ export default async function MePage() {
         <div className="flex items-center gap-4">
           <Avatar name={employee.fullName} hue={session.avatarHue} size={52} />
           <div>
-            <h1 className="text-xl font-semibold" style={{ letterSpacing: '-0.02em' }}>
+            <h1 className="t-title">
               {employee.fullName}
             </h1>
-            <p className="text-[0.8125rem]">
+            <p className="t-small">
               {employee.position?.title ?? '—'}
               {employee.department && ` · ${employee.department.name}`}
             </p>
@@ -186,13 +186,13 @@ export default async function MePage() {
               />
             ) : (
               <div className="scroll-slim -mx-1 overflow-x-auto">
-                <table className="w-full min-w-[600px] text-sm">
+                <table className="w-full min-w-[600px] t-body">
                   <thead>
                     <tr style={{ color: 'var(--text-muted)' }}>
                       {['Periode', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map((h, i) => (
                         <th
                           key={h || i}
-                          className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                             i >= 1 && i <= 4 ? 'text-right' : 'text-left'
                           }`}
                         >
@@ -209,28 +209,28 @@ export default async function MePage() {
                         style={{ borderTop: '1px solid var(--hairline)' }}
                       >
                         <td className="px-2 py-2.5">
-                          <span className="text-[0.8125rem] font-medium" style={{ color: 'var(--text-strong)' }}>
+                          <span className="t-small font-medium" style={{ color: 'var(--text-strong)' }}>
                             {labelPeriode(s.run.period)}
                           </span>
-                          <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                             dibayar {tanggal(s.run.payDate)}
                           </span>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(s.grossPay)}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(s.grossPay)}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                          className="tnum px-2 py-2.5 text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(s.pph21)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                          className="tnum px-2 py-2.5 text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(s.totalDeduction)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-semibold"
+                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(s.netPay)}
@@ -257,11 +257,11 @@ export default async function MePage() {
               <ul className="space-y-1.5">
                 {bulanIni.slice(0, 10).map((a) => (
                   <li key={a.id} className="glass-thin flex flex-wrap items-center gap-3 px-3.5 py-2">
-                    <span className="min-w-[7rem] text-[0.8125rem]" style={{ color: 'var(--text-strong)' }}>
+                    <span className="min-w-[7rem] t-small" style={{ color: 'var(--text-strong)' }}>
                       {tanggal(a.date)}
                     </span>
                     <StatusChip status={a.status} />
-                    <span className="tnum text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                    <span className="tnum t-label" style={{ color: 'var(--text-muted)' }}>
                       {a.clockIn
                         ? `${new Date(a.clockIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} – ${
                             a.clockOut
@@ -271,7 +271,7 @@ export default async function MePage() {
                         : '—'}
                     </span>
                     {a.workMinutes > 0 && (
-                      <span className="ml-auto text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="ml-auto t-label" style={{ color: 'var(--text-muted)' }}>
                         {jamMenit(a.workMinutes)}
                       </span>
                     )}
@@ -288,10 +288,10 @@ export default async function MePage() {
           <GlassCard>
             <SectionTitle title="Kuota cuti" />
             <div className="flex items-baseline justify-between">
-              <span className="tnum text-2xl font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <span className="tnum t-display" style={{ color: 'var(--text-strong)' }}>
                 {sisaCuti}
               </span>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="t-label" style={{ color: 'var(--text-muted)' }}>
                 dari {employee.annualLeaveQuota} hari
               </span>
             </div>
@@ -303,7 +303,7 @@ export default async function MePage() {
           <GlassCard>
             <SectionTitle title="Pengajuan cuti saya" />
             {cuti.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-label" style={{ color: 'var(--text-muted)' }}>
                 Belum ada pengajuan.
               </p>
             ) : (
@@ -311,14 +311,14 @@ export default async function MePage() {
                 {cuti.map((l) => (
                   <li key={l.id} className="flex items-start justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block text-[0.75rem]" style={{ color: 'var(--text-body)' }}>
+                      <span className="block t-label" style={{ color: 'var(--text-body)' }}>
                         {statusLabel(l.type)} · {l.days} hari
                       </span>
-                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                         {tanggal(l.startDate)} – {tanggal(l.endDate)}
                       </span>
                       {l.reviewNote && (
-                        <span className="block text-[0.625rem]" style={{ color: 'var(--color-clay-500)' }}>
+                        <span className="block t-micro" style={{ color: 'var(--color-clay-500)' }}>
                           {l.reviewNote}
                         </span>
                       )}
@@ -333,7 +333,7 @@ export default async function MePage() {
           <GlassCard>
             <SectionTitle title="Pengajuan lembur saya" />
             {lembur.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-label" style={{ color: 'var(--text-muted)' }}>
                 Belum ada pengajuan.
               </p>
             ) : (
@@ -341,10 +341,10 @@ export default async function MePage() {
                 {lembur.map((o) => (
                   <li key={o.id} className="flex items-start justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block text-[0.75rem]" style={{ color: 'var(--text-body)' }}>
+                      <span className="block t-label" style={{ color: 'var(--text-body)' }}>
                         {o.hours} jam · {tanggal(o.date)}
                       </span>
-                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                         {o.amount > 0 ? rupiah(o.amount) : o.reason.slice(0, 34)}
                       </span>
                     </span>
@@ -358,16 +358,16 @@ export default async function MePage() {
           {pinjaman && (
             <GlassCard>
               <SectionTitle title="Pinjaman berjalan" />
-              <p className="tnum text-lg font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <p className="tnum t-title" style={{ color: 'var(--text-strong)' }}>
                 {rupiah(pinjaman.remaining)}
               </p>
-              <p className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                 sisa dari {rupiah(pinjaman.principal)}
               </p>
               <div className="mt-2">
                 <MiniBar value={pinjaman.principal - pinjaman.remaining} max={pinjaman.principal} />
               </div>
-              <p className="mt-1.5 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+              <p className="mt-1.5 t-micro" style={{ color: 'var(--text-muted)' }}>
                 Dipotong {rupiah(pinjaman.monthlyDeduction)} tiap bulan.
               </p>
             </GlassCard>
@@ -375,7 +375,7 @@ export default async function MePage() {
 
           <GlassCard>
             <SectionTitle title="Data pajak & bank" />
-            <dl className="space-y-2.5 text-[0.75rem]">
+            <dl className="space-y-2.5 t-label">
               <Baris k="Status PTKP" v={PTKP_LABEL[employee.ptkpStatus as PtkpStatus] ?? employee.ptkpStatus} />
               <Baris k="NPWP" v={employee.npwp ?? 'Belum terdaftar'} />
               <Baris
@@ -387,7 +387,7 @@ export default async function MePage() {
             </dl>
             {!employee.npwp && (
               <p
-                className="mt-3 rounded-lg px-3 py-2 text-[0.6875rem]"
+                className="mt-3 rounded-lg px-3 py-2 t-micro"
                 style={{ background: 'rgb(168 127 52 / .14)', color: 'var(--color-brass-500)' }}
               >
                 Tanpa NPWP, PPh 21 Anda dikenakan 20% lebih tinggi. Sampaikan NPWP ke bagian SDM
@@ -404,7 +404,7 @@ export default async function MePage() {
 function Baris({ k, v }: { k: string; v: string }) {
   return (
     <div>
-      <dt className="text-[0.625rem] tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+      <dt className="t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
         {k}
       </dt>
       <dd style={{ color: 'var(--text-body)' }}>{v}</dd>

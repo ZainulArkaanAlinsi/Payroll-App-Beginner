@@ -1,5 +1,5 @@
 /**
- * Seed NusaPay — data demo yang realistis.
+ * Seed Racik — data demo yang realistis.
  *
  * Menghasilkan: 1 perusahaan, 6 departemen, 14 posisi, 26 karyawan,
  * komponen gaji, ~4 bulan kehadiran, cuti, lembur, pinjaman, dan
@@ -8,7 +8,8 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { calculatePayroll, workingDaysInPeriod, type ComponentLine } from '../src/lib/payroll-engine';
+import { calculatePayroll, workingDaysInPeriod } from '../src/lib/payroll-engine';
+import { resolveAll, buildVariables } from '../src/lib/components';
 import type { PtkpStatus } from '../src/lib/tax';
 
 const prisma = new PrismaClient();
@@ -80,14 +81,69 @@ const ORANG: { nama: string; posisi: string; gaji: number; ptkp: PtkpStatus; gen
 const BANK = ['BCA', 'Bank Mandiri', 'BNI', 'BRI', 'Bank Jago', 'CIMB Niaga'];
 
 const KOMPONEN = [
-  { code: 'TJ-TRANS', name: 'Tunjangan Transportasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 750_000, percent: 0, taxable: true, isDefault: true },
-  { code: 'TJ-MAKAN', name: 'Tunjangan Makan', type: 'ALLOWANCE', calcType: 'FIXED', amount: 900_000, percent: 0, taxable: true, isDefault: true },
-  { code: 'TJ-JABAT', name: 'Tunjangan Jabatan', type: 'ALLOWANCE', calcType: 'PERCENT_OF_BASE', amount: 0, percent: 12.5, taxable: true, isDefault: false },
-  { code: 'TJ-KOMUN', name: 'Tunjangan Komunikasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 350_000, percent: 0, taxable: true, isDefault: true },
-  { code: 'TJ-KESEH', name: 'Tunjangan Kesehatan Keluarga', type: 'ALLOWANCE', calcType: 'FIXED', amount: 500_000, percent: 0, taxable: false, isDefault: false },
-  { code: 'TJ-WFH', name: 'Tunjangan Kerja Jarak Jauh', type: 'ALLOWANCE', calcType: 'FIXED', amount: 400_000, percent: 0, taxable: false, isDefault: false },
-  { code: 'PT-KOPER', name: 'Iuran Koperasi Karyawan', type: 'DEDUCTION', calcType: 'FIXED', amount: 100_000, percent: 0, taxable: false, isDefault: true },
-  { code: 'PT-SERIK', name: 'Iuran Serikat Pekerja', type: 'DEDUCTION', calcType: 'FIXED', amount: 50_000, percent: 0, taxable: false, isDefault: false },
+  { code: 'TJ-TRANS', name: 'Tunjangan Transportasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 750_000, percent: 0, formula: null, taxable: true, countsForBpjs: true, prorate: true, isDefault: true, sortOrder: 10, note: 'Dibayar per hari kerja, jadi diprorata bila masuk tengah bulan' },
+  { code: 'TJ-MAKAN', name: 'Tunjangan Makan', type: 'ALLOWANCE', calcType: 'FORMULA', amount: 0, percent: 0, formula: 'HARI_HADIR * 45000', taxable: true, countsForBpjs: false, prorate: false, isDefault: true, sortOrder: 20, note: 'Rp 45.000 per hari kehadiran — ikut naik-turun dengan absensi' },
+  { code: 'TJ-JABAT', name: 'Tunjangan Jabatan', type: 'ALLOWANCE', calcType: 'PERCENT_OF_BASE', amount: 0, percent: 12.5, formula: null, taxable: true, countsForBpjs: true, prorate: true, isDefault: false, sortOrder: 5, note: null },
+  { code: 'TJ-KOMUN', name: 'Tunjangan Komunikasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 350_000, percent: 0, formula: null, taxable: true, countsForBpjs: false, prorate: false, isDefault: true, sortOrder: 30, note: null },
+  { code: 'TJ-MASKER', name: 'Tunjangan Masa Kerja', type: 'ALLOWANCE', calcType: 'FORMULA', amount: 0, percent: 0, formula: 'MIN(FLOOR(MASA_KERJA_BULAN / 12) * 250000; 2000000)', taxable: true, countsForBpjs: false, prorate: false, isDefault: false, sortOrder: 40, note: 'Rp 250.000 per tahun masa kerja, maksimal Rp 2 juta' },
+  { code: 'TJ-KESEH', name: 'Tunjangan Kesehatan Keluarga', type: 'ALLOWANCE', calcType: 'FORMULA', amount: 0, percent: 0, formula: 'IF(JUMLAH_TANGGUNGAN > 0; 300000 + JUMLAH_TANGGUNGAN * 150000; 0)', taxable: false, countsForBpjs: false, prorate: false, isDefault: false, sortOrder: 50, note: 'Naik mengikuti jumlah tanggungan pada status PTKP' },
+  { code: 'TJ-WFH', name: 'Tunjangan Kerja Jarak Jauh', type: 'ALLOWANCE', calcType: 'FIXED', amount: 400_000, percent: 0, formula: null, taxable: false, countsForBpjs: false, prorate: false, isDefault: false, sortOrder: 60, note: null },
+  { code: 'PT-KOPER', name: 'Iuran Koperasi Karyawan', type: 'DEDUCTION', calcType: 'FIXED', amount: 100_000, percent: 0, formula: null, taxable: false, countsForBpjs: false, prorate: false, isDefault: true, sortOrder: 70, note: null },
+  { code: 'PT-TELAT', name: 'Potongan Keterlambatan', type: 'DEDUCTION', calcType: 'FORMULA', amount: 0, percent: 0, formula: 'IF(MENIT_TELAT > 30; (MENIT_TELAT - 30) * 2500; 0)', taxable: false, countsForBpjs: false, prorate: false, isDefault: false, sortOrder: 80, note: 'Toleransi 30 menit, lebih dari itu Rp 2.500 per menit' },
+  { code: 'PT-SERIK', name: 'Iuran Serikat Pekerja', type: 'DEDUCTION', calcType: 'FIXED', amount: 50_000, percent: 0, formula: null, taxable: false, countsForBpjs: false, prorate: false, isDefault: false, sortOrder: 90, note: null },
+];
+
+const TAHAP_PERSETUJUAN = [
+  { sortOrder: 1, name: 'Diperiksa Staf HR', role: 'HR', note: 'Memastikan data kehadiran dan lembur sudah lengkap' },
+  { sortOrder: 2, name: 'Disetujui Manajer HR', role: 'HR', note: 'Memeriksa kewajaran angka per karyawan' },
+  { sortOrder: 3, name: 'Dirilis Direktur Keuangan', role: 'ADMIN', note: 'Persetujuan akhir sebelum dana ditransfer' },
+];
+
+const KOLOM_SLIP = [
+  { key: 'nama', label: 'Nama karyawan', section: 'IDENTITAS', sortOrder: 10, visible: true },
+  { key: 'nomor', label: 'Nomor induk', section: 'IDENTITAS', sortOrder: 20, visible: true },
+  { key: 'jabatan', label: 'Jabatan', section: 'IDENTITAS', sortOrder: 30, visible: true },
+  { key: 'departemen', label: 'Departemen', section: 'IDENTITAS', sortOrder: 40, visible: true },
+  { key: 'ptkp', label: 'Status PTKP', section: 'IDENTITAS', sortOrder: 50, visible: true },
+  { key: 'npwp', label: 'NPWP', section: 'IDENTITAS', sortOrder: 60, visible: true },
+  { key: 'rekening', label: 'Nomor rekening', section: 'IDENTITAS', sortOrder: 70, visible: true },
+  { key: 'kehadiran', label: 'Ringkasan kehadiran', section: 'IDENTITAS', sortOrder: 80, visible: true },
+  { key: 'rincian_terima', label: 'Rincian penerimaan', section: 'PENERIMAAN', sortOrder: 10, visible: true },
+  { key: 'rincian_potong', label: 'Rincian potongan', section: 'POTONGAN', sortOrder: 10, visible: true },
+  { key: 'dasar_pajak', label: 'Dasar perhitungan PPh 21', section: 'PAJAK', sortOrder: 10, visible: true },
+  { key: 'iuran_perusahaan', label: 'Iuran ditanggung perusahaan', section: 'PERUSAHAAN', sortOrder: 10, visible: true },
+  { key: 'terbilang', label: 'Terbilang', section: 'CATATAN', sortOrder: 10, visible: true },
+  { key: 'catatan_kaki', label: 'Catatan kaki & tanda tangan', section: 'CATATAN', sortOrder: 20, visible: true },
+];
+
+const FORMAT_BANK = [
+  {
+    name: 'BCA — Mass Transfer',
+    delimiter: ',',
+    includeHeader: false,
+    isDefault: true,
+    columns: JSON.stringify([
+      { header: 'Rekening Tujuan', source: 'bankAccount', prefix: "'" },
+      { header: 'Nama Penerima', source: 'bankHolder', prefix: '' },
+      { header: 'Nominal', source: 'netPay', prefix: '' },
+      { header: 'Berita', source: 'period', prefix: 'GAJI ' },
+    ]),
+  },
+  {
+    name: 'Mandiri — Bulk Payment',
+    delimiter: ';',
+    includeHeader: true,
+    isDefault: false,
+    columns: JSON.stringify([
+      { header: 'NO', source: 'rowNumber', prefix: '' },
+      { header: 'NIK', source: 'employeeNo', prefix: '' },
+      { header: 'NAMA', source: 'bankHolder', prefix: '' },
+      { header: 'BANK', source: 'bankName', prefix: '' },
+      { header: 'NOREK', source: 'bankAccount', prefix: "'" },
+      { header: 'AMOUNT', source: 'netPay', prefix: '' },
+      { header: 'REMARK', source: 'period', prefix: 'PAYROLL ' },
+    ]),
+  },
 ];
 
 function periodeMundur(n: number): string {
@@ -99,8 +155,14 @@ function periodeMundur(n: number): string {
 
 async function main() {
   console.log('› Membersihkan basis data…');
+  // Jejak persetujuan dulu, karena menunjuk ke proses gaji dan tahapnya.
+  await prisma.runApproval.deleteMany();
   await prisma.payrollItem.deleteMany();
   await prisma.payrollRun.deleteMany();
+  await prisma.approvalStep.deleteMany();
+  await prisma.payslipField.deleteMany();
+  await prisma.bankFormat.deleteMany();
+  await prisma.policyRule.deleteMany();
   await prisma.attendance.deleteMany();
   await prisma.overtime.deleteMany();
   await prisma.leaveRequest.deleteMany();
@@ -143,12 +205,63 @@ async function main() {
   const komponen = [];
   for (const k of KOMPONEN) komponen.push(await prisma.salaryComponent.create({ data: k }));
 
+  console.log('› Alur persetujuan, kolom slip, format bank, aturan divisi…');
+  for (const t of TAHAP_PERSETUJUAN) await prisma.approvalStep.create({ data: t });
+  for (const k of KOLOM_SLIP) await prisma.payslipField.create({ data: k });
+  for (const f of FORMAT_BANK) await prisma.bankFormat.create({ data: f });
+
+  // Aturan yang sengaja dibuat berbeda antar divisi, untuk menunjukkan
+  // bahwa satu perusahaan bisa punya kebijakan majemuk dalam satu sistem.
+  await prisma.policyRule.create({
+    data: {
+      name: 'Keterlambatan — aturan umum',
+      kind: 'LATE',
+      priority: 0,
+      config: JSON.stringify({ toleransiMenit: 30, potonganPerMenit: 2500, potonganMaksPerBulan: 500000 }),
+    },
+  });
+  await prisma.policyRule.create({
+    data: {
+      name: 'Keterlambatan — Operasional lebih ketat',
+      kind: 'LATE',
+      priority: 10,
+      scopeDepartmentId: deptMap['OPS'],
+      config: JSON.stringify({ toleransiMenit: 10, potonganPerMenit: 4000, potonganMaksPerBulan: 750000 }),
+    },
+  });
+  await prisma.policyRule.create({
+    data: {
+      name: 'Keterlambatan — Direktur dikecualikan',
+      kind: 'LATE',
+      priority: 20,
+      scopeLevel: 'DIRECTOR',
+      config: JSON.stringify({ toleransiMenit: 0, potonganPerMenit: 0, potonganMaksPerBulan: 0 }),
+    },
+  });
+  await prisma.policyRule.create({
+    data: {
+      name: 'Lembur — pengganda Kepmenaker',
+      kind: 'OVERTIME',
+      priority: 0,
+      config: JSON.stringify({ metode: 'KEPMENAKER', pembagi: 173 }),
+    },
+  });
+  await prisma.policyRule.create({
+    data: {
+      name: 'Lembur — Teknologi tarif rata',
+      kind: 'OVERTIME',
+      priority: 10,
+      scopeDepartmentId: deptMap['ENG'],
+      config: JSON.stringify({ metode: 'FLAT', tarifPerJam: 75000 }),
+    },
+  });
+
   console.log('› Akun & karyawan…');
   const pass = await bcrypt.hash('password123', 10);
 
   await prisma.user.create({
     data: {
-      email: 'admin@nusapay.id',
+      email: 'admin@racik.id',
       name: 'Zainul Arkaan',
       password: pass,
       role: 'ADMIN',
@@ -410,17 +523,6 @@ async function main() {
         where: { employeeId: e.id },
         include: { component: true },
       });
-      const lines: ComponentLine[] = assignments.map((a) => ({
-        code: a.component.code,
-        name: a.component.name,
-        type: a.component.type as 'ALLOWANCE' | 'DEDUCTION',
-        amount:
-          a.overrideAmount ??
-          (a.component.calcType === 'PERCENT_OF_BASE'
-            ? Math.round((e.gaji * a.component.percent) / 100)
-            : a.component.amount),
-        taxable: a.component.taxable,
-      }));
 
       const att = await prisma.attendance.groupBy({
         by: ['status'],
@@ -443,7 +545,40 @@ async function main() {
       const otWeekday = otAgg.filter((o) => !o.isHoliday).reduce((s, o) => s + o.hours, 0);
       const otHoliday = otAgg.filter((o) => o.isHoliday).reduce((s, o) => s + o.hours, 0);
 
-      const loan = await prisma.loan.findFirst({ where: { employeeId: e.id, status: 'ACTIVE' } });
+      const loan = await prisma.loan.findFirst({
+        where: { employeeId: e.id, status: 'ACTIVE' },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      });
+
+      const hadir = cnt('PRESENT') + cnt('LATE') + cnt('WFH');
+      const masaKerjaBulan = Math.max(
+        0,
+        (y - e.joinDate.getFullYear()) * 12 + (m - 1 - e.joinDate.getMonth()),
+      );
+      // angka setelah garis miring pada status PTKP = jumlah tanggungan
+      const tanggungan = Number(e.ptkp.split('/')[1] ?? 0);
+
+      // Rumus diselesaikan lewat resolver bersama, sama persis dengan yang
+      // dipakai proses gaji sungguhan — bukan salinan logika terpisah.
+      const { lines } = resolveAll(assignments, {
+        departmentId: null,
+        level: null,
+        baseSalary: e.gaji,
+        variables: buildVariables({
+          baseSalary: e.gaji,
+          fixedAllowance: 0,
+          workingDays,
+          presentDays: hadir,
+          absentDays: cnt('ABSENT'),
+          leaveDays: cnt('LEAVE'),
+          overtimeHours: otWeekday,
+          overtimeHolidayHours: otHoliday,
+          lateMinutes: lateAgg._sum.lateMinutes ?? 0,
+          monthsOfService: masaKerjaBulan,
+          dependents: tanggungan,
+          paidDays: workingDays,
+        }),
+      });
 
       const hasil = calculatePayroll({
         employeeId: e.id,
@@ -463,7 +598,6 @@ async function main() {
         lateMinutes: lateAgg._sum.lateMinutes ?? 0,
         loanDeduction: loan?.monthlyDeduction ?? 0,
         workingDays,
-        lateCutPerMinute: company.lateCutPerMinute,
         cutAbsent: company.absentCutPerDay,
         bpjs: bpjsConfig,
       });
@@ -490,6 +624,8 @@ async function main() {
           unpaidLeaveCut: hasil.unpaidLeaveCut,
           lateCut: hasil.lateCut,
           taxableIncome: hasil.taxableIncome,
+          taxAllowance: hasil.taxAllowance,
+          prorateDays: hasil.prorateDays,
           terRate: hasil.terRate,
           pph21: hasil.pph21,
           taxMethod: hasil.taxMethod,
@@ -547,7 +683,7 @@ async function main() {
   }
 
   console.log('\n✓ Seed selesai.');
-  console.log('  Admin    : admin@nusapay.id / password123');
+  console.log('  Admin    : admin@racik.id / password123');
   console.log('  HR       : larasati.widyaningrum@nusantaradigital.id / password123');
   console.log('  Karyawan : bagas.setiawan@nusantaradigital.id / password123');
 }

@@ -5,16 +5,18 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { audit, notify, requireRole } from '@/lib/auth';
 import { FAIL, OK, type ActionState } from '@/lib/types';
+import { calculatePayroll, workingDaysInPeriod, type BpjsConfig, type TaxMethod } from '@/lib/payroll-engine';
+import { resolveAll, buildVariables } from '@/lib/components';
 import {
-  calculatePayroll,
-  workingDaysInPeriod,
-  type BpjsConfig,
-  type ComponentLine,
-} from '@/lib/payroll-engine';
+  pilihAturan,
+  lateConfigDari,
+  overtimeConfigDari,
+  type PolicyRow,
+} from '@/lib/policy';
 import type { PtkpStatus } from '@/lib/tax';
 import { labelPeriode } from '@/lib/format';
 
-async function bpjsConfig(): Promise<{ bpjs: BpjsConfig; lateCutPerMinute: number; cutAbsent: boolean }> {
+async function bpjsConfig(): Promise<{ bpjs: BpjsConfig; cutAbsent: boolean }> {
   const c =
     (await prisma.companySetting.findUnique({ where: { id: 'singleton' } })) ??
     (await prisma.companySetting.create({ data: { id: 'singleton' } }));
@@ -31,7 +33,6 @@ async function bpjsConfig(): Promise<{ bpjs: BpjsConfig; lateCutPerMinute: numbe
       jkkRate: c.bpjsJkkRate,
       jkmRate: c.bpjsJkmRate,
     },
-    lateCutPerMinute: c.lateCutPerMinute,
     cutAbsent: c.absentCutPerDay,
   };
 }
@@ -87,12 +88,17 @@ export async function calculateRun(runId: string): Promise<ActionState> {
   const akhir = new Date(y, m, 1);
   const isDecember = m === 12;
 
-  const { bpjs, lateCutPerMinute, cutAbsent } = await bpjsConfig();
+  const { bpjs, cutAbsent } = await bpjsConfig();
+  // Aturan divisi diambil sekali, lalu dipilih per karyawan di memori.
+  const policies = (await prisma.policyRule.findMany({ where: { active: true } })) as PolicyRow[];
   const workingDays = workingDaysInPeriod(run.period);
 
   const employees = await prisma.employee.findMany({
     where: { status: { in: ['ACTIVE', 'ON_LEAVE'] }, joinDate: { lt: akhir } },
-    include: { components: { include: { component: true } } },
+    include: {
+      components: { include: { component: true } },
+      position: { select: { level: true } },
+    },
   });
 
   if (employees.length === 0) return FAIL('Tidak ada karyawan aktif untuk diproses.');
@@ -154,21 +160,9 @@ export async function calculateRun(runId: string): Promise<ActionState> {
   let tg = 0, td = 0, tt = 0, tn = 0, tec = 0;
   const rows = [];
 
-  for (const e of employees) {
-    const lines: ComponentLine[] = e.components
-      .filter((a) => a.component.active)
-      .map((a) => ({
-        code: a.component.code,
-        name: a.component.name,
-        type: a.component.type as 'ALLOWANCE' | 'DEDUCTION',
-        amount:
-          a.overrideAmount ??
-          (a.component.calcType === 'PERCENT_OF_BASE'
-            ? Math.round((e.baseSalary * a.component.percent) / 100)
-            : a.component.amount),
-        taxable: a.component.taxable,
-      }));
+  const masalahRumus: { nama: string; kode: string; pesan: string }[] = [];
 
+  for (const e of employees) {
     const att = attMap.get(e.id) ?? [];
     const count = (s: string) => att.filter((a) => a.status === s).length;
     const lateMinutes = att.reduce((s, a) => s + a.lateMinutes, 0);
@@ -182,6 +176,52 @@ export async function calculateRun(runId: string): Promise<ActionState> {
 
     const ytd = ytdMap.get(e.id) ?? [];
 
+    const presentDays = count('PRESENT') + count('LATE') + count('WFH');
+
+    // Prorata: karyawan yang baru masuk atau berhenti di tengah periode
+    // hanya dibayar untuk hari kerja sejak/ sampai tanggal tersebut.
+    const mulai = e.joinDate > awal ? e.joinDate : awal;
+    const selesai = e.endDate && e.endDate < akhir ? e.endDate : new Date(akhir.getTime() - 1);
+    let paidDays = 0;
+    for (const d = new Date(mulai); d <= selesai; d.setDate(d.getDate() + 1)) {
+      const dow = d.getDay();
+      if (dow !== 0 && dow !== 6) paidDays++;
+    }
+    paidDays = Math.min(workingDays, paidDays);
+
+    const masaKerjaBulan = Math.max(
+      0,
+      (y - e.joinDate.getFullYear()) * 12 + (m - 1 - e.joinDate.getMonth()),
+    );
+    const tanggungan = Number(e.ptkpStatus.split('/')[1] ?? 0);
+
+    // Rumus racikan HR diselesaikan lewat resolver bersama — halaman
+    // simulasi karyawan memakai jalur yang sama, jadi angkanya tidak
+    // pernah berbeda antara pratinjau dan hasil sungguhan.
+    const { lines, errors } = resolveAll(e.components, {
+      departmentId: e.departmentId,
+      level: e.position?.level ?? null,
+      baseSalary: e.baseSalary,
+      variables: buildVariables({
+        baseSalary: e.baseSalary,
+        fixedAllowance: 0,
+        workingDays,
+        presentDays,
+        absentDays: count('ABSENT'),
+        leaveDays: count('LEAVE'),
+        overtimeHours: otWeekday,
+        overtimeHolidayHours: otHoliday,
+        lateMinutes,
+        monthsOfService: masaKerjaBulan,
+        dependents: tanggungan,
+        paidDays,
+      }),
+    });
+
+    for (const er of errors) {
+      masalahRumus.push({ nama: e.fullName, kode: er.code, pesan: er.pesan });
+    }
+
     const hasil = calculatePayroll({
       employeeId: e.id,
       fullName: e.fullName,
@@ -193,15 +233,20 @@ export async function calculateRun(runId: string): Promise<ActionState> {
       components: lines,
       overtimeHours: otWeekday,
       overtimeHolidayHours: otHoliday,
-      presentDays: count('PRESENT') + count('LATE') + count('WFH'),
+      taxMethod: e.taxMethod as TaxMethod,
+      paidDays,
+      presentDays,
       absentDays: count('ABSENT'),
       leaveDays: count('LEAVE'),
       unpaidLeaveDays: 0,
       lateMinutes,
       loanDeduction,
       workingDays,
-      lateCutPerMinute,
       cutAbsent,
+      latePolicy: lateConfigDari(pilihAturan(policies, 'LATE', e.departmentId, e.position?.level ?? null)),
+      overtimePolicy: overtimeConfigDari(
+        pilihAturan(policies, 'OVERTIME', e.departmentId, e.position?.level ?? null),
+      ),
       bpjs,
       isDecember,
       ytdGross: isDecember ? ytd.reduce((s, i) => s + i.taxableIncome, 0) : undefined,
@@ -232,13 +277,15 @@ export async function calculateRun(runId: string): Promise<ActionState> {
       unpaidLeaveCut: hasil.unpaidLeaveCut,
       lateCut: hasil.lateCut,
       taxableIncome: hasil.taxableIncome,
+      taxAllowance: hasil.taxAllowance,
+      prorateDays: hasil.prorateDays,
       terRate: hasil.terRate,
       pph21: hasil.pph21,
       taxMethod: hasil.taxMethod,
       totalDeduction: hasil.totalDeduction,
       netPay: hasil.netPay,
       employerCost: hasil.employerCost,
-      presentDays: count('PRESENT') + count('LATE') + count('WFH'),
+      presentDays,
       absentDays: count('ABSENT'),
       leaveDays: count('LEAVE'),
       overtimeHours: otWeekday + otHoliday,
@@ -254,7 +301,9 @@ export async function calculateRun(runId: string): Promise<ActionState> {
 
   // Hapus-lalu-tulis di dalam satu transaksi: kalau gagal di tengah,
   // periode tidak tertinggal dalam keadaan setengah terhitung.
+  // Persetujuan lama juga dibatalkan karena angkanya berubah.
   await prisma.$transaction([
+    prisma.runApproval.deleteMany({ where: { runId } }),
     prisma.payrollItem.deleteMany({ where: { runId } }),
     prisma.payrollItem.createMany({ data: rows }),
     prisma.payrollRun.update({
@@ -284,14 +333,113 @@ export async function calculateRun(runId: string): Promise<ActionState> {
   revalidatePath('/payroll');
   revalidatePath(`/payroll/${runId}`);
   revalidatePath('/dashboard');
-  return OK(`${rows.length} karyawan berhasil dihitung. Total bersih ${tn.toLocaleString('id-ID')}.`);
+  const dasar = `${rows.length} karyawan dihitung. Total bersih Rp ${tn.toLocaleString('id-ID')}.`;
+  if (masalahRumus.length > 0) {
+    // Rumus yang gagal tidak membatalkan payroll — komponennya dilewati,
+    // tetapi HR harus tahu supaya bisa segera memperbaikinya.
+    const contoh = masalahRumus.slice(0, 3).map((m) => `${m.kode} (${m.nama}): ${m.pesan}`).join('; ');
+    return OK(`${dasar} Namun ${masalahRumus.length} komponen berumus gagal dihitung dan dilewati — ${contoh}`);
+  }
+  return OK(dasar);
 }
 
+/**
+ * Memutuskan satu tahap pada alur persetujuan yang disusun HR.
+ *
+ * Periode baru berstatus APPROVED setelah seluruh tahap aktif disetujui
+ * berurutan. Selama masih ada tahap yang menunggu, angkanya tetap bisa
+ * dihitung ulang — itulah gunanya berjenjang.
+ */
+export async function decideRunStep(
+  runId: string,
+  stepId: string,
+  decision: 'APPROVED' | 'REJECTED',
+  note?: string,
+): Promise<ActionState> {
+  const session = await requireRole('ADMIN', 'HR');
+
+  const run = await prisma.payrollRun.findUnique({ where: { id: runId } });
+  if (!run) return FAIL('Proses gaji tidak ditemukan.');
+  if (run.status !== 'CALCULATED') {
+    return FAIL('Hanya periode berstatus terhitung yang bisa ditinjau.');
+  }
+
+  const steps = await prisma.approvalStep.findMany({
+    where: { active: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const step = steps.find((s) => s.id === stepId);
+  if (!step) return FAIL('Tahap persetujuan tidak ditemukan atau sudah dinonaktifkan.');
+
+  // Peran penentu dikunci di server; menyembunyikan tombol saja tidak cukup.
+  if (session.role !== step.role && session.role !== 'ADMIN') {
+    return FAIL(`Tahap ini hanya boleh diputuskan oleh ${step.role === 'HR' ? 'HRD' : 'administrator'}.`);
+  }
+
+  const sudah = await prisma.runApproval.findMany({ where: { runId } });
+  const sudahSet = new Set(sudah.filter((a) => a.decision === 'APPROVED').map((a) => a.stepId));
+
+  // Tahap harus dilalui berurutan — tidak boleh melompati atasan.
+  const berikutnya = steps.find((s) => !sudahSet.has(s.id));
+  if (!berikutnya || berikutnya.id !== stepId) {
+    return FAIL(
+      berikutnya
+        ? `Selesaikan tahap "${berikutnya.name}" terlebih dahulu.`
+        : 'Seluruh tahap sudah diselesaikan.',
+    );
+  }
+
+  if (decision === 'REJECTED') {
+    // Penolakan menghapus jejak persetujuan sebelumnya: setelah diperbaiki,
+    // alurnya harus diulang dari awal supaya tidak ada tahap yang terlewat.
+    await prisma.$transaction([
+      prisma.runApproval.deleteMany({ where: { runId } }),
+      prisma.runApproval.create({
+        data: { runId, stepId, decidedBy: session.name, decision: 'REJECTED', note: note || null },
+      }),
+    ]);
+    await audit(session, 'REJECT', 'PayrollRun', runId, `Tahap "${step.name}" menolak payroll ${labelPeriode(run.period)}`);
+    revalidatePath(`/payroll/${runId}`);
+    return OK(`Ditolak pada tahap "${step.name}". Alur persetujuan diulang dari awal.`);
+  }
+
+  await prisma.runApproval.upsert({
+    where: { runId_stepId: { runId, stepId } },
+    create: { runId, stepId, decidedBy: session.name, decision: 'APPROVED', note: note || null },
+    update: { decidedBy: session.name, decision: 'APPROVED', note: note || null, decidedAt: new Date() },
+  });
+
+  const terakhir = steps[steps.length - 1]?.id === stepId;
+  if (terakhir) {
+    await prisma.payrollRun.update({
+      where: { id: runId },
+      data: { status: 'APPROVED', approvedAt: new Date(), approvedBy: session.name },
+    });
+  }
+
+  await audit(session, 'APPROVE', 'PayrollRun', runId, `Tahap "${step.name}" menyetujui payroll ${labelPeriode(run.period)}`);
+  revalidatePath('/payroll');
+  revalidatePath(`/payroll/${runId}`);
+  revalidatePath('/dashboard');
+
+  return OK(
+    terakhir
+      ? 'Seluruh tahap selesai. Proses gaji disetujui dan siap dibayarkan.'
+      : `Tahap "${step.name}" disetujui. Menunggu tahap berikutnya.`,
+  );
+}
+
+/** Persetujuan sekali jalan — dipakai bila HR belum menyusun alur bertahap. */
 export async function approveRun(runId: string): Promise<ActionState> {
   const session = await requireRole('ADMIN');
   const run = await prisma.payrollRun.findUnique({ where: { id: runId } });
   if (!run) return FAIL('Proses gaji tidak ditemukan.');
   if (run.status !== 'CALCULATED') return FAIL('Hanya periode berstatus terhitung yang bisa disetujui.');
+
+  const jumlahTahap = await prisma.approvalStep.count({ where: { active: true } });
+  if (jumlahTahap > 0) {
+    return FAIL('Perusahaan ini memakai alur bertahap — setujui lewat tahapnya satu per satu.');
+  }
 
   await prisma.payrollRun.update({
     where: { id: runId },
@@ -375,10 +523,15 @@ export async function reopenRun(runId: string): Promise<ActionState> {
   if (!run) return FAIL('Proses gaji tidak ditemukan.');
   if (run.status === 'PAID') return FAIL('Periode yang sudah dibayarkan tidak bisa dibuka kembali.');
 
-  await prisma.payrollRun.update({
-    where: { id: runId },
-    data: { status: 'CALCULATED', approvedAt: null, approvedBy: null },
-  });
+  // Jejak persetujuan ikut dihapus: angka yang disetujui sudah tidak berlaku,
+  // jadi seluruh tahap wajib meninjau ulang.
+  await prisma.$transaction([
+    prisma.runApproval.deleteMany({ where: { runId } }),
+    prisma.payrollRun.update({
+      where: { id: runId },
+      data: { status: 'CALCULATED', approvedAt: null, approvedBy: null },
+    }),
+  ]);
   await audit(session, 'UPDATE', 'PayrollRun', runId, `Persetujuan ${labelPeriode(run.period)} dicabut`);
   revalidatePath(`/payroll/${runId}`);
   return OK('Persetujuan dicabut. Periode bisa dihitung ulang.');

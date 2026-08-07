@@ -1,5 +1,5 @@
 /**
- * Mesin penggajian NusaPay.
+ * Mesin penggajian Racik.
  *
  * Alur satu karyawan dalam satu periode:
  *   gaji pokok (disesuaikan kehadiran)
@@ -16,6 +16,14 @@
  */
 
 import { pph21Ter, pph21Progressive, type PtkpStatus } from './tax';
+import {
+  hitungPotonganTelat,
+  hitungUpahLembur,
+  LATE_DEFAULT,
+  OVERTIME_DEFAULT,
+  type LateConfig,
+  type OvertimeConfig,
+} from './policy';
 
 export interface BpjsConfig {
   kesEmployeeRate: number;
@@ -34,9 +42,18 @@ export interface ComponentLine {
   code: string;
   name: string;
   type: 'ALLOWANCE' | 'DEDUCTION';
+  /** nominal yang sudah diselesaikan — rumus dievaluasi sebelum masuk mesin */
   amount: number;
   taxable: boolean;
+  /** ikut menambah dasar pengali BPJS */
+  countsForBpjs?: boolean;
+  /** dipotong proporsional bila karyawan tidak bekerja sebulan penuh */
+  prorate?: boolean;
+  /** penjelasan asal angka, ditampilkan di slip */
+  note?: string;
 }
+
+export type TaxMethod = 'NETT' | 'GROSS' | 'GROSS_UP';
 
 export interface PayrollInput {
   employeeId: string;
@@ -56,13 +73,25 @@ export interface PayrollInput {
   lateMinutes: number;
   loanDeduction: number;
   workingDays: number;
-  lateCutPerMinute: number;
   cutAbsent: boolean;
+  /** aturan keterlambatan yang berlaku bagi karyawan ini */
+  latePolicy?: LateConfig;
+  /** aturan lembur yang berlaku bagi karyawan ini */
+  overtimePolicy?: OvertimeConfig;
   bpjs: BpjsConfig;
   isDecember?: boolean;
   ytdGross?: number;
   ytdTax?: number;
   ytdBpjsEmployee?: number;
+
+  /** siapa yang menanggung PPh 21 */
+  taxMethod?: TaxMethod;
+  /**
+   * Hari yang benar-benar dibayar dalam periode ini. Lebih kecil dari
+   * workingDays bila karyawan masuk atau berhenti di tengah bulan.
+   * Bila tidak diisi, dianggap bekerja sebulan penuh.
+   */
+  paidDays?: number;
 }
 
 export interface BreakdownRow {
@@ -96,6 +125,10 @@ export interface PayrollResult {
   taxableIncome: number;
   terRate: number;
   pph21: number;
+  /** tunjangan pajak bila perusahaan yang menanggung */
+  taxAllowance: number;
+  /** hari dibayar bila prorata berlaku; 0 berarti sebulan penuh */
+  prorateDays: number;
   taxMethod: 'TER' | 'PROGRESSIVE';
 
   totalDeduction: number;
@@ -160,42 +193,63 @@ export function calcBpjs(baseWage: number, enrollKes: boolean, enrollTk: boolean
 export function calculatePayroll(input: PayrollInput): PayrollResult {
   const rows: BreakdownRow[] = [];
 
-  // ── 1. Gaji pokok, dipotong proporsional bila mangkir tanpa keterangan ──
+  // ── 1. Gaji pokok, diprorata bila tidak bekerja sebulan penuh ──
   const workingDays = Math.max(1, input.workingDays);
+  const paidDays = Math.min(workingDays, Math.max(0, input.paidDays ?? workingDays));
+  const prorated = paidDays < workingDays;
+  // faktor prorata dipakai bersama oleh gaji pokok dan komponen ber-prorata
+  const factor = prorated ? paidDays / workingDays : 1;
+
   const perDay = Math.round(input.baseSalary / workingDays);
+  const paidBase = prorated ? Math.round(input.baseSalary * factor) : input.baseSalary;
 
   const unpaidDays = input.unpaidLeaveDays + (input.cutAbsent ? input.absentDays : 0);
-  const unpaidLeaveCut = Math.min(input.baseSalary, perDay * unpaidDays);
-  const paidBase = input.baseSalary;
+  const unpaidLeaveCut = Math.min(paidBase, perDay * unpaidDays);
 
-  rows.push({ group: 'EARNING', label: 'Gaji pokok', amount: paidBase });
+  rows.push({
+    group: 'EARNING',
+    label: 'Gaji pokok',
+    amount: paidBase,
+    note: prorated ? `prorata ${paidDays}/${workingDays} hari kerja` : undefined,
+  });
 
-  // ── 2. Tunjangan ──
+  // ── 2. Tunjangan & potongan komponen ──
   let allowanceTaxable = 0;
   let allowanceNonTax = 0;
   let otherDeduction = 0;
+  // sebagian komponen ikut menaikkan dasar pengali BPJS
+  let bpjsExtra = 0;
 
   for (const c of input.components) {
+    const amount = c.prorate ? Math.round(c.amount * factor) : c.amount;
+    if (amount === 0) continue;
+
+    const note = [c.note, c.prorate && prorated ? `prorata ${paidDays}/${workingDays}` : null]
+      .filter(Boolean)
+      .join(' · ');
+
     if (c.type === 'ALLOWANCE') {
-      if (c.taxable) allowanceTaxable += c.amount;
-      else allowanceNonTax += c.amount;
+      if (c.taxable) allowanceTaxable += amount;
+      else allowanceNonTax += amount;
+      if (c.countsForBpjs) bpjsExtra += amount;
       rows.push({
         group: 'EARNING',
         label: c.name,
-        amount: c.amount,
-        note: c.taxable ? undefined : 'non-taxable',
+        amount,
+        note: note || (c.taxable ? undefined : 'bebas pajak'),
       });
     } else {
-      otherDeduction += c.amount;
-      rows.push({ group: 'DEDUCTION', label: c.name, amount: c.amount });
+      otherDeduction += amount;
+      rows.push({ group: 'DEDUCTION', label: c.name, amount, note: note || undefined });
     }
   }
 
-  // ── 3. Lembur ──
-  const ot = overtimePay(
+  // ── 3. Lembur, menurut aturan divisi yang berlaku ──
+  const ot = hitungUpahLembur(
     input.baseSalary + allowanceTaxable,
     input.overtimeHours,
     input.overtimeHolidayHours,
+    input.overtimePolicy ?? OVERTIME_DEFAULT,
   );
   if (ot.amount > 0) {
     rows.push({
@@ -207,10 +261,15 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
   }
 
   // ── 4. Bruto ──
-  const grossPay = paidBase + allowanceTaxable + allowanceNonTax + ot.amount;
+  // Tunjangan pajak (bila ada) ditambahkan setelah bagian pajak, karena
+  // nilainya baru diketahui di sana.
+  let grossPay = paidBase + allowanceTaxable + allowanceNonTax + ot.amount;
 
-  // ── 5. BPJS (dasar: gaji pokok + tunjangan tetap kena pajak) ──
-  const bpjsBase = paidBase + allowanceTaxable;
+  // ── 5. BPJS ──
+  // Dasarnya gaji pokok ditambah komponen yang ditandai HR sebagai dasar
+  // pengali BPJS — bukan otomatis seluruh tunjangan kena pajak, karena
+  // perusahaan berbeda menetapkan "upah" yang berbeda untuk BPJS.
+  const bpjsBase = paidBase + bpjsExtra;
   const b = calcBpjs(bpjsBase, input.enrollBpjsKes, input.enrollBpjsTk, input.bpjs);
 
   if (b.kesEmployee) rows.push({ group: 'DEDUCTION', label: 'BPJS Kesehatan (1%)', amount: b.kesEmployee });
@@ -218,7 +277,7 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
   if (b.jpEmployee) rows.push({ group: 'DEDUCTION', label: 'BPJS Jaminan Pensiun (1%)', amount: b.jpEmployee });
 
   // ── 6. Potongan lain ──
-  const lateCut = Math.round(input.lateMinutes * input.lateCutPerMinute);
+  const lateCut = hitungPotonganTelat(input.lateMinutes, input.latePolicy ?? LATE_DEFAULT);
   if (unpaidLeaveCut > 0) {
     rows.push({
       group: 'DEDUCTION',
@@ -232,7 +291,7 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
       group: 'DEDUCTION',
       label: 'Potongan keterlambatan',
       amount: lateCut,
-      note: `${input.lateMinutes} menit`,
+      note: `${input.lateMinutes} menit, toleransi ${(input.latePolicy ?? LATE_DEFAULT).toleransiMenit} menit`,
     });
   }
   if (input.loanDeduction > 0) {
@@ -243,19 +302,57 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
   const bpjsEmployeeTotal = b.kesEmployee + b.jhtEmployee + b.jpEmployee;
   // Premi BPJS yang dibayar perusahaan (kesehatan, JKK, JKM) adalah
   // penambah penghasilan bruto karyawan menurut ketentuan PPh 21.
-  const taxableGross =
+  const dasarPajak =
     paidBase + allowanceTaxable + ot.amount - unpaidLeaveCut + b.kesEmployer + b.jkkEmployer + b.jkmEmployer;
 
-  const tax =
+  const hitungPajak = (tambahan: number) =>
     input.isDecember && input.ytdGross !== undefined
       ? pph21Progressive(
-          input.ytdGross + taxableGross,
+          input.ytdGross + dasarPajak + tambahan,
           input.ptkpStatus,
           input.hasNpwp,
           input.ytdTax ?? 0,
           (input.ytdBpjsEmployee ?? 0) + bpjsEmployeeTotal,
         )
-      : pph21Ter(Math.max(0, taxableGross), input.ptkpStatus, input.hasNpwp);
+      : pph21Ter(Math.max(0, dasarPajak + tambahan), input.ptkpStatus, input.hasNpwp);
+
+  const metode: TaxMethod = input.taxMethod ?? 'NETT';
+  let taxAllowance = 0;
+
+  if (metode === 'GROSS') {
+    // Perusahaan memberi tunjangan pajak sebesar pajak atas penghasilan
+    // sebelum tunjangan itu. Tunjangannya sendiri tetap kena pajak, jadi
+    // karyawan masih menanggung selisih kecil — itu memang sifat metode ini.
+    taxAllowance = hitungPajak(0).tax;
+  } else if (metode === 'GROSS_UP') {
+    // Cari titik tetap: tunjangan = pajak atas (penghasilan + tunjangan).
+    // Karena tarif TER berjenjang, iterasi jauh lebih sederhana dan lebih
+    // akurat daripada rumus tertutup. Konvergen dalam beberapa putaran.
+    let x = hitungPajak(0).tax;
+    for (let i = 0; i < 12; i++) {
+      const next = hitungPajak(x).tax;
+      if (Math.abs(next - x) <= 1) {
+        x = next;
+        break;
+      }
+      x = next;
+    }
+    taxAllowance = x;
+  }
+
+  const tax = hitungPajak(taxAllowance);
+
+  if (taxAllowance > 0) {
+    allowanceTaxable += taxAllowance;
+    rows.push({
+      group: 'EARNING',
+      label: 'Tunjangan pajak',
+      amount: taxAllowance,
+      note: metode === 'GROSS_UP' ? 'metode gross up' : 'metode gross',
+    });
+  }
+
+  grossPay += taxAllowance;
 
   if (tax.tax > 0) {
     rows.push({
@@ -298,7 +395,9 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
     loanDeduction: input.loanDeduction,
     unpaidLeaveCut,
     lateCut,
-    taxableIncome: taxableGross,
+    taxableIncome: dasarPajak + taxAllowance,
+    taxAllowance,
+    prorateDays: prorated ? paidDays : 0,
     terRate: tax.rate,
     pph21: tax.tax,
     taxMethod: tax.method,

@@ -282,13 +282,13 @@ function Field({
 }) {
   return (
     <label className={span2 ? 'sm:col-span-2' : undefined}>
-      <span className="mb-1 block text-[0.75rem] font-medium" style={{ color: 'var(--text-body)' }}>
+      <span className="mb-1 block t-label font-medium" style={{ color: 'var(--text-body)' }}>
         {label}
         {required && <span style={{ color: 'var(--color-clay-500)' }}> *</span>}
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+        <span className="mt-1 block t-micro" style={{ color: 'var(--text-muted)' }}>
           {hint}
         </span>
       )}
@@ -306,7 +306,7 @@ function Checkbox({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-[0.8125rem]">
+    <label className="flex cursor-pointer items-center gap-2 t-small">
       <input
         type="checkbox"
         name={name}

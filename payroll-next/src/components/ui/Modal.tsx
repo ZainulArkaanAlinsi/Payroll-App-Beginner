@@ -56,9 +56,9 @@ export default function Modal({
           style={{ borderColor: 'var(--hairline)' }}
         >
           <div>
-            <h2 className="text-[0.9375rem] font-semibold">{title}</h2>
+            <h2 className="t-heading font-semibold">{title}</h2>
             {description && (
-              <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <p className="mt-0.5 t-label" style={{ color: 'var(--text-muted)' }}>
                 {description}
               </p>
             )}

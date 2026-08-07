@@ -5,7 +5,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
-const SESSION_COOKIE = 'nusapay_session';
+const SESSION_COOKIE = 'racik_session';
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 hari
 
 function secret() {

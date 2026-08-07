@@ -76,12 +76,12 @@ export default function ComponentToggles({
                 />
                 <span className="min-w-0 flex-1">
                   <span
-                    className="block truncate text-[0.8125rem] font-medium"
+                    className="block truncate t-small font-medium"
                     style={{ color: 'var(--text-strong)' }}
                   >
                     {c.name}
                   </span>
-                  <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                  <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                     {c.code} ·{' '}
                     {c.calcType === 'PERCENT_OF_BASE' ? `${c.percent}% gaji pokok` : 'nominal tetap'}
                   </span>
@@ -91,7 +91,7 @@ export default function ComponentToggles({
                   <LoaderCircle size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
                 ) : (
                   <span
-                    className="tnum shrink-0 text-[0.8125rem] font-semibold"
+                    className="tnum shrink-0 t-small font-semibold"
                     style={{
                       color: c.type === 'ALLOWANCE' ? 'var(--text-strong)' : 'var(--color-clay-500)',
                     }}

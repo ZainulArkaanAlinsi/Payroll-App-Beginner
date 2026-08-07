@@ -107,13 +107,13 @@ export default function CommandPalette({ role }: { role: Role }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="glass-thin flex items-center gap-2 px-2.5 py-1.5 text-xs transition-colors sm:min-w-[220px]"
+        className="glass-thin flex items-center gap-2 px-2.5 py-1.5 t-label transition-colors sm:min-w-[220px]"
         style={{ color: 'var(--text-muted)' }}
       >
         <Search size={14} />
         <span className="hidden sm:inline">Cari halaman atau karyawan…</span>
         <kbd
-          className="ml-auto hidden rounded border px-1.5 py-px font-mono text-[0.625rem] sm:inline"
+          className="ml-auto hidden rounded border px-1.5 py-px font-mono t-micro sm:inline"
           style={{ borderColor: 'var(--hairline)' }}
         >
           ⌘K
@@ -149,11 +149,11 @@ export default function CommandPalette({ role }: { role: Role }) {
                 }}
                 onKeyDown={onKeyDown}
                 placeholder="Ketik untuk mencari…"
-                className="flex-1 bg-transparent text-sm outline-none"
+                className="flex-1 bg-transparent t-body outline-none"
                 style={{ color: 'var(--text-strong)' }}
               />
               <kbd
-                className="rounded border px-1.5 py-px font-mono text-[0.625rem]"
+                className="rounded border px-1.5 py-px font-mono t-micro"
                 style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)' }}
               >
                 esc
@@ -162,7 +162,7 @@ export default function CommandPalette({ role }: { role: Role }) {
 
             <ul className="scroll-slim max-h-[52vh] overflow-y-auto p-2">
               {results.length === 0 && (
-                <li className="px-3 py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                <li className="px-3 py-8 text-center t-label" style={{ color: 'var(--text-muted)' }}>
                   Tidak ada yang cocok dengan “{q}”.
                 </li>
               )}
@@ -186,13 +186,13 @@ export default function CommandPalette({ role }: { role: Role }) {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span
-                            className="block text-[0.8125rem] font-medium"
+                            className="block t-small font-medium"
                             style={{ color: 'var(--text-strong)' }}
                           >
                             {r.item.label}
                           </span>
                           <span
-                            className="block truncate text-[0.6875rem]"
+                            className="block truncate t-micro"
                             style={{ color: 'var(--text-muted)' }}
                           >
                             {r.item.hint}
@@ -204,13 +204,13 @@ export default function CommandPalette({ role }: { role: Role }) {
                         <Avatar name={r.item.fullName} size={28} />
                         <span className="min-w-0 flex-1">
                           <span
-                            className="block truncate text-[0.8125rem] font-medium"
+                            className="block truncate t-small font-medium"
                             style={{ color: 'var(--text-strong)' }}
                           >
                             {r.item.fullName}
                           </span>
                           <span
-                            className="block truncate text-[0.6875rem]"
+                            className="block truncate t-micro"
                             style={{ color: 'var(--text-muted)' }}
                           >
                             {r.item.employeeNo} · {r.item.position ?? '—'}
@@ -228,7 +228,7 @@ export default function CommandPalette({ role }: { role: Role }) {
             </ul>
 
             <div
-              className="flex items-center gap-3 border-t px-4 py-2 text-[0.625rem]"
+              className="flex items-center gap-3 border-t px-4 py-2 t-micro"
               style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)' }}
             >
               <span>↑↓ pilih</span>

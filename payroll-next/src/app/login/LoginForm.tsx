@@ -7,7 +7,7 @@ import { loginAction, type FormState } from '@/actions/auth';
 import { GlassCard, Avatar } from '@/components/ui/Glass';
 
 const DEMO = [
-  { role: 'Administrator', email: 'admin@nusapay.id', name: 'Zainul Arkaan', desc: 'akses penuh' },
+  { role: 'Administrator', email: 'admin@racik.id', name: 'Zainul Arkaan', desc: 'akses penuh' },
   {
     role: 'HRD',
     email: 'larasati.widyaningrum@nusantaradigital.id',
@@ -43,16 +43,16 @@ function SubmitButton() {
 
 export default function LoginForm() {
   const [state, action] = useActionState<FormState, FormData>(loginAction, {});
-  const [email, setEmail] = useState('admin@nusapay.id');
+  const [email, setEmail] = useState('admin@racik.id');
   const [password, setPassword] = useState('password123');
   const [show, setShow] = useState(false);
 
   return (
     <div className="rise">
-      <h2 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
-        Masuk ke NusaPay
+      <h2 className="t-display">
+        Masuk ke Racik
       </h2>
-      <p className="mt-1.5 text-[0.8125rem]">
+      <p className="mt-1.5 t-small">
         Pilih salah satu akun demo di bawah, atau isi kredensial sendiri.
       </p>
 
@@ -142,17 +142,17 @@ export default function LoginForm() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
                     <span
-                      className="text-[0.8125rem] font-medium"
+                      className="t-small font-medium"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {d.role}
                     </span>
-                    <span className="truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                    <span className="truncate t-micro" style={{ color: 'var(--text-muted)' }}>
                       {d.desc}
                     </span>
                   </span>
                   <span
-                    className="block truncate text-[0.6875rem]"
+                    className="block truncate t-micro"
                     style={{ color: 'var(--text-muted)' }}
                   >
                     {d.email}
@@ -162,7 +162,7 @@ export default function LoginForm() {
             </button>
           ))}
         </div>
-        <p className="mt-3 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+        <p className="mt-3 t-micro" style={{ color: 'var(--text-muted)' }}>
           Kata sandi untuk semua akun demo: <code className="font-mono">password123</code>
         </p>
       </div>

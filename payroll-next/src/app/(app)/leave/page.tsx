@@ -79,10 +79,10 @@ export default async function LeavePage({
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Cuti
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {pending.length} pengajuan menunggu ditinjau
           </p>
         </div>
@@ -120,12 +120,12 @@ export default async function LeavePage({
                       <Avatar name={r.employee.fullName} size={34} />
                       <span className="min-w-0">
                         <span
-                          className="block truncate text-[0.875rem] font-medium"
+                          className="block truncate t-body font-medium"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {r.employee.fullName}
                         </span>
-                        <span className="block truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                        <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
                           {r.employee.department?.name ?? '—'} · diajukan {sejak(r.createdAt)}
                         </span>
                       </span>
@@ -134,18 +134,18 @@ export default async function LeavePage({
                     <div className="min-w-[11rem]">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Chip tone="info">{statusLabel(r.type)}</Chip>
-                        <span className="tnum text-[0.75rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                        <span className="tnum t-label font-semibold" style={{ color: 'var(--text-strong)' }}>
                           {r.days} hari
                         </span>
                         {melebihi && <Chip tone="clay">melebihi kuota</Chip>}
                       </div>
-                      <p className="mt-0.5 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                      <p className="mt-0.5 t-micro" style={{ color: 'var(--text-muted)' }}>
                         {tanggal(r.startDate)} – {tanggal(r.endDate)}
                         {r.type === 'ANNUAL' && ` · sisa kuota ${sisa} hari`}
                       </p>
                     </div>
 
-                    <p className="min-w-[12rem] flex-1 text-[0.75rem]">{r.reason}</p>
+                    <p className="min-w-[12rem] flex-1 t-label">{r.reason}</p>
 
                     <ReviewLeave id={r.id} name={r.employee.fullName} />
                   </div>
@@ -189,13 +189,13 @@ export default async function LeavePage({
           <EmptyState title="Tidak ada data yang cocok" />
         ) : (
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[820px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'Jenis', 'Tanggal', 'Hari', 'Alasan', 'Peninjau', 'Status'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                      className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                         i === 3 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -214,29 +214,29 @@ export default async function LeavePage({
                     <td className="px-2 py-2.5">
                       <Link
                         href={`/employees/${r.employee.id}`}
-                        className="text-[0.8125rem] font-medium"
+                        className="t-small font-medium"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {r.employee.fullName}
                       </Link>
-                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                         {r.employee.department?.name ?? '—'}
                       </span>
                     </td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">{statusLabel(r.type)}</td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">
+                    <td className="px-2 py-2.5 t-small">{statusLabel(r.type)}</td>
+                    <td className="px-2 py-2.5 t-small">
                       {tanggal(r.startDate)} – {tanggal(r.endDate)}
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{r.days}</td>
-                    <td className="max-w-[16rem] px-2 py-2.5 text-[0.75rem]">
+                    <td className="tnum px-2 py-2.5 text-right t-small">{r.days}</td>
+                    <td className="max-w-[16rem] px-2 py-2.5 t-label">
                       <span className="line-clamp-2">{r.reason}</span>
                       {r.reviewNote && (
-                        <span className="block text-[0.625rem]" style={{ color: 'var(--color-clay-500)' }}>
+                        <span className="block t-micro" style={{ color: 'var(--color-clay-500)' }}>
                           Catatan: {r.reviewNote}
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-2.5 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                    <td className="px-2 py-2.5 t-label" style={{ color: 'var(--text-muted)' }}>
                       {r.reviewedBy ?? '—'}
                     </td>
                     <td className="px-2 py-2.5">

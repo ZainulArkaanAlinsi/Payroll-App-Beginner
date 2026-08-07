@@ -285,7 +285,7 @@ export default function CostTerrain({
 
   if (!supported) {
     return (
-      <div className="grid h-full place-items-center text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="grid h-full place-items-center t-label" style={{ color: 'var(--text-muted)' }}>
         Peramban ini tidak mendukung WebGL — gunakan tampilan tabel di bawah.
       </div>
     );
@@ -297,7 +297,7 @@ export default function CostTerrain({
 
       {/* label melayang: identitas & angka, bukan sekadar warna */}
       <div
-        className="glass pointer-events-none absolute top-3 left-3 px-3 py-2 text-[0.6875rem] transition-opacity"
+        className="glass pointer-events-none absolute top-3 left-3 px-3 py-2 t-micro transition-opacity"
         style={{ borderRadius: 12, opacity: hover ? 1 : 0 }}
       >
         {hover && (
@@ -314,7 +314,7 @@ export default function CostTerrain({
       </div>
 
       <p
-        className="pointer-events-none absolute right-3 bottom-2 text-[0.625rem]"
+        className="pointer-events-none absolute right-3 bottom-2 t-micro"
         style={{ color: 'var(--text-muted)' }}
       >
         seret untuk memutar · arahkan kursor ke balok

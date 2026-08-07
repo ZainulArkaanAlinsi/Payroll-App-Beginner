@@ -77,7 +77,7 @@ export function DepartmentDialog({
           </label>
 
           {state.error && (
-            <p className="text-xs" style={{ color: 'var(--color-clay-500)' }}>
+            <p className="t-label" style={{ color: 'var(--color-clay-500)' }}>
               {state.error}
             </p>
           )}
@@ -201,7 +201,7 @@ export function PositionDialog({
           </div>
 
           {state.error && (
-            <p className="text-xs" style={{ color: 'var(--color-clay-500)' }}>
+            <p className="t-label" style={{ color: 'var(--color-clay-500)' }}>
               {state.error}
             </p>
           )}

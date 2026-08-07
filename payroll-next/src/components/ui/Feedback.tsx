@@ -46,7 +46,7 @@ export function Toast({
       ) : (
         <CircleCheck size={16} className="mt-px shrink-0" style={{ color: 'var(--color-jade-500)' }} />
       )}
-      <p className="text-[0.8125rem] leading-snug" style={{ color: 'var(--text-strong)' }}>
+      <p className="t-small leading-snug" style={{ color: 'var(--text-strong)' }}>
         {state.error ?? state.message}
       </p>
       <button
@@ -150,10 +150,10 @@ export function ActionButton({
             onClick={() => setAsking(false)}
           />
           <div className="glass rise relative w-full max-w-sm" style={{ animationDuration: '.24s' }}>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-strong)' }}>
+            <p className="t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
               Konfirmasi
             </p>
-            <p className="mt-1.5 text-[0.8125rem]">{confirm}</p>
+            <p className="mt-1.5 t-small">{confirm}</p>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAsking(false)}>
                 Batal

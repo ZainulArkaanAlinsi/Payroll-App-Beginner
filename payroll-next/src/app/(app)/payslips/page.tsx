@@ -69,10 +69,10 @@ export default async function PayslipsPage({
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+        <h1 className="t-display">
           Slip gaji
         </h1>
-        <p className="mt-1 text-[0.8125rem]">{total} slip tersimpan di arsip</p>
+        <p className="mt-1 t-small">{total} slip tersimpan di arsip</p>
       </div>
 
       <GlassCard>
@@ -96,14 +96,14 @@ export default async function PayslipsPage({
           />
         ) : (
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="w-full min-w-[880px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'Periode', 'Status', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                           i >= 3 && i <= 6 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -125,13 +125,13 @@ export default async function PayslipsPage({
                         <Avatar name={it.employee.fullName} size={28} />
                         <span className="min-w-0">
                           <span
-                            className="block truncate text-[0.8125rem] font-medium"
+                            className="block truncate t-small font-medium"
                             style={{ color: 'var(--text-strong)' }}
                           >
                             {it.employee.fullName}
                           </span>
                           <span
-                            className="block truncate text-[0.625rem]"
+                            className="block truncate t-micro"
                             style={{ color: 'var(--text-muted)' }}
                           >
                             {it.employee.employeeNo} · {it.employee.position?.title ?? '—'}
@@ -139,25 +139,25 @@ export default async function PayslipsPage({
                         </span>
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">{labelPeriode(it.run.period)}</td>
+                    <td className="px-2 py-2.5 t-small">{labelPeriode(it.run.period)}</td>
                     <td className="px-2 py-2.5">
                       <StatusChip status={it.run.status} />
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(it.grossPay)}</td>
+                    <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(it.grossPay)}</td>
                     <td
-                      className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                      className="tnum px-2 py-2.5 text-right t-small"
                       style={{ color: 'var(--color-clay-500)' }}
                     >
                       −{rupiah(it.pph21)}
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                      className="tnum px-2 py-2.5 text-right t-small"
                       style={{ color: 'var(--color-clay-500)' }}
                     >
                       −{rupiah(it.totalDeduction)}
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-semibold"
+                      className="tnum px-2 py-2.5 text-right t-small font-semibold"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {rupiah(it.netPay)}
@@ -176,7 +176,7 @@ export default async function PayslipsPage({
 
         {pages > 1 && (
           <div
-            className="mt-4 flex items-center justify-between border-t pt-3 text-xs"
+            className="mt-4 flex items-center justify-between border-t pt-3 t-label"
             style={{ borderColor: 'var(--hairline)' }}
           >
             <span style={{ color: 'var(--text-muted)' }}>

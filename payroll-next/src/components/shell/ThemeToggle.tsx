@@ -17,7 +17,7 @@ export default function ThemeToggle({ compact }: { compact?: boolean }) {
     setDark(next);
     document.documentElement.classList.toggle('dark', next);
     try {
-      localStorage.setItem('nusapay-theme', next ? 'dark' : 'light');
+      localStorage.setItem('racik-theme', next ? 'dark' : 'light');
     } catch {
       /* mode privat menolak localStorage — abaikan */
     }

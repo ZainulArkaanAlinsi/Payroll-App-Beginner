@@ -39,9 +39,9 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
-        <h2 className="text-[0.95rem] font-semibold">{title}</h2>
+        <h2 className="t-body font-semibold">{title}</h2>
         {subtitle && (
-          <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <p className="mt-0.5 t-label" style={{ color: 'var(--text-muted)' }}>
             {subtitle}
           </p>
         )}
@@ -194,11 +194,11 @@ export function EmptyState({
         </div>
       )}
       <div>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-strong)' }}>
+        <p className="t-body font-medium" style={{ color: 'var(--text-strong)' }}>
           {title}
         </p>
         {hint && (
-          <p className="mx-auto mt-1 max-w-sm text-xs" style={{ color: 'var(--text-muted)' }}>
+          <p className="mx-auto mt-1 max-w-sm t-label" style={{ color: 'var(--text-muted)' }}>
             {hint}
           </p>
         )}

@@ -1,4 +1,4 @@
-# NusaPay — Sistem Penggajian Modern
+# Racik — Sistem Penggajian Modern
 
 Platform penggajian untuk perusahaan Indonesia. Menyatukan kehadiran, lembur, cuti,
 tunjangan, iuran BPJS, dan PPh 21 ke dalam satu proses yang bisa ditelusuri sampai
@@ -46,7 +46,7 @@ Kata sandi untuk semua akun: `password123`
 
 | Peran         | Surel                                          | Akses                                            |
 | ------------- | ---------------------------------------------- | ------------------------------------------------ |
-| Administrator | `admin@nusapay.id`                             | seluruh modul, pengaturan, jejak audit           |
+| Administrator | `admin@racik.id`                             | seluruh modul, pengaturan, jejak audit           |
 | HRD           | `larasati.widyaningrum@nusantaradigital.id`    | kepegawaian, proses gaji, laporan                |
 | Karyawan      | `bagas.setiawan@nusantaradigital.id`           | portal mandiri: absen, slip, cuti, lembur        |
 
@@ -62,7 +62,7 @@ npm run db:seed    # isi ulang data demo saja
 
 ## Mesin perhitungan
 
-Bagian ini yang membedakan NusaPay dari CRUD payroll biasa. Seluruhnya di
+Bagian ini yang membedakan Racik dari CRUD payroll biasa. Seluruhnya di
 `src/lib/tax.ts` dan `src/lib/payroll-engine.ts`, terpisah dari lapisan tampilan
 sehingga bisa diuji sendiri.
 

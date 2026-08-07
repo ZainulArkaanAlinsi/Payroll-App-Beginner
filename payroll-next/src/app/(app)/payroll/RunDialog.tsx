@@ -63,7 +63,7 @@ export default function RunDialog({
             />
             {period && (
               <span
-                className="mt-1 block text-[0.6875rem]"
+                className="mt-1 block t-micro"
                 style={{ color: sudahAda ? 'var(--color-clay-500)' : 'var(--text-muted)' }}
               >
                 {sudahAda
@@ -76,7 +76,7 @@ export default function RunDialog({
           <label className="block">
             <span className="label">Tanggal pembayaran</span>
             <input name="payDate" type="date" required defaultValue={payDate} key={payDate} className="field" />
-            <span className="mt-1 block text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+            <span className="mt-1 block t-micro" style={{ color: 'var(--text-muted)' }}>
               Bawaan mengikuti tanggal gajian perusahaan (tanggal {payDay}).
             </span>
           </label>

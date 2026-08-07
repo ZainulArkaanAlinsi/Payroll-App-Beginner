@@ -38,10 +38,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="flex-1 px-3 py-5 lg:px-5">{children}</main>
 
         <footer
-          className="px-5 pb-5 text-center text-[0.625rem]"
+          className="px-5 pb-5 text-center t-micro"
           style={{ color: 'var(--text-muted)' }}
         >
-          NusaPay · data demo · dibuat oleh Zainul Arkaan
+          Racik · data demo · dibuat oleh Zainul Arkaan
         </footer>
       </div>
     </div>

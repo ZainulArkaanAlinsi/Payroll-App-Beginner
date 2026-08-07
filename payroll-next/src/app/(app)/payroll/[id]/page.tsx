@@ -14,6 +14,7 @@ import { ActionButton } from '@/components/ui/Feedback';
 import { BarRank, Donut } from '@/components/ui/charts';
 import StatTile from '@/components/ui/StatTile';
 import { approveRun, calculateRun, deleteRun, payRun, reopenRun } from '@/actions/payroll';
+import ApprovalChain, { type StepView } from './ApprovalChain';
 
 export const metadata = { title: 'Detail Proses Gaji' };
 
@@ -24,7 +25,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
   const run = await prisma.payrollRun.findUnique({ where: { id } });
   if (!run) notFound();
 
-  const [items, byDept, deductions] = await Promise.all([
+  const [items, byDept, deductions, steps, approvals, bankFormats] = await Promise.all([
     prisma.payrollItem.findMany({
       where: { runId: id },
       include: {
@@ -46,7 +47,27 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
     }),
     run.status !== 'DRAFT' ? costByDepartment(id) : Promise.resolve([]),
     run.status !== 'DRAFT' ? deductionBreakdown(id) : Promise.resolve([]),
+    prisma.approvalStep.findMany({ where: { active: true }, orderBy: { sortOrder: 'asc' } }),
+    prisma.runApproval.findMany({ where: { runId: id } }),
+    prisma.bankFormat.findMany({ orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] }),
   ]);
+
+  // Gabungkan tahap dengan keputusan yang sudah ada supaya komponen klien
+  // menerima satu bentuk data yang siap ditampilkan.
+  const rantai: StepView[] = steps.map((s) => {
+    const a = approvals.find((x) => x.stepId === s.id);
+    return {
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      note: s.note,
+      decision: (a?.decision as 'APPROVED' | 'REJECTED' | undefined) ?? null,
+      decidedBy: a?.decidedBy ?? null,
+      decidedAt: a?.decidedAt.toISOString() ?? null,
+      decisionNote: a?.note ?? null,
+    };
+  });
+  const pakaiAlur = rantai.length > 0;
 
   const isAdmin = session.role === 'ADMIN';
   const totalEmployerBpjs = items.reduce(
@@ -58,7 +79,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
     <div className="mx-auto max-w-[1400px] space-y-4">
       <Link
         href="/payroll"
-        className="inline-flex items-center gap-1.5 text-xs"
+        className="inline-flex items-center gap-1.5 t-label"
         style={{ color: 'var(--text-muted)' }}
       >
         <ArrowLeft size={13} />
@@ -69,18 +90,18 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
       <GlassCard className="flex flex-wrap items-start justify-between gap-5">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+            <h1 className="t-display">
               {labelPeriode(run.period)}
             </h1>
             <StatusChip status={run.status} />
           </div>
-          <p className="mt-1.5 text-[0.8125rem]">
+          <p className="mt-1.5 t-small">
             Tanggal bayar {tanggalPanjang(run.payDate)}
             {run.calculatedAt && ` · dihitung ${tanggal(run.calculatedAt)}`}
             {run.approvedBy && ` · disetujui ${run.approvedBy}`}
           </p>
           {run.note && (
-            <p className="mt-1 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+            <p className="mt-1 t-label" style={{ color: 'var(--text-muted)' }}>
               Catatan: {run.note}
             </p>
           )}
@@ -103,7 +124,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
             </ActionButton>
           )}
 
-          {run.status === 'CALCULATED' && isAdmin && (
+          {run.status === 'CALCULATED' && isAdmin && !pakaiAlur && (
             <ActionButton
               action={approveRun.bind(null, run.id)}
               className="btn btn-primary btn-sm"
@@ -141,10 +162,17 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                 <Download size={13} />
                 CSV rinci
               </a>
-              <a href={`/api/export/bank/${run.id}`} className="btn btn-ghost btn-sm">
-                <Download size={13} />
-                Daftar transfer bank
-              </a>
+              {bankFormats.map((f) => (
+                <a
+                  key={f.id}
+                  href={`/api/export/bank/${run.id}?format=${f.id}`}
+                  className="btn btn-ghost btn-sm"
+                  title={`Susunan kolom mengikuti format ${f.name}`}
+                >
+                  <Download size={13} />
+                  {f.name}
+                </a>
+              ))}
             </>
           )}
 
@@ -171,6 +199,25 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
         </GlassCard>
       ) : (
         <>
+          {pakaiAlur && run.status !== 'PAID' && (
+            <GlassCard>
+              <SectionTitle
+                title="Alur persetujuan"
+                subtitle={
+                  run.status === 'APPROVED'
+                    ? 'Seluruh tahap selesai — periode siap dibayarkan'
+                    : 'Tahap dilalui berurutan; tahap berikutnya terkunci sampai tahap sebelumnya selesai'
+                }
+              />
+              <ApprovalChain
+                runId={run.id}
+                steps={rantai}
+                role={session.role}
+                runStatus={run.status}
+              />
+            </GlassCard>
+          )}
+
           {/* ── ringkasan angka ── */}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatTile label="Bruto" value={rupiahRingkas(run.totalGross)} sub={`${run.headcount} karyawan`} />
@@ -224,7 +271,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
               subtitle={`${items.length} baris · klik untuk membuka slip gaji`}
             />
             <div className="scroll-slim -mx-1 overflow-x-auto">
-              <table className="w-full min-w-[1000px] text-sm">
+              <table className="w-full min-w-[1000px] t-body">
                 <thead>
                   <tr style={{ color: 'var(--text-muted)' }}>
                     {[
@@ -233,7 +280,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                     ].map((h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                           i > 0 && i < 9 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -257,13 +304,13 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                             <Avatar name={it.employee.fullName} size={28} />
                             <span className="min-w-0">
                               <span
-                                className="block truncate text-[0.8125rem] font-medium"
+                                className="block truncate t-small font-medium"
                                 style={{ color: 'var(--text-strong)' }}
                               >
                                 {it.employee.fullName}
                               </span>
                               <span
-                                className="block truncate text-[0.625rem]"
+                                className="block truncate t-micro"
                                 style={{ color: 'var(--text-muted)' }}
                               >
                                 {it.employee.department?.name ?? '—'} · {it.employee.ptkpStatus}
@@ -272,35 +319,35 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                             </span>
                           </Link>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(it.baseSalary)}</td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">
+                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(it.baseSalary)}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">
                           {rupiah(it.allowanceTaxable + it.allowanceNonTax)}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">
+                        <td className="tnum px-2 py-2.5 text-right t-small">
                           {it.overtimePay > 0 ? rupiah(it.overtimePay) : '—'}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-medium"
+                          className="tnum px-2 py-2.5 text-right t-small font-medium"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(it.grossPay)}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]" style={{ color: 'var(--color-clay-500)' }}>
+                        <td className="tnum px-2 py-2.5 text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
                           −{rupiah(bpjs)}
                         </td>
                         <td className="px-2 py-2.5 text-right">
-                          <span className="tnum block text-[0.8125rem]" style={{ color: 'var(--color-clay-500)' }}>
+                          <span className="tnum block t-small" style={{ color: 'var(--color-clay-500)' }}>
                             −{rupiah(it.pph21)}
                           </span>
-                          <span className="tnum block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <span className="tnum block t-micro" style={{ color: 'var(--text-muted)' }}>
                             {it.taxMethod === 'TER' ? `TER ${it.terRate}%` : 'progresif'}
                           </span>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]" style={{ color: 'var(--color-clay-500)' }}>
+                        <td className="tnum px-2 py-2.5 text-right t-small" style={{ color: 'var(--color-clay-500)' }}>
                           {lain > 0 ? `−${rupiah(lain)}` : '—'}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-semibold"
+                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(it.netPay)}
@@ -316,15 +363,15 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                 </tbody>
                 <tfoot>
                   <tr style={{ borderTop: '2px solid var(--hairline)' }}>
-                    <td className="px-2 pt-3 text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                    <td className="px-2 pt-3 t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                       Total {items.length} karyawan
                     </td>
                     <td colSpan={3} />
-                    <td className="tnum px-2 pt-3 text-right text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                    <td className="tnum px-2 pt-3 text-right t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                       {rupiah(run.totalGross)}
                     </td>
                     <td colSpan={3} />
-                    <td className="tnum px-2 pt-3 text-right text-[0.875rem] font-bold" style={{ color: 'var(--accent)' }}>
+                    <td className="tnum px-2 pt-3 text-right t-body font-bold" style={{ color: 'var(--accent)' }}>
                       {rupiah(run.totalNet)}
                     </td>
                     <td />
@@ -339,7 +386,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
               <Chip tone="jade" dot>
                 Periode terkunci
               </Chip>
-              <p className="text-[0.8125rem]">
+              <p className="t-small">
                 Gaji sudah dibayarkan pada {tanggalPanjang(run.paidAt)}. Angka pada periode ini tidak
                 bisa diubah lagi demi menjaga keutuhan arsip.
               </p>

@@ -74,10 +74,10 @@ export default async function EmployeesPage({
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Karyawan
           </h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-[0.8125rem]">
+          <p className="mt-1 flex flex-wrap items-center gap-2 t-small">
             <span>{total} data ditemukan</span>
             <Chip tone="jade">{jml('ACTIVE')} aktif</Chip>
             {jml('RESIGNED') > 0 && <Chip tone="clay">{jml('RESIGNED')} keluar</Chip>}
@@ -122,14 +122,14 @@ export default async function EmployeesPage({
           />
         ) : (
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[820px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'Departemen', 'Posisi', 'Bergabung', 'Gaji pokok', 'PTKP', 'Status', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                           i === 4 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -157,7 +157,7 @@ export default async function EmployeesPage({
                             {e.fullName}
                           </span>
                           <span
-                            className="tnum block truncate text-[0.6875rem]"
+                            className="tnum block truncate t-micro"
                             style={{ color: 'var(--text-muted)' }}
                           >
                             {e.employeeNo} · {e.email}
@@ -165,17 +165,17 @@ export default async function EmployeesPage({
                         </span>
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">{e.department?.name ?? '—'}</td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">{e.position?.title ?? '—'}</td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">{tanggal(e.joinDate)}</td>
+                    <td className="px-2 py-2.5 t-small">{e.department?.name ?? '—'}</td>
+                    <td className="px-2 py-2.5 t-small">{e.position?.title ?? '—'}</td>
+                    <td className="px-2 py-2.5 t-small">{tanggal(e.joinDate)}</td>
                     <td
-                      className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-medium"
+                      className="tnum px-2 py-2.5 text-right t-small font-medium"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {rupiah(e.baseSalary)}
                     </td>
                     <td className="px-2 py-2.5">
-                      <span className="tnum text-[0.75rem]">{e.ptkpStatus}</span>
+                      <span className="tnum t-label">{e.ptkpStatus}</span>
                       {!e.npwp && (
                         <span className="ml-1.5">
                           <Chip tone="brass">tanpa NPWP</Chip>
@@ -204,7 +204,7 @@ export default async function EmployeesPage({
 
         {pages > 1 && (
           <div
-            className="mt-4 flex items-center justify-between border-t pt-3 text-xs"
+            className="mt-4 flex items-center justify-between border-t pt-3 t-label"
             style={{ borderColor: 'var(--hairline)' }}
           >
             <span style={{ color: 'var(--text-muted)' }}>

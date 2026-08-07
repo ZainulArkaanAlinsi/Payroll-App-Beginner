@@ -83,10 +83,10 @@ export default async function AuditPage({
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+        <h1 className="t-display">
           Jejak audit
         </h1>
-        <p className="mt-1 text-[0.8125rem]">
+        <p className="mt-1 t-small">
           {total} catatan · setiap perubahan penting terekam beserta pelakunya
         </p>
       </div>
@@ -116,7 +116,7 @@ export default async function AuditPage({
             {[...perTanggal.entries()].map(([hari, items]) => (
               <div key={hari}>
                 <p
-                  className="mb-2.5 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase"
+                  className="mb-2.5 t-micro font-semibold tracking-[0.1em] uppercase"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   {tanggalPanjang(new Date(hari))}
@@ -142,10 +142,10 @@ export default async function AuditPage({
                       <div className="flex flex-wrap items-start gap-x-3 gap-y-1.5">
                         <Avatar name={l.actorName} size={24} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[0.8125rem]" style={{ color: 'var(--text-body)' }}>
+                          <p className="t-small" style={{ color: 'var(--text-body)' }}>
                             {l.summary}
                           </p>
-                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 t-micro" style={{ color: 'var(--text-muted)' }}>
                             <span>{l.actorName}</span>
                             <span>·</span>
                             <span className="tnum">{jam(l.createdAt)}</span>
@@ -170,7 +170,7 @@ export default async function AuditPage({
 
         {pages > 1 && (
           <div
-            className="mt-5 flex items-center justify-between border-t pt-3 text-xs"
+            className="mt-5 flex items-center justify-between border-t pt-3 t-label"
             style={{ borderColor: 'var(--hairline)' }}
           >
             <span style={{ color: 'var(--text-muted)' }}>

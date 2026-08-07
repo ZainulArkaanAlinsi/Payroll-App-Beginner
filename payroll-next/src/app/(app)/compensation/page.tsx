@@ -47,7 +47,7 @@ export default async function CompensationPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[0.875rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <span className="t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                 {c.name}
               </span>
               <Chip tone="neutral">{c.code}</Chip>
@@ -55,10 +55,12 @@ export default async function CompensationPage() {
               {c.isDefault && <Chip tone="jade">bawaan</Chip>}
               {c.type === 'ALLOWANCE' && !c.taxable && <Chip tone="info">bebas pajak</Chip>}
             </div>
-            <p className="mt-1 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+            <p className="mt-1 t-micro" style={{ color: 'var(--text-muted)' }}>
               {c.calcType === 'PERCENT_OF_BASE'
                 ? `${c.percent}% dari gaji pokok`
-                : 'nominal tetap per bulan'}
+                : c.calcType === 'FORMULA'
+                  ? 'dihitung dari rumus'
+                  : 'nominal tetap per bulan'}
               {' · '}
               melekat pada {c._count.assignments} karyawan
               {c.note && ` · ${c.note}`}
@@ -74,11 +76,24 @@ export default async function CompensationPage() {
 
           <div className="text-right">
             <p
-              className="tnum text-[0.9375rem] font-semibold"
+              className="tnum t-heading font-semibold"
               style={{ color: c.type === 'ALLOWANCE' ? 'var(--text-strong)' : 'var(--color-clay-500)' }}
             >
-              {c.calcType === 'PERCENT_OF_BASE' ? `${c.percent}%` : rupiah(c.amount)}
+              {c.calcType === 'PERCENT_OF_BASE'
+                ? `${c.percent}%`
+                : c.calcType === 'FORMULA'
+                  ? 'rumus'
+                  : rupiah(c.amount)}
             </p>
+            {c.calcType === 'FORMULA' && c.formula && (
+              <code
+                className="mt-0.5 block max-w-[15rem] truncate font-mono t-micro"
+                style={{ color: 'var(--accent)' }}
+                title={c.formula}
+              >
+                {c.formula}
+              </code>
+            )}
             <div className="mt-1.5 flex justify-end gap-1.5">
               {c.active && c._count.assignments < activeCount && (
                 <ActionButton
@@ -99,9 +114,13 @@ export default async function CompensationPage() {
                   calcType: c.calcType,
                   amount: c.amount,
                   percent: c.percent,
+                  formula: c.formula,
                   taxable: c.taxable,
+                  countsForBpjs: c.countsForBpjs,
+                  prorate: c.prorate,
                   isDefault: c.isDefault,
                   active: c.active,
+                  sortOrder: c.sortOrder,
                   note: c.note,
                 }}
               />
@@ -125,10 +144,10 @@ export default async function CompensationPage() {
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Komponen gaji
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {tunjangan.length} tunjangan · {potongan.length} potongan · {pinjamanAktif.length} pinjaman
             berjalan
           </p>
@@ -181,14 +200,14 @@ export default async function CompensationPage() {
           />
         ) : (
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[760px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'Pokok', 'Tenor', 'Cicilan/bulan', 'Terbayar', 'Sisa', 'Status', ''].map(
                     (h, i) => (
                       <th
                         key={h || i}
-                        className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                        className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                           i >= 1 && i <= 5 ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -215,13 +234,13 @@ export default async function CompensationPage() {
                           <Avatar name={l.employee.fullName} size={28} />
                           <span className="min-w-0">
                             <span
-                              className="block truncate text-[0.8125rem] font-medium"
+                              className="block truncate t-small font-medium"
                               style={{ color: 'var(--text-strong)' }}
                             >
                               {l.employee.fullName}
                             </span>
                             <span
-                              className="block truncate text-[0.625rem]"
+                              className="block truncate t-micro"
                               style={{ color: 'var(--text-muted)' }}
                             >
                               {l.note ?? l.employee.employeeNo}
@@ -229,19 +248,19 @@ export default async function CompensationPage() {
                           </span>
                         </Link>
                       </td>
-                      <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(l.principal)}</td>
-                      <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{l.tenorMonths} bln</td>
-                      <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">
+                      <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(l.principal)}</td>
+                      <td className="tnum px-2 py-2.5 text-right t-small">{l.tenorMonths} bln</td>
+                      <td className="tnum px-2 py-2.5 text-right t-small">
                         {rupiah(l.monthlyDeduction)}
                       </td>
                       <td className="px-2 py-2.5 text-right">
-                        <span className="tnum block text-[0.8125rem]">{rupiah(terbayar)}</span>
+                        <span className="tnum block t-small">{rupiah(terbayar)}</span>
                         <span className="mt-1 block w-24 justify-self-end">
                           <MiniBar value={terbayar} max={l.principal} />
                         </span>
                       </td>
                       <td
-                        className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-semibold"
+                        className="tnum px-2 py-2.5 text-right t-small font-semibold"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {rupiah(l.remaining)}

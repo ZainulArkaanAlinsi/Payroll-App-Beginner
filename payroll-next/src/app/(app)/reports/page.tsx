@@ -97,10 +97,10 @@ export default async function ReportsPage({
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Laporan
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             Analitik biaya tenaga kerja dan pajak · periode aktif {labelPeriode(selected.period)}
           </p>
         </div>
@@ -190,7 +190,7 @@ export default async function ReportsPage({
         </div>
         <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t pt-3" style={{ borderColor: 'var(--hairline)' }}>
           {terrain.departments.map((d, i) => (
-            <li key={d} className="flex items-center gap-1.5 text-[0.6875rem]" style={{ color: 'var(--text-body)' }}>
+            <li key={d} className="flex items-center gap-1.5 t-micro" style={{ color: 'var(--text-body)' }}>
               <span className="size-2 rounded-[3px]" style={{ background: `var(--series-${(i % 6) + 1})` }} aria-hidden />
               {d}
             </li>
@@ -256,13 +256,13 @@ export default async function ReportsPage({
             subtitle={`Delapan pemotongan tertinggi pada ${labelPeriode(selected.period)}`}
           />
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[420px] text-sm">
+            <table className="w-full min-w-[420px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'PTKP', 'Tarif', 'PPh 21'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                      className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                         i >= 2 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -277,7 +277,7 @@ export default async function ReportsPage({
                     <td className="px-2 py-2">
                       <Link
                         href={`/employees/${t.employee.id}`}
-                        className="text-[0.8125rem] font-medium"
+                        className="t-small font-medium"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {t.employee.fullName}
@@ -288,10 +288,10 @@ export default async function ReportsPage({
                         </span>
                       )}
                     </td>
-                    <td className="tnum px-2 py-2 text-[0.75rem]">{t.employee.ptkpStatus}</td>
-                    <td className="tnum px-2 py-2 text-right text-[0.75rem]">{t.terRate}%</td>
+                    <td className="tnum px-2 py-2 t-label">{t.employee.ptkpStatus}</td>
+                    <td className="tnum px-2 py-2 text-right t-label">{t.terRate}%</td>
                     <td
-                      className="tnum px-2 py-2 text-right text-[0.8125rem] font-semibold"
+                      className="tnum px-2 py-2 text-right t-small font-semibold"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {rupiah(t.pph21)}

@@ -44,7 +44,7 @@ export default function StatTile({
 
       <div>
         <p
-          className="tnum text-[1.6rem] leading-none font-semibold"
+          className="tnum t-money-lg leading-none font-semibold"
           style={{ color: 'var(--text-strong)', letterSpacing: '-0.02em' }}
         >
           {value}
@@ -54,7 +54,7 @@ export default function StatTile({
           <span className="flex items-center gap-1.5">
             {delta !== undefined && delta !== null && (
               <span
-                className="tnum inline-flex items-center gap-0.5 text-[0.6875rem] font-semibold"
+                className="tnum inline-flex items-center gap-0.5 t-micro font-semibold"
                 style={{ color: bagus ? 'var(--color-jade-500)' : 'var(--color-clay-500)' }}
               >
                 {naik ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
@@ -63,7 +63,7 @@ export default function StatTile({
               </span>
             )}
             {sub && (
-              <span className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+              <span className="t-micro" style={{ color: 'var(--text-muted)' }}>
                 {sub}
               </span>
             )}

@@ -25,13 +25,13 @@ export default async function DeniedPage() {
           <ShieldX size={22} />
         </span>
 
-        <h1 className="mt-4 text-lg font-semibold">Halaman ini di luar hak akses Anda</h1>
-        <p className="mx-auto mt-2 max-w-sm text-[0.8125rem]">
+        <h1 className="mt-4 t-title">Halaman ini di luar hak akses Anda</h1>
+        <p className="mx-auto mt-2 max-w-sm t-small">
           Anda masuk sebagai <strong>{statusLabel(session.role)}</strong>. Peran ini punya akses ke:{' '}
           {HAK[session.role]}
         </p>
 
-        <p className="mt-4 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+        <p className="mt-4 t-label" style={{ color: 'var(--text-muted)' }}>
           Bila Anda merasa seharusnya bisa membuka halaman ini, hubungi administrator sistem.
         </p>
 

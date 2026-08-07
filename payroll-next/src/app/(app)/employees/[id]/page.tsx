@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { calculatePayroll, workingDaysInPeriod, type ComponentLine } from '@/lib/payroll-engine';
+import { calculatePayroll, workingDaysInPeriod, type TaxMethod } from '@/lib/payroll-engine';
+import { resolveAll, buildVariables } from '@/lib/components';
+import { pilihAturan, lateConfigDari, overtimeConfigDari, type PolicyRow } from '@/lib/policy';
 import { PTKP_LABEL, type PtkpStatus } from '@/lib/tax';
 import { jamMenit, labelPeriode, periodeSekarang, rupiah, tanggal, tanggalPanjang } from '@/lib/format';
 import {
@@ -36,7 +38,7 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
   const period = periodeSekarang();
   const [y, m] = period.split('-').map(Number);
 
-  const [departments, positions, allComponents, payslips, attendance, leaves, loans, setting] =
+  const [departments, positions, allComponents, payslips, attendance, leaves, loans, setting, policies] =
     await Promise.all([
       prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
       prisma.position.findMany({
@@ -57,22 +59,8 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
       prisma.leaveRequest.findMany({ where: { employeeId: id }, orderBy: { startDate: 'desc' }, take: 6 }),
       prisma.loan.findMany({ where: { employeeId: id }, orderBy: { createdAt: 'desc' } }),
       prisma.companySetting.findUnique({ where: { id: 'singleton' } }),
+      prisma.policyRule.findMany({ where: { active: true } }),
     ]);
-
-  // ── simulasi gaji bulan berjalan, dihitung dengan mesin yang sama ──
-  const lines: ComponentLine[] = employee.components
-    .filter((c) => c.component.active)
-    .map((c) => ({
-      code: c.component.code,
-      name: c.component.name,
-      type: c.component.type as 'ALLOWANCE' | 'DEDUCTION',
-      amount:
-        c.overrideAmount ??
-        (c.component.calcType === 'PERCENT_OF_BASE'
-          ? Math.round((employee.baseSalary * c.component.percent) / 100)
-          : c.component.amount),
-      taxable: c.component.taxable,
-    }));
 
   const hadir = attendance.filter((a) => ['PRESENT', 'LATE', 'WFH'].includes(a.status)).length;
   const mangkir = attendance.filter((a) => a.status === 'ABSENT').length;
@@ -81,12 +69,38 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
   // pinjaman terlama — sama dengan yang dipakai mesin penggajian
   const pinjamanAktif = loans.filter((l) => l.status === 'ACTIVE').sort((a, b) => +a.createdAt - +b.createdAt)[0];
 
+  // Simulasi memakai resolver yang sama dengan proses gaji sungguhan,
+  // supaya angka pratinjau di sini tidak pernah berbeda dengan hasil akhir.
+  const { lines, errors: galatRumus } = resolveAll(employee.components, {
+    departmentId: employee.departmentId,
+    level: employee.position?.level ?? null,
+    baseSalary: employee.baseSalary,
+    variables: buildVariables({
+      baseSalary: employee.baseSalary,
+      fixedAllowance: 0,
+      workingDays: workingDaysInPeriod(period),
+      presentDays: hadir,
+      absentDays: mangkir,
+      leaveDays: cuti,
+      overtimeHours: 0,
+      overtimeHolidayHours: 0,
+      lateMinutes: totalTelat,
+      monthsOfService: Math.max(
+        0,
+        (y - employee.joinDate.getFullYear()) * 12 + (m - 1 - employee.joinDate.getMonth()),
+      ),
+      dependents: Number(employee.ptkpStatus.split('/')[1] ?? 0),
+      paidDays: workingDaysInPeriod(period),
+    }),
+  });
+
   const simulasi = calculatePayroll({
     employeeId: employee.id,
     fullName: employee.fullName,
     baseSalary: employee.baseSalary,
     ptkpStatus: employee.ptkpStatus as PtkpStatus,
     hasNpwp: Boolean(employee.npwp),
+    taxMethod: employee.taxMethod as TaxMethod,
     enrollBpjsKes: employee.enrollBpjsKes,
     enrollBpjsTk: employee.enrollBpjsTk,
     components: lines,
@@ -99,8 +113,13 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
     lateMinutes: totalTelat,
     loanDeduction: pinjamanAktif?.monthlyDeduction ?? 0,
     workingDays: workingDaysInPeriod(period),
-    lateCutPerMinute: setting?.lateCutPerMinute ?? 0,
     cutAbsent: setting?.absentCutPerDay ?? true,
+    latePolicy: lateConfigDari(
+      pilihAturan(policies as PolicyRow[], 'LATE', employee.departmentId, employee.position?.level ?? null),
+    ),
+    overtimePolicy: overtimeConfigDari(
+      pilihAturan(policies as PolicyRow[], 'OVERTIME', employee.departmentId, employee.position?.level ?? null),
+    ),
     bpjs: {
       kesEmployeeRate: setting?.bpjsKesEmployeeRate ?? 1,
       kesEmployerRate: setting?.bpjsKesEmployerRate ?? 4,
@@ -149,7 +168,7 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
     <div className="mx-auto max-w-[1400px] space-y-4">
       <Link
         href="/employees"
-        className="inline-flex items-center gap-1.5 text-xs"
+        className="inline-flex items-center gap-1.5 t-label"
         style={{ color: 'var(--text-muted)' }}
       >
         <ArrowLeft size={13} />
@@ -161,10 +180,10 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
         <div className="flex min-w-0 items-center gap-4">
           <Avatar name={employee.fullName} size={60} />
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold" style={{ letterSpacing: '-0.02em' }}>
+            <h1 className="t-title">
               {employee.fullName}
             </h1>
-            <p className="mt-0.5 text-[0.8125rem]">
+            <p className="mt-0.5 t-small">
               {employee.position?.title ?? 'Tanpa posisi'}
               {employee.department && ` · ${employee.department.name}`}
             </p>
@@ -212,11 +231,11 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                 <p className="label">Penerimaan</p>
                 <ul className="space-y-1.5">
                   {penerimaan.map((r, i) => (
-                    <li key={i} className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
+                    <li key={i} className="flex items-baseline justify-between gap-3 t-small">
                       <span className="min-w-0">
                         <span className="truncate">{r.label}</span>
                         {r.note && (
-                          <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                             {r.note}
                           </span>
                         )}
@@ -228,7 +247,7 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                   ))}
                 </ul>
                 <div
-                  className="mt-2.5 flex items-baseline justify-between border-t pt-2.5 text-[0.8125rem] font-semibold"
+                  className="mt-2.5 flex items-baseline justify-between border-t pt-2.5 t-small font-semibold"
                   style={{ borderColor: 'var(--hairline)', color: 'var(--text-strong)' }}
                 >
                   <span>Bruto</span>
@@ -240,11 +259,11 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                 <p className="label">Potongan</p>
                 <ul className="space-y-1.5">
                   {potongan.map((r, i) => (
-                    <li key={i} className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
+                    <li key={i} className="flex items-baseline justify-between gap-3 t-small">
                       <span className="min-w-0">
                         <span className="truncate">{r.label}</span>
                         {r.note && (
-                          <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                             {r.note}
                           </span>
                         )}
@@ -255,13 +274,13 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                     </li>
                   ))}
                   {potongan.length === 0 && (
-                    <li className="text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
+                    <li className="t-small" style={{ color: 'var(--text-muted)' }}>
                       Tidak ada potongan.
                     </li>
                   )}
                 </ul>
                 <div
-                  className="mt-2.5 flex items-baseline justify-between border-t pt-2.5 text-[0.8125rem] font-semibold"
+                  className="mt-2.5 flex items-baseline justify-between border-t pt-2.5 t-small font-semibold"
                   style={{ borderColor: 'var(--hairline)', color: 'var(--color-clay-500)' }}
                 >
                   <span>Total potongan</span>
@@ -276,16 +295,16 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
             >
               <div>
                 <p className="label !mb-0.5">Perkiraan diterima</p>
-                <p className="tnum text-xl font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <p className="tnum t-title" style={{ color: 'var(--text-strong)' }}>
                   {rupiah(simulasi.netPay)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="label !mb-0.5">Biaya perusahaan</p>
-                <p className="tnum text-sm font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <p className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                   {rupiah(simulasi.employerCost)}
                 </p>
-                <p className="text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                   PPh 21 {simulasi.taxMethod === 'TER' ? `TER ${simulasi.terRate}%` : 'progresif'}
                 </p>
               </div>
@@ -322,13 +341,13 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
               <EmptyState icon={<Receipt size={18} />} title="Belum ada slip gaji" />
             ) : (
               <div className="scroll-slim -mx-1 overflow-x-auto">
-                <table className="w-full min-w-[620px] text-sm">
+                <table className="w-full min-w-[620px] t-body">
                   <thead>
                     <tr style={{ color: 'var(--text-muted)' }}>
                       {['Periode', 'Status', 'Bruto', 'PPh 21', 'Potongan', 'Diterima', ''].map((h, i) => (
                         <th
                           key={h || i}
-                          className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                             i >= 2 && i <= 5 ? 'text-right' : 'text-left'
                           }`}
                         >
@@ -350,16 +369,16 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                         <td className="px-2 py-2.5">
                           <StatusChip status={p.run.status} />
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(p.grossPay)}</td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{rupiah(p.pph21)}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(p.grossPay)}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{rupiah(p.pph21)}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                          className="tnum px-2 py-2.5 text-right t-small"
                           style={{ color: 'var(--color-clay-500)' }}
                         >
                           −{rupiah(p.totalDeduction)}
                         </td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-semibold"
+                          className="tnum px-2 py-2.5 text-right t-small font-semibold"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {rupiah(p.netPay)}
@@ -421,17 +440,17 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                 ['Mangkir', mangkir, 'var(--color-clay-500)'],
               ].map(([l, v, c]) => (
                 <div key={String(l)} className="glass-thin py-2.5">
-                  <p className="tnum text-lg font-semibold" style={{ color: String(c) }}>
+                  <p className="tnum t-title" style={{ color: String(c) }}>
                     {String(v)}
                   </p>
-                  <p className="text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                  <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                     {String(l)}
                   </p>
                 </div>
               ))}
             </div>
             {totalTelat > 0 && (
-              <p className="mt-3 text-[0.75rem]" style={{ color: 'var(--color-brass-500)' }}>
+              <p className="mt-3 t-label" style={{ color: 'var(--color-brass-500)' }}>
                 Akumulasi keterlambatan {jamMenit(totalTelat)} bulan ini.
               </p>
             )}
@@ -440,17 +459,17 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
           <GlassCard>
             <SectionTitle title="Kuota cuti tahunan" />
             <div className="flex items-baseline justify-between">
-              <span className="tnum text-2xl font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <span className="tnum t-display" style={{ color: 'var(--text-strong)' }}>
                 {employee.annualLeaveQuota - cutiTerpakai}
               </span>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="t-label" style={{ color: 'var(--text-muted)' }}>
                 dari {employee.annualLeaveQuota} hari
               </span>
             </div>
             <div className="mt-2">
               <MiniBar value={cutiTerpakai} max={employee.annualLeaveQuota} tone="brass" />
             </div>
-            <p className="mt-1.5 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+            <p className="mt-1.5 t-micro" style={{ color: 'var(--text-muted)' }}>
               {cutiTerpakai} hari terpakai tahun {y}
             </p>
 
@@ -459,10 +478,10 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                 {leaves.slice(0, 4).map((l) => (
                   <li key={l.id} className="flex items-start justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block text-[0.75rem]" style={{ color: 'var(--text-body)' }}>
+                      <span className="block t-label" style={{ color: 'var(--text-body)' }}>
                         {statusLabel(l.type)} · {l.days} hari
                       </span>
-                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                         {tanggal(l.startDate)}
                       </span>
                     </span>
@@ -480,18 +499,18 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
                 {loans.map((l) => (
                   <li key={l.id} className="glass-thin px-3 py-2.5">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="tnum text-[0.8125rem] font-medium" style={{ color: 'var(--text-strong)' }}>
+                      <span className="tnum t-small font-medium" style={{ color: 'var(--text-strong)' }}>
                         {rupiah(l.principal)}
                       </span>
                       <StatusChip status={l.status === 'ACTIVE' ? 'PENDING' : 'PAID'} />
                     </div>
-                    <p className="mt-1 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                    <p className="mt-1 t-micro" style={{ color: 'var(--text-muted)' }}>
                       {l.tenorMonths} bulan · potong {rupiah(l.monthlyDeduction)}/bulan
                     </p>
                     <div className="mt-1.5">
                       <MiniBar value={l.principal - l.remaining} max={l.principal} />
                     </div>
-                    <p className="mt-1 text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                    <p className="mt-1 t-micro" style={{ color: 'var(--text-muted)' }}>
                       Sisa {rupiah(l.remaining)}
                     </p>
                   </li>
@@ -512,10 +531,10 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
         {icon}
       </span>
       <div className="min-w-0">
-        <dt className="text-[0.625rem] tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+        <dt className="t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
           {label}
         </dt>
-        <dd className="text-[0.8125rem] break-words" style={{ color: 'var(--text-body)' }}>
+        <dd className="t-small break-words" style={{ color: 'var(--text-body)' }}>
           {value}
         </dd>
       </div>

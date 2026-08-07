@@ -65,10 +65,10 @@ export default async function OvertimePage({
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Lembur
           </h1>
-          <p className="mt-1 text-[0.8125rem]">{pending.length} pengajuan menunggu ditinjau</p>
+          <p className="mt-1 t-small">{pending.length} pengajuan menunggu ditinjau</p>
         </div>
         <OvertimeDialog employees={employees} label="Ajukan atas nama karyawan" />
       </div>
@@ -113,12 +113,12 @@ export default async function OvertimePage({
                       <Avatar name={r.employee.fullName} size={34} />
                       <span className="min-w-0">
                         <span
-                          className="block truncate text-[0.875rem] font-medium"
+                          className="block truncate t-body font-medium"
                           style={{ color: 'var(--text-strong)' }}
                         >
                           {r.employee.fullName}
                         </span>
-                        <span className="block truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                        <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
                           {r.employee.department?.name ?? '—'} · diajukan {sejak(r.createdAt)}
                         </span>
                       </span>
@@ -126,23 +126,23 @@ export default async function OvertimePage({
 
                     <div className="min-w-[10rem]">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="tnum text-[0.875rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                        <span className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                           {r.hours} jam
                         </span>
                         {r.isHoliday && <Chip tone="brass">hari libur</Chip>}
                       </div>
-                      <p className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                      <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                         {tanggal(r.date)}
                       </p>
                     </div>
 
-                    <p className="min-w-[11rem] flex-1 text-[0.75rem]">{r.reason}</p>
+                    <p className="min-w-[11rem] flex-1 t-label">{r.reason}</p>
 
                     <div className="text-right">
-                      <p className="text-[0.625rem] tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+                      <p className="t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
                         Perkiraan
                       </p>
-                      <p className="tnum text-[0.875rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                      <p className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                         {rupiah(perkiraan)}
                       </p>
                     </div>
@@ -180,13 +180,13 @@ export default async function OvertimePage({
           <EmptyState title="Tidak ada data yang cocok" />
         ) : (
           <div className="scroll-slim -mx-1 overflow-x-auto">
-            <table className="w-full min-w-[780px] text-sm">
+            <table className="w-full min-w-[780px] t-body">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   {['Karyawan', 'Tanggal', 'Jam', 'Alasan', 'Nilai', 'Peninjau', 'Status'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                      className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                         i === 2 || i === 4 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -205,16 +205,16 @@ export default async function OvertimePage({
                     <td className="px-2 py-2.5">
                       <Link
                         href={`/employees/${r.employee.id}`}
-                        className="text-[0.8125rem] font-medium"
+                        className="t-small font-medium"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {r.employee.fullName}
                       </Link>
-                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                         {r.employee.department?.name ?? '—'}
                       </span>
                     </td>
-                    <td className="px-2 py-2.5 text-[0.8125rem]">
+                    <td className="px-2 py-2.5 t-small">
                       {tanggal(r.date)}
                       {r.isHoliday && (
                         <span className="ml-1.5">
@@ -222,17 +222,17 @@ export default async function OvertimePage({
                         </span>
                       )}
                     </td>
-                    <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{r.hours}</td>
-                    <td className="max-w-[18rem] px-2 py-2.5 text-[0.75rem]">
+                    <td className="tnum px-2 py-2.5 text-right t-small">{r.hours}</td>
+                    <td className="max-w-[18rem] px-2 py-2.5 t-label">
                       <span className="line-clamp-2">{r.reason}</span>
                     </td>
                     <td
-                      className="tnum px-2 py-2.5 text-right text-[0.8125rem] font-medium"
+                      className="tnum px-2 py-2.5 text-right t-small font-medium"
                       style={{ color: 'var(--text-strong)' }}
                     >
                       {r.amount > 0 ? rupiah(r.amount) : '—'}
                     </td>
-                    <td className="px-2 py-2.5 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                    <td className="px-2 py-2.5 t-label" style={{ color: 'var(--text-muted)' }}>
                       {r.reviewedBy ?? '—'}
                     </td>
                     <td className="px-2 py-2.5">

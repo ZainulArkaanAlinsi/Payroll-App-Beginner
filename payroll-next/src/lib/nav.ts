@@ -20,7 +20,8 @@ export const NAV: NavItem[] = [
   { href: '/leave', label: 'Cuti', icon: 'Palmtree', roles: ['ADMIN', 'HR'], group: 'Kepegawaian', hint: 'Pengajuan & persetujuan' },
   { href: '/overtime', label: 'Lembur', icon: 'Timer', roles: ['ADMIN', 'HR'], group: 'Kepegawaian', hint: 'Pengajuan & persetujuan' },
 
-  { href: '/compensation', label: 'Komponen Gaji', icon: 'Layers', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Tunjangan & potongan' },
+  { href: '/compensation', label: 'Komponen Gaji', icon: 'Layers', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Tunjangan, potongan & rumus racikan' },
+  { href: '/racik', label: 'Racik', icon: 'FlaskConical', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Aturan divisi, alur persetujuan, slip, format bank' },
   { href: '/payroll', label: 'Proses Gaji', icon: 'Wallet', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Jalankan payroll periode' },
   { href: '/payslips', label: 'Slip Gaji', icon: 'Receipt', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Arsip slip semua karyawan' },
   { href: '/reports', label: 'Laporan', icon: 'ChartColumn', roles: ['ADMIN', 'HR'], group: 'Penggajian', hint: 'Analitik & ekspor CSV' },

@@ -42,10 +42,10 @@ export default async function PayrollPage() {
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Proses gaji
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {runs.length} periode tercatat · {activeCount} karyawan aktif siap diproses
           </p>
         </div>
@@ -66,13 +66,13 @@ export default async function PayrollPage() {
           {LANGKAH.map((l, i) => (
             <li key={l.status} className="glass-thin relative px-3.5 py-3">
               <span
-                className="tnum absolute top-3 right-3 text-[0.625rem] font-semibold"
+                className="tnum absolute top-3 right-3 t-micro font-semibold"
                 style={{ color: 'var(--text-muted)' }}
               >
                 {i + 1}
               </span>
               <StatusChip status={l.status} />
-              <p className="mt-2 text-[0.75rem] leading-snug">{l.desc}</p>
+              <p className="mt-2 t-label leading-snug">{l.desc}</p>
             </li>
           ))}
         </ol>
@@ -123,10 +123,10 @@ export default async function PayrollPage() {
                 <Link href={`/payroll/${r.id}`} className="block">
                   <div className="glass-thin flex flex-wrap items-center gap-4 px-4 py-3 transition-colors hover:border-[color-mix(in_srgb,var(--accent)_35%,transparent)]">
                     <div className="min-w-[9rem]">
-                      <p className="text-[0.9375rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                      <p className="t-heading font-semibold" style={{ color: 'var(--text-strong)' }}>
                         {labelPeriode(r.period)}
                       </p>
-                      <p className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                      <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                         bayar {tanggal(r.payDate)}
                       </p>
                     </div>
@@ -166,11 +166,11 @@ export default async function PayrollPage() {
 function Angka({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <span className="text-right">
-      <span className="block text-[0.625rem] tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+      <span className="block t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
         {label}
       </span>
       <span
-        className="tnum block text-[0.8125rem]"
+        className="tnum block t-small"
         style={{
           color: 'var(--text-strong)',
           fontWeight: strong ? 650 : 500,

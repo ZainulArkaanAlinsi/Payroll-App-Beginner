@@ -50,7 +50,7 @@ function TableToggle({ open, onToggle }: { open: boolean; onToggle: () => void }
     <button
       type="button"
       onClick={onToggle}
-      className="text-[0.6875rem] font-medium underline-offset-2 hover:underline"
+      className="t-micro font-medium underline-offset-2 hover:underline"
       style={{ color: 'var(--text-muted)' }}
     >
       {open ? 'Tampilkan grafik' : 'Lihat tabel'}
@@ -61,7 +61,7 @@ function TableToggle({ open, onToggle }: { open: boolean; onToggle: () => void }
 function DataTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
     <div className="scroll-slim max-h-64 overflow-auto">
-      <table className="w-full text-xs">
+      <table className="w-full t-label">
         <thead className="sticky top-0" style={{ background: 'var(--bg-base)' }}>
           <tr>
             {head.map((h, i) => (
@@ -264,7 +264,7 @@ export function LineChart({
 
         {active && (
           <div
-            className="glass pointer-events-none absolute z-10 px-2.5 py-1.5 text-[0.6875rem] whitespace-nowrap"
+            className="glass pointer-events-none absolute z-10 px-2.5 py-1.5 t-micro whitespace-nowrap"
             style={{
               left: `${(active.x / W) * 100}%`,
               top: 0,
@@ -339,7 +339,7 @@ export function BarRank({
               onMouseLeave={() => setHover(null)}
             >
               <div className="mb-1 flex items-baseline justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-1.5 text-xs">
+                <span className="flex min-w-0 items-center gap-1.5 t-label">
                   {colored && (
                     <span
                       className="size-2 shrink-0 rounded-[3px]"
@@ -353,7 +353,7 @@ export function BarRank({
                 </span>
                 {/* label langsung — identitas & nilai tidak bergantung warna */}
                 <span
-                  className="tnum shrink-0 text-xs font-semibold"
+                  className="tnum shrink-0 t-label font-semibold"
                   style={{ color: 'var(--text-strong)' }}
                 >
                   {hover === i ? tooltipFormatter(d.value) : formatter(d.value)}
@@ -370,7 +370,7 @@ export function BarRank({
                 />
               </div>
               {d.sub && (
-                <p className="mt-0.5 text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                <p className="mt-0.5 t-micro" style={{ color: 'var(--text-muted)' }}>
                   {d.sub}
                 </p>
               )}
@@ -475,7 +475,7 @@ export function Donut({
           {data.map((d, i) => (
             <li
               key={d.label}
-              className="flex items-center justify-between gap-2 rounded-md px-1.5 py-0.5 text-xs transition-colors"
+              className="flex items-center justify-between gap-2 rounded-md px-1.5 py-0.5 t-label transition-colors"
               style={{ background: hover === i ? 'var(--field-bg)' : 'transparent' }}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
@@ -563,7 +563,7 @@ export function Heatmap({
           />
         ))}
       </div>
-      <div className="mt-2.5 flex items-center justify-between text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+      <div className="mt-2.5 flex items-center justify-between t-micro" style={{ color: 'var(--text-muted)' }}>
         <span className="tnum">{active ? `${active.label} · ${active.value} hadir` : 'Arahkan kursor ke kotak'}</span>
         <span className="flex items-center gap-1">
           {legendLabels[0]}
@@ -622,7 +622,7 @@ export function StackedBars({
       <div className="mb-1 flex items-center justify-between gap-3">
         <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {keys.map((k, i) => (
-            <li key={k} className="flex items-center gap-1.5 text-[0.6875rem]" style={{ color: 'var(--text-body)' }}>
+            <li key={k} className="flex items-center gap-1.5 t-micro" style={{ color: 'var(--text-body)' }}>
               <span className="size-2 rounded-[3px]" style={{ background: seriesColor(i) }} aria-hidden />
               {k}
             </li>
@@ -636,7 +636,7 @@ export function StackedBars({
           const total = totals[bi];
           return (
             <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-              <span className="tnum text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+              <span className="tnum t-micro" style={{ color: 'var(--text-muted)' }}>
                 {formatter(total)}
               </span>
               <div
@@ -657,7 +657,7 @@ export function StackedBars({
                   />
                 ))}
               </div>
-              <span className="truncate text-[0.625rem]" style={{ color: 'var(--axis-text)' }}>
+              <span className="truncate t-micro" style={{ color: 'var(--axis-text)' }}>
                 {d.label}
               </span>
             </div>
@@ -666,7 +666,7 @@ export function StackedBars({
 
         {hover && (
           <div
-            className="glass pointer-events-none absolute top-0 left-1/2 z-10 -translate-x-1/2 px-2.5 py-1.5 text-[0.6875rem] whitespace-nowrap"
+            className="glass pointer-events-none absolute top-0 left-1/2 z-10 -translate-x-1/2 px-2.5 py-1.5 t-micro whitespace-nowrap"
             style={{ borderRadius: 10 }}
           >
             <span style={{ color: 'var(--text-muted)' }}>

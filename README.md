@@ -2,7 +2,7 @@
 
 Repositori ini memuat dua aplikasi penggajian: yang aktif dan pendahulunya.
 
-## [`payroll-next/`](payroll-next) — NusaPay
+## [`payroll-next/`](payroll-next) — Racik
 
 **Aplikasi yang aktif dikembangkan.** Penulisan ulang penuh dengan Next.js 15,
 TypeScript, Prisma, dan Three.js. Perhitungan PPh 21 metode TER, iuran BPJS lima

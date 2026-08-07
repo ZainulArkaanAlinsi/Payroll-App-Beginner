@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
-  CalendarCheck, ChartColumn, CircleUser, LayoutDashboard, Layers, LogOut,
+  CalendarCheck, ChartColumn, CircleUser, FlaskConical, LayoutDashboard, Layers, LogOut,
   Menu, Network, Palmtree, Receipt, ScrollText, Settings, Timer, Users, Wallet, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -15,7 +15,7 @@ import { logoutAction } from '@/actions/auth';
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard, Users, Network, CalendarCheck, Palmtree, Timer,
-  Layers, Wallet, Receipt, ChartColumn, CircleUser, Settings, ScrollText,
+  Layers, Wallet, Receipt, ChartColumn, CircleUser, Settings, ScrollText, FlaskConical,
 };
 
 export default function Sidebar({
@@ -48,7 +48,7 @@ export default function Sidebar({
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="relative flex items-center gap-2.5 rounded-[10px] px-2.5 py-[7px] text-[0.8125rem] transition-colors"
+                    className="relative flex items-center gap-2.5 rounded-[10px] px-2.5 py-[7px] t-small transition-colors"
                     style={{
                       background: active ? 'var(--accent-soft)' : 'transparent',
                       color: active ? 'var(--accent)' : 'var(--text-body)',
@@ -94,10 +94,10 @@ export default function Sidebar({
           </svg>
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold" style={{ color: 'var(--text-strong)' }}>
-            NusaPay
+          <span className="block t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
+            Racik
           </span>
-          <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+          <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
             PT Nusantara Digital
           </span>
         </span>
@@ -122,12 +122,12 @@ export default function Sidebar({
           <Avatar name={name} hue={hue} size={32} />
           <span className="min-w-0 flex-1">
             <span
-              className="block truncate text-[0.8125rem] font-medium"
+              className="block truncate t-small font-medium"
               style={{ color: 'var(--text-strong)' }}
             >
               {name}
             </span>
-            <span className="block truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+            <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
               {statusLabel(role)} · {email}
             </span>
           </span>

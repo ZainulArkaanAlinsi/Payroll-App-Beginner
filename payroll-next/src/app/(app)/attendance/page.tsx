@@ -114,10 +114,10 @@ export default async function AttendancePage({
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Kehadiran
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {employees.length} karyawan · {hariKerja} hari kerja pada {labelPeriode(period)}
           </p>
         </div>
@@ -171,14 +171,14 @@ export default async function AttendancePage({
               subtitle="Diurutkan dari yang paling banyak mangkir dan terlambat"
             />
             <div className="scroll-slim -mx-1 overflow-x-auto">
-              <table className="w-full min-w-[840px] text-sm">
+              <table className="w-full min-w-[840px] t-body">
                 <thead>
                   <tr style={{ color: 'var(--text-muted)' }}>
                     {['Karyawan', 'Hadir', 'Jarak jauh', 'Terlambat', 'Cuti', 'Mangkir', 'Akumulasi telat', 'Kedisiplinan'].map(
                       (h, i) => (
                         <th
                           key={h}
-                          className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                          className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                             i === 0 || i === 7 ? 'text-left' : 'text-right'
                           }`}
                         >
@@ -204,13 +204,13 @@ export default async function AttendancePage({
                             <Avatar name={e.fullName} size={28} />
                             <span className="min-w-0">
                               <span
-                                className="block truncate text-[0.8125rem] font-medium"
+                                className="block truncate t-small font-medium"
                                 style={{ color: 'var(--text-strong)' }}
                               >
                                 {e.fullName}
                               </span>
                               <span
-                                className="block truncate text-[0.625rem]"
+                                className="block truncate t-micro"
                                 style={{ color: 'var(--text-muted)' }}
                               >
                                 {e.department?.name ?? '—'}
@@ -218,22 +218,22 @@ export default async function AttendancePage({
                             </span>
                           </Link>
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{a.hadir}</td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{a.wfh}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{a.hadir}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{a.wfh}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                          className="tnum px-2 py-2.5 text-right t-small"
                           style={{ color: a.telat > 0 ? 'var(--color-brass-500)' : undefined }}
                         >
                           {a.telat}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{a.cuti}</td>
+                        <td className="tnum px-2 py-2.5 text-right t-small">{a.cuti}</td>
                         <td
-                          className="tnum px-2 py-2.5 text-right text-[0.8125rem]"
+                          className="tnum px-2 py-2.5 text-right t-small"
                           style={{ color: a.mangkir > 0 ? 'var(--color-clay-500)' : undefined }}
                         >
                           {a.mangkir}
                         </td>
-                        <td className="tnum px-2 py-2.5 text-right text-[0.75rem]">
+                        <td className="tnum px-2 py-2.5 text-right t-label">
                           {a.menitTelat > 0 ? jamMenit(a.menitTelat) : '—'}
                         </td>
                         <td className="px-2 py-2.5">
@@ -245,7 +245,7 @@ export default async function AttendancePage({
                                 tone={skor >= 90 ? 'jade' : skor >= 75 ? 'brass' : 'clay'}
                               />
                             </span>
-                            <span className="tnum text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                            <span className="tnum t-micro" style={{ color: 'var(--text-muted)' }}>
                               {skor.toFixed(0)}%
                             </span>
                             {a.mangkir >= 3 && <Chip tone="clay">perlu ditegur</Chip>}

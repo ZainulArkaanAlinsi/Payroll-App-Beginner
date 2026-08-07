@@ -57,10 +57,10 @@ export default async function DashboardPage() {
           <p className="label !mb-1">
             {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Selamat datang, {session.name.split(' ')[0]}
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {o.latest
               ? `Proses gaji terakhir: ${labelPeriode(o.latest.period)} · ${o.latest.headcount} karyawan`
               : 'Belum ada proses gaji yang diselesaikan.'}
@@ -90,10 +90,10 @@ export default async function DashboardPage() {
           <div className="flex items-start gap-3">
             <CircleAlert size={18} className="mt-px shrink-0" style={{ color: 'var(--color-brass-500)' }} />
             <div>
-              <p className="text-[0.875rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+              <p className="t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                 Periode {labelPeriode(periodeSekarang())} belum diproses
               </p>
-              <p className="mt-0.5 text-[0.8125rem]">
+              <p className="mt-0.5 t-small">
                 Buat proses gaji baru agar kehadiran dan lembur bulan ini ikut terhitung.
               </p>
             </div>
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
         {/* legenda tekstual — identitas departemen tidak bergantung warna saja */}
         <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t pt-3" style={{ borderColor: 'var(--hairline)' }}>
           {terrain.departments.map((d, i) => (
-            <li key={d} className="flex items-center gap-1.5 text-[0.6875rem]" style={{ color: 'var(--text-body)' }}>
+            <li key={d} className="flex items-center gap-1.5 t-micro" style={{ color: 'var(--text-body)' }}>
               <span className="size-2 rounded-[3px]" style={{ background: `var(--series-${(i % 6) + 1})` }} aria-hidden />
               {d}
             </li>
@@ -217,7 +217,7 @@ export default async function DashboardPage() {
             title="Biaya per departemen"
             subtitle={o.latest ? labelPeriode(o.latest.period) : '—'}
             action={
-              <Link href="/reports" className="text-[0.6875rem]" style={{ color: 'var(--accent)' }}>
+              <Link href="/reports" className="t-micro" style={{ color: 'var(--accent)' }}>
                 Laporan
               </Link>
             }
@@ -250,16 +250,16 @@ export default async function DashboardPage() {
                     <Avatar name={t.employee.fullName} size={30} />
                     <span className="min-w-0 flex-1">
                       <span
-                        className="block truncate text-[0.8125rem] font-medium"
+                        className="block truncate t-small font-medium"
                         style={{ color: 'var(--text-strong)' }}
                       >
                         {t.employee.fullName}
                       </span>
-                      <span className="block truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="block truncate t-micro" style={{ color: 'var(--text-muted)' }}>
                         {t.employee.position?.title ?? '—'}
                       </span>
                     </span>
-                    <span className="tnum shrink-0 text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                    <span className="tnum shrink-0 t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                       {rupiahRingkas(t.netPay)}
                     </span>
                   </Link>
@@ -301,7 +301,7 @@ export default async function DashboardPage() {
             <SectionTitle
               title="Aktivitas terakhir"
               action={
-                <Link href="/audit" className="text-[0.6875rem]" style={{ color: 'var(--accent)' }}>
+                <Link href="/audit" className="t-micro" style={{ color: 'var(--accent)' }}>
                   Semua
                 </Link>
               }
@@ -314,17 +314,17 @@ export default async function DashboardPage() {
                     style={{ background: 'var(--accent)' }}
                   />
                   <div className="min-w-0">
-                    <p className="text-[0.75rem] leading-snug" style={{ color: 'var(--text-body)' }}>
+                    <p className="t-label leading-snug" style={{ color: 'var(--text-body)' }}>
                       {a.summary}
                     </p>
-                    <p className="text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                    <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                       {a.actorName} · {sejak(a.createdAt)}
                     </p>
                   </div>
                 </li>
               ))}
               {activity.length === 0 && (
-                <li className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                <li className="t-label" style={{ color: 'var(--text-muted)' }}>
                   Belum ada aktivitas.
                 </li>
               )}
@@ -345,13 +345,13 @@ export default async function DashboardPage() {
           }
         />
         <div className="scroll-slim -mx-1 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[640px] t-body">
             <thead>
               <tr style={{ color: 'var(--text-muted)' }}>
                 {['Periode', 'Status', 'Karyawan', 'Bruto', 'Potongan', 'Bersih', 'Tanggal bayar'].map((h, i) => (
                   <th
                     key={h}
-                    className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                    className={`px-2 pb-2 t-micro font-semibold tracking-wide uppercase ${
                       i > 1 && i < 6 ? 'text-right' : 'text-left'
                     }`}
                   >
@@ -390,7 +390,7 @@ export default async function DashboardPage() {
                   >
                     {rupiah(r.totalNet)}
                   </td>
-                  <td className="px-2 py-2.5 text-[0.8125rem]">{tanggal(r.payDate)}</td>
+                  <td className="px-2 py-2.5 t-small">{tanggal(r.payDate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -421,9 +421,9 @@ function PendingRow({
         className="glass-thin flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:border-[color-mix(in_srgb,var(--accent)_35%,transparent)]"
       >
         <span style={{ color: 'var(--text-muted)' }}>{icon}</span>
-        <span className="flex-1 text-[0.8125rem]">{label}</span>
+        <span className="flex-1 t-small">{label}</span>
         {right ? (
-          <span className="tnum text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+          <span className="tnum t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
             {right}
           </span>
         ) : count && count > 0 ? (

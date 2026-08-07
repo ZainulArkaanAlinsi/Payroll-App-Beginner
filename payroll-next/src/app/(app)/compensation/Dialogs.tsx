@@ -8,6 +8,7 @@ import { SubmitButton, Toast } from '@/components/ui/Feedback';
 import { saveComponent, saveLoan } from '@/actions/compensation';
 import type { ActionState } from '@/lib/types';
 import { rupiah } from '@/lib/format';
+import FormulaEditor from '@/components/ui/FormulaEditor';
 
 export interface ComponentRow {
   id: string;
@@ -17,9 +18,13 @@ export interface ComponentRow {
   calcType: string;
   amount: number;
   percent: number;
+  formula: string | null;
   taxable: boolean;
+  countsForBpjs: boolean;
+  prorate: boolean;
   isDefault: boolean;
   active: boolean;
+  sortOrder: number;
   note: string | null;
 }
 
@@ -101,7 +106,14 @@ export function ComponentDialog({ component }: { component?: ComponentRow }) {
             </select>
           </label>
 
-          {calcType === 'FIXED' ? (
+          {calcType === 'FORMULA' ? (
+            <div>
+              <span className="label">Rumus</span>
+              <FormulaEditor name="formula" defaultValue={component?.formula ?? ''} />
+              <input type="hidden" name="amount" value={0} />
+              <input type="hidden" name="percent" value={0} />
+            </div>
+          ) : calcType === 'FIXED' ? (
             <label className="block">
               <span className="label">Nominal per bulan</span>
               <input
@@ -127,27 +139,51 @@ export function ComponentDialog({ component }: { component?: ComponentRow }) {
                 className="field tnum"
               />
               <input type="hidden" name="amount" value={0} />
-              <span className="mt-1 block text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+              <span className="mt-1 block t-micro" style={{ color: 'var(--text-muted)' }}>
                 Contoh: 12,5% dari gaji pokok Rp 20.000.000 = {rupiah(2_500_000)}.
               </span>
             </label>
           )}
 
-          <label className="block">
-            <span className="label">Catatan (opsional)</span>
-            <input name="note" defaultValue={component?.note ?? ''} className="field" />
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="label">Catatan (opsional)</span>
+              <input name="note" defaultValue={component?.note ?? ''} className="field" />
+            </label>
+            <label className="block">
+              <span className="label">Urutan tampil</span>
+              <input
+                name="sortOrder"
+                type="number"
+                min={0}
+                max={999}
+                defaultValue={component?.sortOrder ?? 0}
+                className="field tnum"
+              />
+            </label>
+          </div>
 
           <div className="space-y-2.5 pt-1">
             {type === 'ALLOWANCE' && (
               <Check name="taxable" defaultChecked={component?.taxable ?? true}>
                 Kena pajak
-                <span className="block text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                   Tunjangan bebas pajak tidak menambah dasar pengenaan PPh 21.
                 </span>
               </Check>
             )}
             {type === 'DEDUCTION' && <input type="hidden" name="taxable" value="" />}
+            {type === 'ALLOWANCE' && (
+              <Check name="countsForBpjs" defaultChecked={component?.countsForBpjs ?? false}>
+                Ikut menambah dasar pengali BPJS
+                <span className="block t-micro">
+                  Centang bila komponen ini termasuk “upah” menurut kebijakan perusahaan.
+                </span>
+              </Check>
+            )}
+            <Check name="prorate" defaultChecked={component?.prorate ?? false}>
+              Diprorata bila masuk atau berhenti tengah bulan
+            </Check>
             <Check name="isDefault" defaultChecked={component?.isDefault ?? false}>
               Otomatis diberikan ke karyawan baru
             </Check>
@@ -157,7 +193,7 @@ export function ComponentDialog({ component }: { component?: ComponentRow }) {
           </div>
 
           {state.error && (
-            <p className="text-xs" style={{ color: 'var(--color-clay-500)' }}>
+            <p className="t-label" style={{ color: 'var(--color-clay-500)' }}>
               {state.error}
             </p>
           )}
@@ -267,8 +303,8 @@ export function LoanDialog({
           </label>
 
           <div className="glass-thin flex items-baseline justify-between px-3.5 py-2.5">
-            <span className="text-[0.8125rem]">Potongan per bulan</span>
-            <span className="tnum text-sm font-semibold" style={{ color: 'var(--text-strong)' }}>
+            <span className="t-small">Potongan per bulan</span>
+            <span className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
               {rupiah(cicilan)}
             </span>
           </div>
@@ -279,7 +315,7 @@ export function LoanDialog({
           </label>
 
           {state.error && (
-            <p className="text-xs" style={{ color: 'var(--color-clay-500)' }}>
+            <p className="t-label" style={{ color: 'var(--color-clay-500)' }}>
               {state.error}
             </p>
           )}
@@ -310,7 +346,7 @@ function Check({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 text-[0.8125rem]">
+    <label className="flex cursor-pointer items-start gap-2.5 t-small">
       <input
         type="checkbox"
         name={name}

@@ -37,8 +37,8 @@ export default async function LoginPage() {
             </p>
           </div>
 
-          <p className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
-            NusaPay — proyek portofolio oleh Zainul Arkaan
+          <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
+            Racik — proyek portofolio oleh Zainul Arkaan
           </p>
         </div>
       </section>

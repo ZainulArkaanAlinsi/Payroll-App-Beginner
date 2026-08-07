@@ -132,15 +132,15 @@ export function OvertimeDialog({
           {upah > 0 && (
             <div className="glass-thin px-3.5 py-2.5">
               <div className="flex items-baseline justify-between">
-                <span className="text-[0.8125rem]">
+                <span className="t-small">
                   Perkiraan upah lembur
                   {hariLibur && (
-                    <span className="block text-[0.625rem]" style={{ color: 'var(--color-brass-500)' }}>
+                    <span className="block t-micro" style={{ color: 'var(--color-brass-500)' }}>
                       hari libur — pengganda 2× hingga 4×
                     </span>
                   )}
                 </span>
-                <span className="tnum text-sm font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <span className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                   {rupiah(perkiraan)}
                 </span>
               </div>
@@ -160,7 +160,7 @@ export function OvertimeDialog({
           </label>
 
           {state.error && (
-            <p className="text-xs" style={{ color: 'var(--color-clay-500)' }}>
+            <p className="t-label" style={{ color: 'var(--color-clay-500)' }}>
               {state.error}
             </p>
           )}

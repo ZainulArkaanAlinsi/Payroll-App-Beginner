@@ -14,10 +14,10 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+        <h1 className="t-display">
           Pengaturan
         </h1>
-        <p className="mt-1 text-[0.8125rem]">
+        <p className="mt-1 t-small">
           Perubahan tarif baru berlaku pada perhitungan payroll berikutnya. Periode yang sudah
           dibayarkan tidak terpengaruh.
         </p>

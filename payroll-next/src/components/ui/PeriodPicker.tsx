@@ -42,7 +42,7 @@ export default function PeriodPicker({
       </button>
 
       <span
-        className="glass-thin min-w-[9.5rem] px-3 py-1.5 text-center text-[0.8125rem] font-medium"
+        className="glass-thin min-w-[9.5rem] px-3 py-1.5 text-center t-small font-medium"
         style={{ color: 'var(--text-strong)' }}
       >
         {pending ? (

@@ -4,12 +4,12 @@ import { LiquidFilters } from '@/components/ui/Glass';
 
 export const metadata: Metadata = {
   title: {
-    default: 'NusaPay — Sistem Penggajian Modern',
-    template: '%s · NusaPay',
+    default: 'Racik — Sistem Penggajian Modern',
+    template: '%s · Racik',
   },
   description:
     'Platform penggajian untuk perusahaan Indonesia: perhitungan PPh 21 metode TER, iuran BPJS, lembur, cuti, dan slip gaji dalam satu alur kerja.',
-  applicationName: 'NusaPay',
+  applicationName: 'Racik',
   authors: [{ name: 'Zainul Arkaan' }],
   keywords: ['payroll', 'penggajian', 'PPh 21', 'BPJS', 'HRIS', 'Indonesia'],
 };
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 const THEME_BOOT = `
 (function(){
   try {
-    var s = localStorage.getItem('nusapay-theme');
+    var s = localStorage.getItem('racik-theme');
     var d = s ? s === 'dark'
       : window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (d) document.documentElement.classList.add('dark');

@@ -5,23 +5,36 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { audit, requireRole } from '@/lib/auth';
 import { FAIL, OK, type ActionState } from '@/lib/types';
+import { validateFormula } from '@/lib/formula';
 
 const schema = z
   .object({
     code: z.string().min(2, 'Kode minimal 2 karakter').max(12, 'Kode maksimal 12 karakter'),
     name: z.string().min(3, 'Nama minimal 3 karakter'),
     type: z.enum(['ALLOWANCE', 'DEDUCTION']),
-    calcType: z.enum(['FIXED', 'PERCENT_OF_BASE']),
+    calcType: z.enum(['FIXED', 'PERCENT_OF_BASE', 'FORMULA']),
     amount: z.coerce.number().int().min(0),
     percent: z.coerce.number().min(0).max(100),
+    formula: z.string().optional().nullable(),
     taxable: z.boolean(),
+    countsForBpjs: z.boolean(),
+    prorate: z.boolean(),
     isDefault: z.boolean(),
     active: z.boolean(),
+    sortOrder: z.coerce.number().int().min(0).max(999),
+    scopeDepartments: z.string().optional().nullable(),
+    scopeLevels: z.string().optional().nullable(),
     note: z.string().optional().nullable(),
   })
-  .refine((d) => (d.calcType === 'FIXED' ? d.amount > 0 : d.percent > 0), {
-    message: 'Isi nominal untuk tipe tetap, atau persentase untuk tipe persentase.',
-  });
+  .refine(
+    (d) =>
+      d.calcType === 'FIXED'
+        ? d.amount > 0
+        : d.calcType === 'PERCENT_OF_BASE'
+          ? d.percent > 0
+          : Boolean(d.formula && d.formula.trim()),
+    { message: 'Isi nominal, persentase, atau rumus sesuai cara hitung yang dipilih.' },
+  );
 
 export async function saveComponent(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const session = await requireRole('ADMIN', 'HR');
@@ -34,12 +47,29 @@ export async function saveComponent(_prev: ActionState, fd: FormData): Promise<A
     calcType: fd.get('calcType'),
     amount: fd.get('amount') || 0,
     percent: fd.get('percent') || 0,
+    formula: fd.get('formula') || null,
     taxable: fd.get('taxable') === 'on',
+    countsForBpjs: fd.get('countsForBpjs') === 'on',
+    prorate: fd.get('prorate') === 'on',
     isDefault: fd.get('isDefault') === 'on',
     active: fd.get('active') === 'on',
+    sortOrder: fd.get('sortOrder') || 0,
+    scopeDepartments: fd.getAll('scopeDepartments').length
+      ? JSON.stringify(fd.getAll('scopeDepartments').map(String))
+      : null,
+    scopeLevels: fd.getAll('scopeLevels').length
+      ? JSON.stringify(fd.getAll('scopeLevels').map(String))
+      : null,
     note: fd.get('note') || null,
   });
   if (!parsed.success) return FAIL(parsed.error.issues[0].message);
+
+  // Rumus diperiksa di server juga, bukan hanya di peramban — rumus rusak
+  // yang lolos ke basis data akan menggagalkan perhitungan seluruh periode.
+  if (parsed.data.calcType === 'FORMULA') {
+    const cek = validateFormula(parsed.data.formula ?? '');
+    if (!cek.ok) return FAIL(`Rumus tidak sah: ${cek.pesan}`);
+  }
 
   const bentrok = await prisma.salaryComponent.findFirst({
     where: { code: parsed.data.code, ...(id ? { NOT: { id } } : {}) },

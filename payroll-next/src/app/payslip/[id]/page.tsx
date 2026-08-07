@@ -30,8 +30,15 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
   // Karyawan biasa hanya boleh melihat slipnya sendiri.
   if (!canManage(session.role) && item.employeeId !== session.employeeId) notFound();
 
-  const company =
-    (await prisma.companySetting.findUnique({ where: { id: 'singleton' } })) ?? null;
+  const [company, fields] = await Promise.all([
+    prisma.companySetting.findUnique({ where: { id: 'singleton' } }),
+    prisma.payslipField.findMany({ select: { key: true, visible: true } }),
+  ]);
+
+  // Kolom yang disembunyikan HR di halaman Racik tidak dicetak di sini.
+  // Kolom yang belum terdaftar dianggap tampil, supaya slip tidak
+  // mendadak kosong bila ada kolom baru yang belum dikonfigurasi.
+  const tampil = (key: string) => fields.find((f) => f.key === key)?.visible ?? true;
 
   let rows: BreakdownRow[] = [];
   try {
@@ -81,26 +88,26 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 <h1 className="text-base font-semibold" style={{ color: 'var(--text-strong)' }}>
                   {company?.legalName ?? 'PT Nusantara Digital Karya'}
                 </h1>
-                <p className="mt-0.5 max-w-xs text-[0.6875rem] leading-snug" style={{ color: 'var(--text-muted)' }}>
+                <p className="mt-0.5 max-w-xs t-micro leading-snug" style={{ color: 'var(--text-muted)' }}>
                   {company?.address}
                 </p>
-                <p className="tnum text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                <p className="tnum t-micro" style={{ color: 'var(--text-muted)' }}>
                   NPWP {company?.npwp}
                 </p>
               </div>
             </div>
 
             <div className="text-right">
-              <p className="text-[0.6875rem] tracking-[0.14em] uppercase" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-micro tracking-[0.14em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Slip Gaji
               </p>
               <p className="text-lg font-semibold" style={{ color: 'var(--text-strong)' }}>
                 {labelPeriode(item.run.period)}
               </p>
-              <p className="text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-micro" style={{ color: 'var(--text-muted)' }}>
                 Dibayarkan {tanggalPanjang(item.run.paidAt ?? item.run.payDate)}
               </p>
-              <p className="tnum mt-1 text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+              <p className="tnum mt-1 t-micro" style={{ color: 'var(--text-muted)' }}>
                 No. {item.id.slice(-10).toUpperCase()}
               </p>
             </div>
@@ -108,12 +115,13 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
 
           {/* ── identitas karyawan ── */}
           <section className="grid gap-x-8 gap-y-3 py-6 sm:grid-cols-2">
-            <Baris label="Nama karyawan" value={item.employee.fullName} strong />
-            <Baris label="Nomor induk" value={item.employee.employeeNo} />
-            <Baris label="Jabatan" value={item.employee.position?.title ?? '—'} />
-            <Baris label="Departemen" value={item.employee.department?.name ?? '—'} />
-            <Baris label="Status PTKP" value={item.employee.ptkpStatus} />
-            <Baris label="NPWP" value={item.employee.npwp ?? 'Tidak terdaftar'} />
+            {tampil('nama') && <Baris label="Nama karyawan" value={item.employee.fullName} strong />}
+            {tampil('nomor') && <Baris label="Nomor induk" value={item.employee.employeeNo} />}
+            {tampil('jabatan') && <Baris label="Jabatan" value={item.employee.position?.title ?? '—'} />}
+            {tampil('departemen') && <Baris label="Departemen" value={item.employee.department?.name ?? '—'} />}
+            {tampil('ptkp') && <Baris label="Status PTKP" value={item.employee.ptkpStatus} />}
+            {tampil('npwp') && <Baris label="NPWP" value={item.employee.npwp ?? 'Tidak terdaftar'} />}
+            {tampil('rekening') && (
             <Baris
               label="Rekening"
               value={
@@ -122,30 +130,33 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                   : '—'
               }
             />
+            )}
+            {tampil('kehadiran') && (
             <Baris
               label="Kehadiran"
               value={`${item.presentDays} hadir · ${item.leaveDays} cuti · ${item.absentDays} mangkir`}
             />
+            )}
           </section>
 
           {/* ── penerimaan & potongan ── */}
           <section className="grid gap-8 border-t pt-6 sm:grid-cols-2" style={{ borderColor: 'var(--hairline)' }}>
             <div>
-              <h2 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
+              <h2 className="mb-3 t-micro font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Penerimaan
               </h2>
               <ul className="space-y-2">
                 {penerimaan.map((r, i) => (
                   <li key={i} className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 text-[0.8125rem]">
+                    <span className="min-w-0 t-small">
                       {r.label}
                       {r.note && (
-                        <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                        <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                           {r.note}
                         </span>
                       )}
                     </span>
-                    <span className="tnum shrink-0 text-[0.8125rem]" style={{ color: 'var(--text-strong)' }}>
+                    <span className="tnum shrink-0 t-small" style={{ color: 'var(--text-strong)' }}>
                       {rupiah(r.amount)}
                     </span>
                   </li>
@@ -155,37 +166,37 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 className="mt-3 flex items-baseline justify-between border-t pt-2.5"
                 style={{ borderColor: 'var(--hairline)' }}
               >
-                <span className="text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <span className="t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                   Penghasilan bruto
                 </span>
-                <span className="tnum text-[0.875rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <span className="tnum t-body font-semibold" style={{ color: 'var(--text-strong)' }}>
                   {rupiah(item.grossPay)}
                 </span>
               </div>
             </div>
 
             <div>
-              <h2 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
+              <h2 className="mb-3 t-micro font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Potongan
               </h2>
               <ul className="space-y-2">
                 {potongan.map((r, i) => (
                   <li key={i} className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 text-[0.8125rem]">
+                    <span className="min-w-0 t-small">
                       {r.label}
                       {r.note && (
-                        <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                        <span className="block t-micro" style={{ color: 'var(--text-muted)' }}>
                           {r.note}
                         </span>
                       )}
                     </span>
-                    <span className="tnum shrink-0 text-[0.8125rem]" style={{ color: 'var(--color-clay-500)' }}>
+                    <span className="tnum shrink-0 t-small" style={{ color: 'var(--color-clay-500)' }}>
                       ({rupiah(r.amount)})
                     </span>
                   </li>
                 ))}
                 {potongan.length === 0 && (
-                  <li className="text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
+                  <li className="t-small" style={{ color: 'var(--text-muted)' }}>
                     Tidak ada potongan.
                   </li>
                 )}
@@ -194,10 +205,10 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 className="mt-3 flex items-baseline justify-between border-t pt-2.5"
                 style={{ borderColor: 'var(--hairline)' }}
               >
-                <span className="text-[0.8125rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                <span className="t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
                   Total potongan
                 </span>
-                <span className="tnum text-[0.875rem] font-semibold" style={{ color: 'var(--color-clay-500)' }}>
+                <span className="tnum t-body font-semibold" style={{ color: 'var(--color-clay-500)' }}>
                   ({rupiah(item.totalDeduction)})
                 </span>
               </div>
@@ -210,25 +221,28 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
             style={{ background: 'var(--accent-soft)' }}
           >
             <div>
-              <p className="text-[0.6875rem] tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
+              <p className="t-micro tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Gaji bersih diterima
               </p>
               <p className="tnum mt-1 text-2xl font-bold" style={{ color: 'var(--text-strong)' }}>
                 {rupiah(item.netPay)}
               </p>
             </div>
-            <p className="max-w-[16rem] text-right text-[0.6875rem] italic" style={{ color: 'var(--text-muted)' }}>
-              Terbilang: {terbilangRp} rupiah
-            </p>
+            {tampil('terbilang') && (
+              <p className="max-w-[16rem] text-right t-micro italic" style={{ color: 'var(--text-muted)' }}>
+                Terbilang: {terbilangRp} rupiah
+              </p>
+            )}
           </section>
 
           {/* ── catatan pajak ── */}
           <section className="mt-6 grid gap-6 border-t pt-5 sm:grid-cols-2" style={{ borderColor: 'var(--hairline)' }}>
+            {tampil('dasar_pajak') && (
             <div>
-              <h3 className="mb-2 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
+              <h3 className="mb-2 t-micro font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Dasar perhitungan PPh 21
               </h3>
-              <dl className="space-y-1.5 text-[0.75rem]">
+              <dl className="space-y-1.5 t-label">
                 <Kecil k="Metode" v={item.taxMethod === 'TER' ? 'Tarif Efektif Rata-rata (PP 58/2023)' : 'Progresif Pasal 17 UU HPP'} />
                 <Kecil k="Bruto kena pajak" v={rupiah(item.taxableIncome)} />
                 <Kecil k="Tarif diterapkan" v={`${item.terRate}%`} />
@@ -238,13 +252,14 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 )}
               </dl>
             </div>
+            )}
 
-            {perusahaan.length > 0 && (
+            {tampil('iuran_perusahaan') && perusahaan.length > 0 && (
               <div>
-                <h3 className="mb-2 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
+                <h3 className="mb-2 t-micro font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>
                   Iuran ditanggung perusahaan
                 </h3>
-                <dl className="space-y-1.5 text-[0.75rem]">
+                <dl className="space-y-1.5 t-label">
                   {perusahaan.map((r, i) => (
                     <Kecil key={i} k={r.label} v={rupiah(r.amount)} />
                   ))}
@@ -258,8 +273,9 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
             )}
           </section>
 
+          {tampil('catatan_kaki') && (
           <footer
-            className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t pt-5 text-[0.625rem]"
+            className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t pt-5 t-micro"
             style={{ borderColor: 'var(--hairline)', color: 'var(--text-muted)' }}
           >
             <p className="max-w-sm leading-relaxed">
@@ -273,6 +289,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
               Bagian Sumber Daya Manusia
             </p>
           </footer>
+          )}
         </article>
       </div>
     </main>
@@ -282,11 +299,11 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
 function Baris({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div>
-      <p className="text-[0.625rem] tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+      <p className="t-micro tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
         {label}
       </p>
       <p
-        className="text-[0.8125rem]"
+        className="t-small"
         style={{ color: 'var(--text-strong)', fontWeight: strong ? 600 : 450 }}
       >
         {value}

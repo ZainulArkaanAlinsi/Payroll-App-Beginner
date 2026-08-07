@@ -40,10 +40,10 @@ export default async function OrgPage() {
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+          <h1 className="t-display">
             Organisasi
           </h1>
-          <p className="mt-1 text-[0.8125rem]">
+          <p className="mt-1 t-small">
             {departments.length} departemen · {totalPosisi} posisi · {totalKaryawan} karyawan aktif
           </p>
         </div>
@@ -96,10 +96,10 @@ export default async function OrgPage() {
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-[0.9375rem] font-semibold">{d.name}</h2>
+                      <h2 className="t-heading font-semibold">{d.name}</h2>
                       <Chip tone="neutral">{d.code}</Chip>
                     </div>
-                    <p className="mt-0.5 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                    <p className="mt-0.5 t-label" style={{ color: 'var(--text-muted)' }}>
                       {jumlah} karyawan · {d.positions.length} posisi
                       {d.costCenter && ` · ${d.costCenter}`}
                     </p>
@@ -126,7 +126,7 @@ export default async function OrgPage() {
 
                 {d.positions.length === 0 ? (
                   <p
-                    className="glass-thin px-3 py-4 text-center text-xs"
+                    className="glass-thin px-3 py-4 text-center t-label"
                     style={{ color: 'var(--text-muted)' }}
                   >
                     Belum ada posisi di departemen ini.
@@ -141,14 +141,14 @@ export default async function OrgPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span
-                              className="truncate text-[0.8125rem] font-medium"
+                              className="truncate t-small font-medium"
                               style={{ color: 'var(--text-strong)' }}
                             >
                               {p.title}
                             </span>
                             <Chip tone="info">{statusLabel(p.level)}</Chip>
                           </div>
-                          <p className="tnum text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          <p className="tnum t-micro" style={{ color: 'var(--text-muted)' }}>
                             {p.maxSalary > 0
                               ? `${rupiah(p.minSalary)} – ${rupiah(p.maxSalary)}`
                               : 'rentang gaji belum diisi'}
@@ -157,7 +157,7 @@ export default async function OrgPage() {
 
                         <Link
                           href={`/employees?dept=${d.id}`}
-                          className="flex items-center gap-1 text-[0.6875rem]"
+                          className="flex items-center gap-1 t-micro"
                           style={{ color: 'var(--text-muted)' }}
                         >
                           <Users size={12} />
