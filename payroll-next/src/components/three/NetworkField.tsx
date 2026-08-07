@@ -162,7 +162,11 @@ export default function NetworkField({ className }: { className?: string }) {
     const resize = () => {
       const w = el.clientWidth || 1;
       const h = el.clientHeight || 1;
-      renderer.setSize(w, h, false);
+      // Argumen ketiga WAJIB dibiarkan bawaan (true). Dengan false, Three.js
+      // tidak menetapkan lebar/tinggi CSS kanvas, sehingga kanvas tampil
+      // sebesar piksel internalnya — pada layar DPI tinggi jadi 1,5–2× lebih
+      // besar dari wadahnya dan isinya meluber keluar bingkai.
+      renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };

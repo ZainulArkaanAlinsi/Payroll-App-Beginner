@@ -66,7 +66,7 @@ export default function CostTerrain({
     const gap = 1.35;
     const barW = 0.86;
     const maxVal = Math.max(...cells.map((c) => c.value), 1);
-    const MAX_H = 6;
+    const MAX_H = 4.2;
 
     const offsetX = ((nx - 1) * gap) / 2;
     const offsetZ = ((nz - 1) * gap) / 2;
@@ -146,22 +146,38 @@ export default function CostTerrain({
 
     // ── orbit sederhana: seret untuk memutar, tanpa pustaka kontrol ──
     let azimuth = -0.62;
-    let polar = 0.94;
-    const dist = Math.max(15, Math.max(nx, nz) * 2.9);
+    let polar = 0.92;
     let dragging = false;
     let last = { x: 0, y: 0 };
     let autoSpin = true;
 
+    /**
+     * Jarak kamera dihitung dari bola pembatas seluruh isi, bukan angka
+     * tetap. Jarak tetap membuat grid 6x6 terpotong di atas dan bawah,
+     * dan ikut salah lagi setiap kali jumlah departemen berubah.
+     */
+    let dist = 20;
+    const hitungJarak = () => {
+      const w = nx * gap;
+      const d = nz * gap;
+      const radius = Math.sqrt((w / 2) ** 2 + (d / 2) ** 2 + (MAX_H / 2) ** 2) * 1.25;
+      const vFov = (camera.fov * Math.PI) / 180;
+      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.1));
+      // sisi tersempit yang menentukan — kalau tidak, isinya terpotong
+      dist = radius / Math.sin(Math.min(vFov, hFov) / 2);
+    };
+
     const applyCamera = () => {
-      polar = Math.min(1.42, Math.max(0.28, polar));
+      polar = Math.min(1.34, Math.max(0.3, polar));
       camera.position.set(
         dist * Math.sin(polar) * Math.sin(azimuth),
         dist * Math.cos(polar),
         dist * Math.sin(polar) * Math.cos(azimuth),
       );
-      camera.lookAt(0, 1.4, 0);
+      // dibidik ke tengah massa, bukan ke lantai, supaya balok tinggi
+      // tidak keluar dari bingkai atas
+      camera.lookAt(0, MAX_H * 0.3, 0);
     };
-    applyCamera();
 
     const canvas = renderer.domElement;
     canvas.style.touchAction = 'none';
@@ -233,9 +249,14 @@ export default function CostTerrain({
     const resize = () => {
       const w = el.clientWidth || 1;
       const h = el.clientHeight || 1;
-      renderer.setSize(w, h, false);
+      // Biarkan Three.js menetapkan ukuran CSS kanvas (bawaan true). Dengan
+      // false, kanvas tampil sebesar piksel internalnya dan meluber keluar.
+      renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      // rasio berubah -> jarak yang pas ikut berubah
+      hitungJarak();
+      applyCamera();
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -313,9 +334,14 @@ export default function CostTerrain({
         )}
       </div>
 
+      {/* Diberi alas semi-buram: sebelumnya teks ini jatuh tepat di atas
+          balok dan sama-sama tidak terbaca. */}
       <p
-        className="pointer-events-none absolute right-3 bottom-2 t-micro"
-        style={{ color: 'var(--text-muted)' }}
+        className="pointer-events-none absolute right-3 bottom-3 rounded-md px-2 py-1 t-micro"
+        style={{
+          background: 'color-mix(in srgb, var(--bg-base) 78%, transparent)',
+          backdropFilter: 'blur(4px)',
+        }}
       >
         seret untuk memutar · arahkan kursor ke balok
       </p>
