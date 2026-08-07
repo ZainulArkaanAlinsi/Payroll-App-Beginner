@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
-import { togglePayslipField } from '@/actions/racik';
+import { ArrowDown, ArrowUp, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { movePayslipField, togglePayslipField } from '@/actions/racik';
 import { Toast } from '@/components/ui/Feedback';
 import type { ActionState } from '@/lib/types';
 
@@ -20,20 +20,24 @@ const SECTION_LABEL: Record<string, string> = {
 // kehilangan makna, jadi sengaja dikunci.
 const WAJIB = new Set(['nama', 'rincian_terima', 'rincian_potong']);
 
-export default function PayslipFields({
-  fields,
-}: {
-  fields: { id: string; key: string; label: string; section: string; visible: boolean }[];
-}) {
+interface Field {
+  id: string;
+  key: string;
+  label: string;
+  section: string;
+  visible: boolean;
+}
+
+export default function PayslipFields({ fields }: { fields: Field[] }) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [, start] = useTransition();
   const [result, setResult] = useState<ActionState | null>(null);
   const router = useRouter();
 
-  const flip = (id: string, next: boolean) => {
+  const jalankan = (id: string, fn: () => Promise<ActionState>) => {
     setPendingId(id);
     start(async () => {
-      const s = await togglePayslipField(id, next);
+      const s = await fn();
       setResult(s);
       setPendingId(null);
       router.refresh();
@@ -44,56 +48,101 @@ export default function PayslipFields({
 
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {sections.map((sec) => (
-          <div key={sec}>
-            <p className="label">{SECTION_LABEL[sec] ?? sec}</p>
-            <ul className="space-y-1.5">
-              {fields
-                .filter((f) => f.section === sec)
-                .map((f) => {
+      <div className="grid gap-4 sm:grid-cols-2">
+        {sections.map((sec) => {
+          const daftar = fields.filter((f) => f.section === sec);
+          return (
+            <div key={sec}>
+              <p className="label">{SECTION_LABEL[sec] ?? sec}</p>
+              <ul className="space-y-1.5">
+                {daftar.map((f, i) => {
                   const dikunci = WAJIB.has(f.key);
+                  const sibuk = pendingId === f.id;
                   return (
-                    <li key={f.id}>
-                      <label
-                        className="glass-thin flex items-center gap-3 px-3 py-2.5 transition-colors"
+                    <li
+                      key={f.id}
+                      className="glass-thin flex items-center gap-2.5 px-3 py-2"
+                      style={{
+                        opacity: dikunci ? 0.75 : 1,
+                        borderColor: f.visible
+                          ? 'color-mix(in srgb, var(--accent) 30%, transparent)'
+                          : undefined,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={f.visible}
+                        disabled={dikunci || sibuk}
+                        onChange={() => jalankan(f.id, () => togglePayslipField(f.id, !f.visible))}
+                        className="size-4 shrink-0 rounded"
                         style={{
+                          accentColor: 'var(--color-jade-600)',
                           cursor: dikunci ? 'not-allowed' : 'pointer',
-                          opacity: dikunci ? 0.7 : 1,
-                          borderColor: f.visible
-                            ? 'color-mix(in srgb, var(--accent) 30%, transparent)'
-                            : undefined,
                         }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={f.visible}
-                          disabled={dikunci || pendingId === f.id}
-                          onChange={() => flip(f.id, !f.visible)}
-                          className="size-4 shrink-0 rounded"
-                          style={{ accentColor: 'var(--color-jade-600)' }}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate t-small" style={{ color: 'var(--text-strong)' }}>
-                            {f.label}
-                          </span>
-                          {dikunci && <span className="t-micro block">selalu tampil</span>}
+                        aria-label={`Tampilkan ${f.label}`}
+                      />
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate t-small" style={{ color: 'var(--text-strong)' }}>
+                          {f.label}
                         </span>
-                        {pendingId === f.id ? (
-                          <LoaderCircle size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />
-                        ) : f.visible ? (
-                          <Eye size={14} style={{ color: 'var(--accent)' }} />
-                        ) : (
-                          <EyeOff size={14} style={{ color: 'var(--text-muted)' }} />
-                        )}
-                      </label>
+                        {dikunci && <span className="t-micro block">selalu tampil</span>}
+                      </span>
+
+                      {sibuk ? (
+                        <LoaderCircle
+                          size={14}
+                          className="animate-spin"
+                          style={{ color: 'var(--text-muted)' }}
+                        />
+                      ) : f.visible ? (
+                        <Eye size={13} style={{ color: 'var(--accent)' }} />
+                      ) : (
+                        <EyeOff size={13} style={{ color: 'var(--text-muted)' }} />
+                      )}
+
+                      {/* Urutan hanya bisa digeser di dalam bagiannya sendiri. */}
+                      {daftar.length > 1 && (
+                        <span className="flex shrink-0 gap-0.5">
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ width: 24, paddingInline: 0, opacity: i === 0 ? 0.3 : 1 }}
+                            disabled={i === 0 || sibuk}
+                            onClick={() => jalankan(f.id, () => movePayslipField(f.id, 'UP'))}
+                            aria-label={`Naikkan ${f.label}`}
+                          >
+                            <ArrowUp size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{
+                              width: 24,
+                              paddingInline: 0,
+                              opacity: i === daftar.length - 1 ? 0.3 : 1,
+                            }}
+                            disabled={i === daftar.length - 1 || sibuk}
+                            onClick={() => jalankan(f.id, () => movePayslipField(f.id, 'DOWN'))}
+                            aria-label={`Turunkan ${f.label}`}
+                          >
+                            <ArrowDown size={11} />
+                          </button>
+                        </span>
+                      )}
                     </li>
                   );
                 })}
-            </ul>
-          </div>
-        ))}
+              </ul>
+            </div>
+          );
+        })}
       </div>
+
+      <p className="t-micro mt-4 border-t pt-3" style={{ borderColor: 'var(--hairline)' }}>
+        Perubahan langsung berlaku pada slip gaji yang dibuka atau dicetak berikutnya, termasuk slip
+        periode lampau.
+      </p>
 
       <Toast state={result} onDismiss={() => setResult(null)} />
     </>

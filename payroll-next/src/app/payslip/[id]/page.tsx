@@ -32,7 +32,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
 
   const [company, fields] = await Promise.all([
     prisma.companySetting.findUnique({ where: { id: 'singleton' } }),
-    prisma.payslipField.findMany({ select: { key: true, visible: true } }),
+    prisma.payslipField.findMany({ select: { key: true, visible: true, section: true, sortOrder: true } }),
   ]);
 
   // Kolom yang disembunyikan HR di halaman Racik tidak dicetak di sini.
@@ -52,6 +52,33 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
   const perusahaan = rows.filter((r) => r.group === 'EMPLOYER' && r.amount > 0);
 
   const terbilangRp = terbilang(item.netPay);
+
+  // Baris identitas disusun sebagai data lebih dulu, lalu diurutkan menurut
+  // pengaturan Racik. Menyusunnya langsung sebagai JSX membuat urutannya
+  // terkunci di kode dan pengaturan HR jadi tidak berarti.
+  const NILAI_IDENTITAS: Record<string, { label: string; value: string; strong?: boolean }> = {
+    nama: { label: 'Nama karyawan', value: item.employee.fullName, strong: true },
+    nomor: { label: 'Nomor induk', value: item.employee.employeeNo },
+    jabatan: { label: 'Jabatan', value: item.employee.position?.title ?? '—' },
+    departemen: { label: 'Departemen', value: item.employee.department?.name ?? '—' },
+    ptkp: { label: 'Status PTKP', value: item.employee.ptkpStatus },
+    npwp: { label: 'NPWP', value: item.employee.npwp ?? 'Tidak terdaftar' },
+    rekening: {
+      label: 'Rekening',
+      value: item.employee.bankAccount
+        ? `${item.employee.bankName ?? ''} · ${item.employee.bankAccount}`
+        : '—',
+    },
+    kehadiran: {
+      label: 'Kehadiran',
+      value: `${item.presentDays} hadir · ${item.leaveDays} cuti · ${item.absentDays} mangkir`,
+    },
+  };
+
+  const identitas = fields
+    .filter((f) => f.section === 'IDENTITAS' && f.visible && NILAI_IDENTITAS[f.key])
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((f) => ({ key: f.key, ...NILAI_IDENTITAS[f.key] }));
 
   return (
     <main className="min-h-dvh px-4 py-6">
@@ -113,30 +140,14 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
             </div>
           </header>
 
-          {/* ── identitas karyawan ── */}
+          {/* ── identitas karyawan ──
+              Urutan barisnya diambil dari pengaturan Racik, bukan dari urutan
+              penulisan di berkas ini, sehingga HR benar-benar bisa menyusun
+              sendiri tampilan slipnya. */}
           <section className="grid gap-x-8 gap-y-3 py-6 sm:grid-cols-2">
-            {tampil('nama') && <Baris label="Nama karyawan" value={item.employee.fullName} strong />}
-            {tampil('nomor') && <Baris label="Nomor induk" value={item.employee.employeeNo} />}
-            {tampil('jabatan') && <Baris label="Jabatan" value={item.employee.position?.title ?? '—'} />}
-            {tampil('departemen') && <Baris label="Departemen" value={item.employee.department?.name ?? '—'} />}
-            {tampil('ptkp') && <Baris label="Status PTKP" value={item.employee.ptkpStatus} />}
-            {tampil('npwp') && <Baris label="NPWP" value={item.employee.npwp ?? 'Tidak terdaftar'} />}
-            {tampil('rekening') && (
-            <Baris
-              label="Rekening"
-              value={
-                item.employee.bankAccount
-                  ? `${item.employee.bankName ?? ''} · ${item.employee.bankAccount}`
-                  : '—'
-              }
-            />
-            )}
-            {tampil('kehadiran') && (
-            <Baris
-              label="Kehadiran"
-              value={`${item.presentDays} hadir · ${item.leaveDays} cuti · ${item.absentDays} mangkir`}
-            />
-            )}
+            {identitas.map((b) => (
+              <Baris key={b.key} label={b.label} value={b.value} strong={b.strong} />
+            ))}
           </section>
 
           {/* ── penerimaan & potongan ── */}

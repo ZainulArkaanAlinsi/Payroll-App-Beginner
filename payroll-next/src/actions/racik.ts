@@ -158,6 +158,48 @@ export async function deleteStep(id: string): Promise<ActionState> {
 
 // ─────────────────────── Susunan slip gaji ───────────────────────
 
+/**
+ * Menggeser urutan baris slip.
+ *
+ * Pertukaran dibatasi di dalam satu bagian — memindahkan "NPWP" ke bagian
+ * potongan tidak punya makna, dan hasilnya hanya akan membingungkan.
+ */
+export async function movePayslipField(id: string, arah: 'UP' | 'DOWN'): Promise<ActionState> {
+  const session = await requireRole('ADMIN', 'HR');
+
+  const f = await prisma.payslipField.findUnique({ where: { id } });
+  if (!f) return FAIL('Kolom tidak ditemukan.');
+
+  const sekelompok = await prisma.payslipField.findMany({
+    where: { section: f.section },
+    orderBy: { sortOrder: 'asc' },
+  });
+
+  const i = sekelompok.findIndex((x) => x.id === id);
+  const j = arah === 'UP' ? i - 1 : i + 1;
+  if (j < 0 || j >= sekelompok.length) {
+    return FAIL('Baris ini sudah berada di ujung bagiannya.');
+  }
+
+  // Tukar nomor urut dalam satu transaksi agar tidak pernah ada dua baris
+  // dengan urutan sama, walau sesaat.
+  await prisma.$transaction([
+    prisma.payslipField.update({
+      where: { id: sekelompok[i].id },
+      data: { sortOrder: sekelompok[j].sortOrder },
+    }),
+    prisma.payslipField.update({
+      where: { id: sekelompok[j].id },
+      data: { sortOrder: sekelompok[i].sortOrder },
+    }),
+  ]);
+
+  await audit(session, 'UPDATE', 'PayslipField', id, `Urutan baris slip "${f.label}" digeser`);
+  revalidatePath('/racik');
+  revalidatePath('/payslip', 'layout');
+  return OK('Urutan baris slip diperbarui.');
+}
+
 export async function togglePayslipField(id: string, visible: boolean): Promise<ActionState> {
   const session = await requireRole('ADMIN', 'HR');
   const f = await prisma.payslipField.findUnique({ where: { id }, select: { label: true } });
