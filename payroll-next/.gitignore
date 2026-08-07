@@ -5,6 +5,10 @@ build
 .DS_Store
 *.pem
 npm-debug.log*
+
+# .env memuat AUTH_SECRET — jangan pernah masuk git.
+# Sengaja diulang di sini agar tidak bergantung pada .gitignore di akar repo.
+.env
 .env*.local
 prisma/dev.db
 prisma/dev.db-journal
