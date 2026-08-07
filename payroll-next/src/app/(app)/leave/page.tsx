@@ -1,0 +1,254 @@
+import Link from 'next/link';
+import { Palmtree } from 'lucide-react';
+import { requireRole } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { sejak, tanggal } from '@/lib/format';
+import {
+  Avatar, Chip, EmptyState, GlassCard, SectionTitle, StatusChip, statusLabel,
+} from '@/components/ui/Glass';
+import StatTile from '@/components/ui/StatTile';
+import TableToolbar from '@/components/ui/TableToolbar';
+import { LeaveDialog, ReviewLeave } from './LeaveControls';
+
+export const metadata = { title: 'Cuti' };
+
+export default async function LeavePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  await requireRole('ADMIN', 'HR');
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? '';
+  const status = sp.status ?? '';
+  const type = sp.type ?? '';
+
+  const [pending, riwayat, employees, ringkas] = await Promise.all([
+    prisma.leaveRequest.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            fullName: true,
+            employeeNo: true,
+            annualLeaveQuota: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.leaveRequest.findMany({
+      where: {
+        status: status ? status : { not: 'PENDING' },
+        ...(type ? { type } : {}),
+        ...(q ? { employee: { fullName: { contains: q } } } : {}),
+      },
+      include: {
+        employee: { select: { id: true, fullName: true, department: { select: { name: true } } } },
+      },
+      orderBy: { startDate: 'desc' },
+      take: 40,
+    }),
+    prisma.employee.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { fullName: 'asc' },
+      select: { id: true, fullName: true, employeeNo: true },
+    }),
+    prisma.leaveRequest.groupBy({ by: ['status'], _count: true, _sum: { days: true } }),
+  ]);
+
+  const jml = (s: string) => ringkas.find((r) => r.status === s)?._count ?? 0;
+  const hari = (s: string) => ringkas.find((r) => r.status === s)?._sum.days ?? 0;
+
+  // sisa kuota tahun berjalan untuk tiap pemohon yang menunggu
+  const tahun = new Date().getFullYear();
+  const terpakai = await prisma.leaveRequest.groupBy({
+    by: ['employeeId'],
+    where: {
+      type: 'ANNUAL',
+      status: 'APPROVED',
+      startDate: { gte: new Date(tahun, 0, 1) },
+    },
+    _sum: { days: true },
+  });
+  const pakaiMap = new Map(terpakai.map((t) => [t.employeeId, t._sum.days ?? 0]));
+
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.024em' }}>
+            Cuti
+          </h1>
+          <p className="mt-1 text-[0.8125rem]">
+            {pending.length} pengajuan menunggu ditinjau
+          </p>
+        </div>
+        <LeaveDialog employees={employees} label="Ajukan atas nama karyawan" />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label="Menunggu" value={String(jml('PENDING'))} sub="perlu ditinjau" />
+        <StatTile label="Disetujui" value={String(jml('APPROVED'))} sub={`${hari('APPROVED')} hari total`} />
+        <StatTile label="Ditolak" value={String(jml('REJECTED'))} />
+        <StatTile label="Dibatalkan" value={String(jml('CANCELLED'))} />
+      </div>
+
+      {/* ── antrean persetujuan ── */}
+      <GlassCard>
+        <SectionTitle
+          title="Menunggu persetujuan"
+          subtitle="Diurutkan dari pengajuan paling lama"
+        />
+        {pending.length === 0 ? (
+          <EmptyState
+            icon={<Palmtree size={18} />}
+            title="Tidak ada antrean"
+            hint="Semua pengajuan cuti sudah ditinjau."
+          />
+        ) : (
+          <ul className="space-y-2">
+            {pending.map((r) => {
+              const sisa = r.employee.annualLeaveQuota - (pakaiMap.get(r.employeeId) ?? 0);
+              const melebihi = r.type === 'ANNUAL' && r.days > sisa;
+              return (
+                <li key={r.id}>
+                  <div className="glass-thin flex flex-wrap items-center gap-4 px-4 py-3">
+                    <Link href={`/employees/${r.employee.id}`} className="flex min-w-[13rem] items-center gap-2.5">
+                      <Avatar name={r.employee.fullName} size={34} />
+                      <span className="min-w-0">
+                        <span
+                          className="block truncate text-[0.875rem] font-medium"
+                          style={{ color: 'var(--text-strong)' }}
+                        >
+                          {r.employee.fullName}
+                        </span>
+                        <span className="block truncate text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                          {r.employee.department?.name ?? '—'} · diajukan {sejak(r.createdAt)}
+                        </span>
+                      </span>
+                    </Link>
+
+                    <div className="min-w-[11rem]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Chip tone="info">{statusLabel(r.type)}</Chip>
+                        <span className="tnum text-[0.75rem] font-semibold" style={{ color: 'var(--text-strong)' }}>
+                          {r.days} hari
+                        </span>
+                        {melebihi && <Chip tone="clay">melebihi kuota</Chip>}
+                      </div>
+                      <p className="mt-0.5 text-[0.6875rem]" style={{ color: 'var(--text-muted)' }}>
+                        {tanggal(r.startDate)} – {tanggal(r.endDate)}
+                        {r.type === 'ANNUAL' && ` · sisa kuota ${sisa} hari`}
+                      </p>
+                    </div>
+
+                    <p className="min-w-[12rem] flex-1 text-[0.75rem]">{r.reason}</p>
+
+                    <ReviewLeave id={r.id} name={r.employee.fullName} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </GlassCard>
+
+      {/* ── riwayat ── */}
+      <GlassCard>
+        <SectionTitle title="Riwayat pengajuan" subtitle="40 data terbaru" />
+        <TableToolbar
+          searchPlaceholder="Cari nama karyawan…"
+          filters={[
+            {
+              name: 'status',
+              label: 'Semua status',
+              options: [
+                { value: 'APPROVED', label: 'Disetujui' },
+                { value: 'REJECTED', label: 'Ditolak' },
+                { value: 'CANCELLED', label: 'Dibatalkan' },
+              ],
+            },
+            {
+              name: 'type',
+              label: 'Semua jenis',
+              options: [
+                { value: 'ANNUAL', label: 'Cuti tahunan' },
+                { value: 'SICK', label: 'Sakit' },
+                { value: 'UNPAID', label: 'Di luar tanggungan' },
+                { value: 'MATERNITY', label: 'Melahirkan' },
+                { value: 'SPECIAL', label: 'Khusus' },
+              ],
+            },
+          ]}
+        />
+
+        {riwayat.length === 0 ? (
+          <EmptyState title="Tidak ada data yang cocok" />
+        ) : (
+          <div className="scroll-slim -mx-1 overflow-x-auto">
+            <table className="w-full min-w-[820px] text-sm">
+              <thead>
+                <tr style={{ color: 'var(--text-muted)' }}>
+                  {['Karyawan', 'Jenis', 'Tanggal', 'Hari', 'Alasan', 'Peninjau', 'Status'].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-2 pb-2 text-[0.6875rem] font-semibold tracking-wide uppercase ${
+                        i === 3 ? 'text-right' : 'text-left'
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {riwayat.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="transition-colors hover:bg-[var(--field-bg)]"
+                    style={{ borderTop: '1px solid var(--hairline)' }}
+                  >
+                    <td className="px-2 py-2.5">
+                      <Link
+                        href={`/employees/${r.employee.id}`}
+                        className="text-[0.8125rem] font-medium"
+                        style={{ color: 'var(--text-strong)' }}
+                      >
+                        {r.employee.fullName}
+                      </Link>
+                      <span className="block text-[0.625rem]" style={{ color: 'var(--text-muted)' }}>
+                        {r.employee.department?.name ?? '—'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2.5 text-[0.8125rem]">{statusLabel(r.type)}</td>
+                    <td className="px-2 py-2.5 text-[0.8125rem]">
+                      {tanggal(r.startDate)} – {tanggal(r.endDate)}
+                    </td>
+                    <td className="tnum px-2 py-2.5 text-right text-[0.8125rem]">{r.days}</td>
+                    <td className="max-w-[16rem] px-2 py-2.5 text-[0.75rem]">
+                      <span className="line-clamp-2">{r.reason}</span>
+                      {r.reviewNote && (
+                        <span className="block text-[0.625rem]" style={{ color: 'var(--color-clay-500)' }}>
+                          Catatan: {r.reviewNote}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2.5 text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                      {r.reviewedBy ?? '—'}
+                    </td>
+                    <td className="px-2 py-2.5">
+                      <StatusChip status={r.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
+    </div>
+  );
+}

@@ -1,0 +1,562 @@
+/**
+ * Seed NusaPay — data demo yang realistis.
+ *
+ * Menghasilkan: 1 perusahaan, 6 departemen, 14 posisi, 26 karyawan,
+ * komponen gaji, ~4 bulan kehadiran, cuti, lembur, pinjaman, dan
+ * 3 periode payroll yang sudah dibayar + 1 periode berjalan.
+ */
+
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { calculatePayroll, workingDaysInPeriod, type ComponentLine } from '../src/lib/payroll-engine';
+import type { PtkpStatus } from '../src/lib/tax';
+
+const prisma = new PrismaClient();
+
+// PRNG deterministik supaya setiap `db:seed` menghasilkan data yang sama.
+let seed = 20250412;
+function rnd() {
+  seed = (seed * 1664525 + 1013904223) % 4294967296;
+  return seed / 4294967296;
+}
+const pick = <T,>(arr: T[]): T => arr[Math.floor(rnd() * arr.length)];
+const between = (a: number, b: number) => Math.floor(rnd() * (b - a + 1)) + a;
+
+const DEPARTEMEN = [
+  { code: 'ENG', name: 'Teknologi', costCenter: 'CC-100' },
+  { code: 'PRD', name: 'Produk & Desain', costCenter: 'CC-200' },
+  { code: 'FIN', name: 'Keuangan', costCenter: 'CC-300' },
+  { code: 'HRD', name: 'Sumber Daya Manusia', costCenter: 'CC-400' },
+  { code: 'MKT', name: 'Pemasaran', costCenter: 'CC-500' },
+  { code: 'OPS', name: 'Operasional', costCenter: 'CC-600' },
+];
+
+const POSISI: { dept: string; title: string; level: string; min: number; max: number }[] = [
+  { dept: 'ENG', title: 'Backend Engineer', level: 'STAFF', min: 9_000_000, max: 16_000_000 },
+  { dept: 'ENG', title: 'Frontend Engineer', level: 'STAFF', min: 9_000_000, max: 15_500_000 },
+  { dept: 'ENG', title: 'Engineering Lead', level: 'LEAD', min: 22_000_000, max: 34_000_000 },
+  { dept: 'ENG', title: 'QA Engineer', level: 'STAFF', min: 7_500_000, max: 12_000_000 },
+  { dept: 'PRD', title: 'Product Manager', level: 'MANAGER', min: 18_000_000, max: 28_000_000 },
+  { dept: 'PRD', title: 'UI/UX Designer', level: 'STAFF', min: 8_500_000, max: 14_000_000 },
+  { dept: 'FIN', title: 'Staf Akuntansi', level: 'STAFF', min: 6_500_000, max: 10_000_000 },
+  { dept: 'FIN', title: 'Finance Manager', level: 'MANAGER', min: 20_000_000, max: 30_000_000 },
+  { dept: 'HRD', title: 'HR Generalist', level: 'STAFF', min: 7_000_000, max: 11_000_000 },
+  { dept: 'HRD', title: 'HR Manager', level: 'MANAGER', min: 18_000_000, max: 26_000_000 },
+  { dept: 'MKT', title: 'Digital Marketing', level: 'STAFF', min: 6_500_000, max: 11_000_000 },
+  { dept: 'MKT', title: 'Marketing Lead', level: 'LEAD', min: 16_000_000, max: 24_000_000 },
+  { dept: 'OPS', title: 'Staf Operasional', level: 'STAFF', min: 5_500_000, max: 8_500_000 },
+  { dept: 'OPS', title: 'Direktur Operasional', level: 'DIRECTOR', min: 40_000_000, max: 60_000_000 },
+];
+
+const ORANG: { nama: string; posisi: string; gaji: number; ptkp: PtkpStatus; gender: string }[] = [
+  { nama: 'Adit Nugroho Prakoso', posisi: 'Direktur Operasional', gaji: 52_000_000, ptkp: 'K/3', gender: 'M' },
+  { nama: 'Rani Kusumawardani', posisi: 'Engineering Lead', gaji: 29_500_000, ptkp: 'K/1', gender: 'F' },
+  { nama: 'Bagas Setiawan', posisi: 'Backend Engineer', gaji: 14_200_000, ptkp: 'TK/0', gender: 'M' },
+  { nama: 'Dinda Ayu Lestari', posisi: 'Frontend Engineer', gaji: 13_400_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Fajar Ramadhan', posisi: 'Backend Engineer', gaji: 11_800_000, ptkp: 'K/0', gender: 'M' },
+  { nama: 'Sekar Ayuningtyas', posisi: 'Frontend Engineer', gaji: 10_900_000, ptkp: 'TK/1', gender: 'F' },
+  { nama: 'Yoga Pratama Wibowo', posisi: 'QA Engineer', gaji: 9_600_000, ptkp: 'TK/0', gender: 'M' },
+  { nama: 'Nabila Rahmawati', posisi: 'QA Engineer', gaji: 8_400_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Reza Aditya Kurnia', posisi: 'Backend Engineer', gaji: 12_600_000, ptkp: 'K/2', gender: 'M' },
+  { nama: 'Kirana Maheswari', posisi: 'Product Manager', gaji: 24_500_000, ptkp: 'K/1', gender: 'F' },
+  { nama: 'Bimo Aryasatya', posisi: 'UI/UX Designer', gaji: 12_100_000, ptkp: 'TK/0', gender: 'M' },
+  { nama: 'Tiara Hapsari Putri', posisi: 'UI/UX Designer', gaji: 10_300_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Hendra Wijaya Kusuma', posisi: 'Finance Manager', gaji: 26_000_000, ptkp: 'K/2', gender: 'M' },
+  { nama: 'Maya Anggraini', posisi: 'Staf Akuntansi', gaji: 8_200_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Galih Saputra', posisi: 'Staf Akuntansi', gaji: 7_400_000, ptkp: 'TK/1', gender: 'M' },
+  { nama: 'Larasati Widyaningrum', posisi: 'HR Manager', gaji: 22_800_000, ptkp: 'K/1', gender: 'F' },
+  { nama: 'Anggun Puspita Sari', posisi: 'HR Generalist', gaji: 9_100_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Damar Prasetyo', posisi: 'HR Generalist', gaji: 8_000_000, ptkp: 'K/0', gender: 'M' },
+  { nama: 'Rizky Ardiansyah', posisi: 'Marketing Lead', gaji: 19_500_000, ptkp: 'K/0', gender: 'M' },
+  { nama: 'Salsabila Nur Aisyah', posisi: 'Digital Marketing', gaji: 8_800_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Ilham Maulana Yusuf', posisi: 'Digital Marketing', gaji: 7_600_000, ptkp: 'TK/0', gender: 'M' },
+  { nama: 'Citra Dewi Anjani', posisi: 'Digital Marketing', gaji: 9_200_000, ptkp: 'TK/2', gender: 'F' },
+  { nama: 'Arif Budiman Santoso', posisi: 'Staf Operasional', gaji: 6_800_000, ptkp: 'K/1', gender: 'M' },
+  { nama: 'Wulan Safitri', posisi: 'Staf Operasional', gaji: 6_200_000, ptkp: 'TK/0', gender: 'F' },
+  { nama: 'Panji Kurniawan', posisi: 'Staf Operasional', gaji: 5_900_000, ptkp: 'TK/0', gender: 'M' },
+  { nama: 'Melati Ramadhani Putri', posisi: 'Backend Engineer', gaji: 10_400_000, ptkp: 'TK/0', gender: 'F' },
+];
+
+const BANK = ['BCA', 'Bank Mandiri', 'BNI', 'BRI', 'Bank Jago', 'CIMB Niaga'];
+
+const KOMPONEN = [
+  { code: 'TJ-TRANS', name: 'Tunjangan Transportasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 750_000, percent: 0, taxable: true, isDefault: true },
+  { code: 'TJ-MAKAN', name: 'Tunjangan Makan', type: 'ALLOWANCE', calcType: 'FIXED', amount: 900_000, percent: 0, taxable: true, isDefault: true },
+  { code: 'TJ-JABAT', name: 'Tunjangan Jabatan', type: 'ALLOWANCE', calcType: 'PERCENT_OF_BASE', amount: 0, percent: 12.5, taxable: true, isDefault: false },
+  { code: 'TJ-KOMUN', name: 'Tunjangan Komunikasi', type: 'ALLOWANCE', calcType: 'FIXED', amount: 350_000, percent: 0, taxable: true, isDefault: true },
+  { code: 'TJ-KESEH', name: 'Tunjangan Kesehatan Keluarga', type: 'ALLOWANCE', calcType: 'FIXED', amount: 500_000, percent: 0, taxable: false, isDefault: false },
+  { code: 'TJ-WFH', name: 'Tunjangan Kerja Jarak Jauh', type: 'ALLOWANCE', calcType: 'FIXED', amount: 400_000, percent: 0, taxable: false, isDefault: false },
+  { code: 'PT-KOPER', name: 'Iuran Koperasi Karyawan', type: 'DEDUCTION', calcType: 'FIXED', amount: 100_000, percent: 0, taxable: false, isDefault: true },
+  { code: 'PT-SERIK', name: 'Iuran Serikat Pekerja', type: 'DEDUCTION', calcType: 'FIXED', amount: 50_000, percent: 0, taxable: false, isDefault: false },
+];
+
+function periodeMundur(n: number): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function main() {
+  console.log('› Membersihkan basis data…');
+  await prisma.payrollItem.deleteMany();
+  await prisma.payrollRun.deleteMany();
+  await prisma.attendance.deleteMany();
+  await prisma.overtime.deleteMany();
+  await prisma.leaveRequest.deleteMany();
+  await prisma.loan.deleteMany();
+  await prisma.employeeComponent.deleteMany();
+  await prisma.salaryComponent.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.employee.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.position.deleteMany();
+  await prisma.department.deleteMany();
+  await prisma.companySetting.deleteMany();
+
+  console.log('› Profil perusahaan…');
+  const company = await prisma.companySetting.create({ data: { id: 'singleton' } });
+
+  console.log('› Departemen & posisi…');
+  const deptMap: Record<string, string> = {};
+  for (const d of DEPARTEMEN) {
+    const rec = await prisma.department.create({ data: d });
+    deptMap[d.code] = rec.id;
+  }
+
+  const posMap: Record<string, { id: string; deptId: string }> = {};
+  for (const p of POSISI) {
+    const rec = await prisma.position.create({
+      data: {
+        title: p.title,
+        level: p.level,
+        departmentId: deptMap[p.dept],
+        minSalary: p.min,
+        maxSalary: p.max,
+      },
+    });
+    posMap[p.title] = { id: rec.id, deptId: deptMap[p.dept] };
+  }
+
+  console.log('› Komponen gaji…');
+  const komponen = [];
+  for (const k of KOMPONEN) komponen.push(await prisma.salaryComponent.create({ data: k }));
+
+  console.log('› Akun & karyawan…');
+  const pass = await bcrypt.hash('password123', 10);
+
+  await prisma.user.create({
+    data: {
+      email: 'admin@nusapay.id',
+      name: 'Zainul Arkaan',
+      password: pass,
+      role: 'ADMIN',
+      avatarHue: 158,
+    },
+  });
+
+  const employees: { id: string; gaji: number; ptkp: PtkpStatus; joinDate: Date }[] = [];
+
+  for (let i = 0; i < ORANG.length; i++) {
+    const o = ORANG[i];
+    const pos = posMap[o.posisi];
+    const nomor = `ND-${String(i + 1).padStart(4, '0')}`;
+    const email = o.nama.toLowerCase().split(' ')[0] + '.' + o.nama.toLowerCase().split(' ').slice(-1)[0] + '@nusantaradigital.id';
+
+    const tahunGabung = between(2019, 2024);
+    const joinDate = new Date(tahunGabung, between(0, 11), between(1, 28));
+
+    // HR Manager dapat akun HR, sisanya akun karyawan biasa.
+    const role = o.posisi === 'HR Manager' ? 'HR' : 'EMPLOYEE';
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name: o.nama,
+        password: pass,
+        role,
+        avatarHue: between(0, 359),
+      },
+    });
+
+    const emp = await prisma.employee.create({
+      data: {
+        employeeNo: nomor,
+        userId: user.id,
+        fullName: o.nama,
+        email,
+        phone: `08${between(10, 99)}${between(10000000, 99999999)}`,
+        nik: `31${between(70, 79)}${between(100000000000, 999999999999)}`,
+        // ~15% karyawan sengaja tidak punya NPWP → kena tarif PPh +20%
+        npwp: rnd() > 0.15 ? `${between(10, 99)}.${between(100, 999)}.${between(100, 999)}.${between(1, 9)}-${between(100, 999)}.000` : null,
+        birthDate: new Date(between(1985, 2001), between(0, 11), between(1, 28)),
+        gender: o.gender,
+        address: `Jl. ${pick(['Melati', 'Kenanga', 'Cendana', 'Anggrek', 'Bougenville'])} No. ${between(1, 99)}, ${pick(['Jakarta Selatan', 'Depok', 'Tangerang Selatan', 'Bekasi', 'Bogor'])}`,
+        departmentId: pos.deptId,
+        positionId: pos.id,
+        joinDate,
+        employmentType: rnd() > 0.2 ? 'PERMANENT' : 'CONTRACT',
+        status: 'ACTIVE',
+        baseSalary: o.gaji,
+        ptkpStatus: o.ptkp,
+        bankName: pick(BANK),
+        bankAccount: `${between(1000000000, 9999999999)}`,
+        bankHolder: o.nama,
+        bpjsKesehatanNo: `000${between(1000000000, 9999999999)}`,
+        bpjsTkNo: `2${between(10000000000, 99999999999)}`,
+        annualLeaveQuota: 12,
+      },
+    });
+
+    employees.push({ id: emp.id, gaji: o.gaji, ptkp: o.ptkp, joinDate });
+
+    // komponen default + tunjangan jabatan untuk level atas
+    const wajib = komponen.filter((k) => k.isDefault);
+    for (const k of wajib) {
+      await prisma.employeeComponent.create({ data: { employeeId: emp.id, componentId: k.id } });
+    }
+    const posisiInfo = POSISI.find((p) => p.title === o.posisi)!;
+    if (['LEAD', 'MANAGER', 'DIRECTOR'].includes(posisiInfo.level)) {
+      const jabat = komponen.find((k) => k.code === 'TJ-JABAT')!;
+      await prisma.employeeComponent.create({ data: { employeeId: emp.id, componentId: jabat.id } });
+    }
+    if (rnd() > 0.6) {
+      const kes = komponen.find((k) => k.code === 'TJ-KESEH')!;
+      await prisma.employeeComponent.create({ data: { employeeId: emp.id, componentId: kes.id } });
+    }
+    if (rnd() > 0.7) {
+      const wfh = komponen.find((k) => k.code === 'TJ-WFH')!;
+      await prisma.employeeComponent.create({ data: { employeeId: emp.id, componentId: wfh.id } });
+    }
+  }
+
+  console.log('› Pinjaman karyawan…');
+  for (let i = 0; i < 4; i++) {
+    const e = employees[between(0, employees.length - 1)];
+    const principal = between(5, 25) * 1_000_000;
+    const tenor = pick([6, 10, 12, 18, 24]);
+    await prisma.loan.create({
+      data: {
+        employeeId: e.id,
+        principal,
+        tenorMonths: tenor,
+        monthlyDeduction: Math.round(principal / tenor),
+        remaining: Math.round((principal / tenor) * between(2, tenor)),
+        startPeriod: periodeMundur(between(3, 10)),
+        status: 'ACTIVE',
+        note: pick(['Renovasi rumah', 'Biaya pendidikan anak', 'Kebutuhan keluarga', 'Pembelian kendaraan']),
+      },
+    });
+  }
+
+  console.log('› Kehadiran 4 bulan terakhir…');
+  const attendanceRows: any[] = [];
+  for (let back = 3; back >= 0; back--) {
+    const [y, m] = periodeMundur(back).split('-').map(Number);
+    const jumlahHari = new Date(y, m, 0).getDate();
+
+    for (const e of employees) {
+      for (let d = 1; d <= jumlahHari; d++) {
+        const date = new Date(y, m - 1, d);
+        if (date > new Date()) break;
+        const dow = date.getDay();
+        if (dow === 0 || dow === 6) continue;
+        if (date < e.joinDate) continue;
+
+        const r = rnd();
+        let status = 'PRESENT';
+        let clockIn: Date | null = null;
+        let clockOut: Date | null = null;
+        let lateMinutes = 0;
+        let workMinutes = 0;
+
+        if (r < 0.025) {
+          status = 'ABSENT';
+        } else if (r < 0.06) {
+          status = 'LEAVE';
+        } else {
+          const wfh = rnd() < 0.22;
+          const telat = rnd() < 0.18 ? between(5, 65) : 0;
+          const masuk = new Date(y, m - 1, d, 9, telat);
+          const durasi = between(505, 600); // 8j25m – 10j
+          const pulang = new Date(masuk.getTime() + durasi * 60000);
+          clockIn = masuk;
+          clockOut = pulang;
+          workMinutes = durasi;
+          lateMinutes = Math.max(0, telat - company.lateToleranceMin);
+          status = wfh ? 'WFH' : lateMinutes > 0 ? 'LATE' : 'PRESENT';
+        }
+
+        attendanceRows.push({
+          employeeId: e.id,
+          date,
+          clockIn,
+          clockOut,
+          status,
+          lateMinutes,
+          workMinutes,
+        });
+      }
+    }
+  }
+  // createMany jauh lebih cepat daripada ribuan create satu-satu
+  for (let i = 0; i < attendanceRows.length; i += 500) {
+    await prisma.attendance.createMany({ data: attendanceRows.slice(i, i + 500) });
+  }
+  console.log(`  ${attendanceRows.length} baris kehadiran`);
+
+  console.log('› Lembur…');
+  const overtimeRows: any[] = [];
+  for (let back = 3; back >= 0; back--) {
+    const [y, m] = periodeMundur(back).split('-').map(Number);
+    for (let n = 0; n < 18; n++) {
+      const e = employees[between(0, employees.length - 1)];
+      const d = between(1, 26);
+      const date = new Date(y, m - 1, d);
+      if (date > new Date() || date < e.joinDate) continue;
+      const isHoliday = date.getDay() === 0 || date.getDay() === 6;
+      const hours = between(2, 8) / 2 + 1;
+      const status = back === 0 && rnd() < 0.45 ? 'PENDING' : rnd() < 0.9 ? 'APPROVED' : 'REJECTED';
+      overtimeRows.push({
+        employeeId: e.id,
+        date,
+        hours,
+        isHoliday,
+        reason: pick([
+          'Rilis fitur ke produksi',
+          'Menyelesaikan tutup buku bulanan',
+          'Perbaikan insiden produksi',
+          'Persiapan audit internal',
+          'Menyiapkan materi kampanye',
+          'Migrasi basis data',
+        ]),
+        status,
+        reviewedAt: status === 'PENDING' ? null : new Date(y, m - 1, Math.min(28, d + 2)),
+      });
+    }
+  }
+  await prisma.overtime.createMany({ data: overtimeRows });
+
+  console.log('› Pengajuan cuti…');
+  const leaveRows: any[] = [];
+  for (let back = 3; back >= 0; back--) {
+    const [y, m] = periodeMundur(back).split('-').map(Number);
+    for (let n = 0; n < 7; n++) {
+      const e = employees[between(0, employees.length - 1)];
+      const mulai = between(1, 20);
+      const durasi = between(1, 4);
+      const start = new Date(y, m - 1, mulai);
+      if (start < e.joinDate) continue;
+      const status = back === 0 && rnd() < 0.5 ? 'PENDING' : rnd() < 0.85 ? 'APPROVED' : 'REJECTED';
+      leaveRows.push({
+        employeeId: e.id,
+        type: pick(['ANNUAL', 'ANNUAL', 'ANNUAL', 'SICK', 'SICK', 'UNPAID', 'SPECIAL']),
+        startDate: start,
+        endDate: new Date(y, m - 1, mulai + durasi - 1),
+        days: durasi,
+        reason: pick([
+          'Acara keluarga di kampung halaman',
+          'Pemulihan setelah sakit',
+          'Mengurus dokumen kependudukan',
+          'Liburan bersama keluarga',
+          'Menghadiri pernikahan saudara',
+          'Kontrol kesehatan rutin',
+        ]),
+        status,
+        reviewedAt: status === 'PENDING' ? null : new Date(y, m - 1, Math.max(1, mulai - 2)),
+        reviewNote: status === 'REJECTED' ? 'Bentrok dengan jadwal rilis, mohon ajukan ulang.' : null,
+      });
+    }
+  }
+  await prisma.leaveRequest.createMany({ data: leaveRows });
+
+  console.log('› Menjalankan payroll 3 periode terakhir…');
+  const bpjsConfig = {
+    kesEmployeeRate: company.bpjsKesEmployeeRate,
+    kesEmployerRate: company.bpjsKesEmployerRate,
+    kesCap: company.bpjsKesCap,
+    jhtEmployeeRate: company.bpjsJhtEmployeeRate,
+    jhtEmployerRate: company.bpjsJhtEmployerRate,
+    jpEmployeeRate: company.bpjsJpEmployeeRate,
+    jpEmployerRate: company.bpjsJpEmployerRate,
+    jpCap: company.bpjsJpCap,
+    jkkRate: company.bpjsJkkRate,
+    jkmRate: company.bpjsJkmRate,
+  };
+
+  for (let back = 3; back >= 1; back--) {
+    const period = periodeMundur(back);
+    const [y, m] = period.split('-').map(Number);
+    const run = await prisma.payrollRun.create({
+      data: {
+        period,
+        label: `Gaji ${period}`,
+        status: 'PAID',
+        payDate: new Date(y, m - 1, company.payDay),
+        calculatedAt: new Date(y, m - 1, company.cutoffDay),
+        approvedAt: new Date(y, m - 1, company.cutoffDay + 2),
+        approvedBy: 'Zainul Arkaan',
+        paidAt: new Date(y, m - 1, company.payDay),
+      },
+    });
+
+    let tg = 0, td = 0, tt = 0, tn = 0, tec = 0, hc = 0;
+    const workingDays = workingDaysInPeriod(period);
+
+    for (const e of employees) {
+      if (e.joinDate > new Date(y, m - 1, 28)) continue;
+
+      const assignments = await prisma.employeeComponent.findMany({
+        where: { employeeId: e.id },
+        include: { component: true },
+      });
+      const lines: ComponentLine[] = assignments.map((a) => ({
+        code: a.component.code,
+        name: a.component.name,
+        type: a.component.type as 'ALLOWANCE' | 'DEDUCTION',
+        amount:
+          a.overrideAmount ??
+          (a.component.calcType === 'PERCENT_OF_BASE'
+            ? Math.round((e.gaji * a.component.percent) / 100)
+            : a.component.amount),
+        taxable: a.component.taxable,
+      }));
+
+      const att = await prisma.attendance.groupBy({
+        by: ['status'],
+        where: { employeeId: e.id, date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) } },
+        _count: true,
+      });
+      const cnt = (s: string) => att.find((a) => a.status === s)?._count ?? 0;
+      const lateAgg = await prisma.attendance.aggregate({
+        where: { employeeId: e.id, date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) } },
+        _sum: { lateMinutes: true },
+      });
+
+      const otAgg = await prisma.overtime.findMany({
+        where: {
+          employeeId: e.id,
+          status: 'APPROVED',
+          date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) },
+        },
+      });
+      const otWeekday = otAgg.filter((o) => !o.isHoliday).reduce((s, o) => s + o.hours, 0);
+      const otHoliday = otAgg.filter((o) => o.isHoliday).reduce((s, o) => s + o.hours, 0);
+
+      const loan = await prisma.loan.findFirst({ where: { employeeId: e.id, status: 'ACTIVE' } });
+
+      const hasil = calculatePayroll({
+        employeeId: e.id,
+        fullName: '',
+        baseSalary: e.gaji,
+        ptkpStatus: e.ptkp,
+        hasNpwp: true,
+        enrollBpjsKes: true,
+        enrollBpjsTk: true,
+        components: lines,
+        overtimeHours: otWeekday,
+        overtimeHolidayHours: otHoliday,
+        presentDays: cnt('PRESENT') + cnt('LATE') + cnt('WFH'),
+        absentDays: cnt('ABSENT'),
+        leaveDays: cnt('LEAVE'),
+        unpaidLeaveDays: 0,
+        lateMinutes: lateAgg._sum.lateMinutes ?? 0,
+        loanDeduction: loan?.monthlyDeduction ?? 0,
+        workingDays,
+        lateCutPerMinute: company.lateCutPerMinute,
+        cutAbsent: company.absentCutPerDay,
+        bpjs: bpjsConfig,
+      });
+
+      await prisma.payrollItem.create({
+        data: {
+          runId: run.id,
+          employeeId: e.id,
+          baseSalary: hasil.baseSalary,
+          allowanceTaxable: hasil.allowanceTaxable,
+          allowanceNonTax: hasil.allowanceNonTax,
+          overtimePay: hasil.overtimePay,
+          grossPay: hasil.grossPay,
+          bpjsKesEmployee: hasil.bpjsKesEmployee,
+          bpjsJhtEmployee: hasil.bpjsJhtEmployee,
+          bpjsJpEmployee: hasil.bpjsJpEmployee,
+          bpjsKesEmployer: hasil.bpjsKesEmployer,
+          bpjsJhtEmployer: hasil.bpjsJhtEmployer,
+          bpjsJpEmployer: hasil.bpjsJpEmployer,
+          bpjsJkkEmployer: hasil.bpjsJkkEmployer,
+          bpjsJkmEmployer: hasil.bpjsJkmEmployer,
+          otherDeduction: hasil.otherDeduction,
+          loanDeduction: hasil.loanDeduction,
+          unpaidLeaveCut: hasil.unpaidLeaveCut,
+          lateCut: hasil.lateCut,
+          taxableIncome: hasil.taxableIncome,
+          terRate: hasil.terRate,
+          pph21: hasil.pph21,
+          taxMethod: hasil.taxMethod,
+          totalDeduction: hasil.totalDeduction,
+          netPay: hasil.netPay,
+          employerCost: hasil.employerCost,
+          presentDays: cnt('PRESENT') + cnt('LATE') + cnt('WFH'),
+          absentDays: cnt('ABSENT'),
+          leaveDays: cnt('LEAVE'),
+          overtimeHours: otWeekday + otHoliday,
+          breakdown: JSON.stringify(hasil.breakdown),
+        },
+      });
+
+      tg += hasil.grossPay;
+      td += hasil.totalDeduction;
+      tt += hasil.pph21;
+      tn += hasil.netPay;
+      tec += hasil.employerCost;
+      hc++;
+    }
+
+    await prisma.payrollRun.update({
+      where: { id: run.id },
+      data: {
+        totalGross: tg,
+        totalDeduction: td,
+        totalTax: tt,
+        totalNet: tn,
+        totalEmployerCost: tec,
+        headcount: hc,
+      },
+    });
+    console.log(`  ${period}: ${hc} karyawan, net Rp ${tn.toLocaleString('id-ID')}`);
+  }
+
+  console.log('› Jejak audit & notifikasi…');
+  const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+  if (admin) {
+    await prisma.auditLog.createMany({
+      data: [
+        { userId: admin.id, actorName: admin.name, action: 'RUN', entity: 'PayrollRun', summary: `Payroll ${periodeMundur(1)} dibayarkan ke ${employees.length} karyawan` },
+        { userId: admin.id, actorName: admin.name, action: 'APPROVE', entity: 'PayrollRun', summary: `Payroll ${periodeMundur(1)} disetujui` },
+        { userId: admin.id, actorName: admin.name, action: 'UPDATE', entity: 'CompanySetting', summary: 'Plafon BPJS Jaminan Pensiun disesuaikan' },
+        { userId: admin.id, actorName: admin.name, action: 'CREATE', entity: 'SalaryComponent', summary: 'Komponen Tunjangan Kerja Jarak Jauh ditambahkan' },
+      ],
+    });
+    await prisma.notification.createMany({
+      data: [
+        { userId: admin.id, title: 'Payroll periode berjalan belum dihitung', body: `Periode ${periodeMundur(0)} masih kosong. Buat proses gaji sebelum tanggal cutoff.`, kind: 'warning', href: '/payroll' },
+        { userId: admin.id, title: 'Ada pengajuan menunggu persetujuan', body: 'Beberapa pengajuan cuti dan lembur menunggu ditinjau.', kind: 'info', href: '/leave' },
+        { userId: admin.id, title: 'Data karyawan lengkap', body: `${employees.length} karyawan aktif berhasil dimuat.`, kind: 'success', href: '/employees' },
+      ],
+    });
+  }
+
+  console.log('\n✓ Seed selesai.');
+  console.log('  Admin    : admin@nusapay.id / password123');
+  console.log('  HR       : larasati.widyaningrum@nusantaradigital.id / password123');
+  console.log('  Karyawan : bagas.setiawan@nusantaradigital.id / password123');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

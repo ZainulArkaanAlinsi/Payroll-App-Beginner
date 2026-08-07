@@ -1,0 +1,379 @@
+// NusaPay — Payroll Engine Indonesia
+// SQLite + Prisma. Angka uang disimpan sebagai Int (rupiah penuh, tanpa sen)
+// supaya tidak ada floating point drift pada perhitungan gaji.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identitas & akses
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("EMPLOYEE") // ADMIN | HR | EMPLOYEE
+  avatarHue Int      @default(160)
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  Employee?
+  auditLogs AuditLog[]
+  notifications Notification[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  actorName String
+  action    String // CREATE | UPDATE | DELETE | APPROVE | REJECT | RUN | LOGIN
+  entity    String // Employee | PayrollRun | LeaveRequest | ...
+  entityId  String?
+  summary   String
+  meta      String? // JSON
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  kind      String   @default("info") // info | success | warning
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Struktur organisasi
+// ─────────────────────────────────────────────────────────────
+
+model Department {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  costCenter String?
+  createdAt DateTime @default(now())
+
+  positions Position[]
+  employees Employee[]
+}
+
+model Position {
+  id           String   @id @default(cuid())
+  title        String
+  level        String   @default("STAFF") // INTERN | STAFF | SENIOR | LEAD | MANAGER | DIRECTOR
+  departmentId String
+  minSalary    Int      @default(0)
+  maxSalary    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  employees  Employee[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// Karyawan
+// ─────────────────────────────────────────────────────────────
+
+model Employee {
+  id           String   @id @default(cuid())
+  employeeNo   String   @unique
+  userId       String?  @unique
+  fullName     String
+  email        String   @unique
+  phone        String?
+  nik          String? // NIK KTP
+  npwp         String? // NPWP — tanpa NPWP kena tarif +20%
+  birthDate    DateTime?
+  gender       String?  // M | F
+  address      String?
+
+  departmentId String?
+  positionId   String?
+  joinDate     DateTime
+  endDate      DateTime?
+  employmentType String @default("PERMANENT") // PERMANENT | CONTRACT | PROBATION | INTERN
+  status       String   @default("ACTIVE")    // ACTIVE | ON_LEAVE | RESIGNED | TERMINATED
+
+  baseSalary   Int      @default(0) // gaji pokok bulanan
+  ptkpStatus   String   @default("TK/0") // TK/0..TK/3, K/0..K/3
+  bankName     String?
+  bankAccount  String?
+  bankHolder   String?
+
+  bpjsKesehatanNo String?
+  bpjsTkNo        String?
+  enrollBpjsKes   Boolean @default(true)
+  enrollBpjsTk    Boolean @default(true)
+
+  annualLeaveQuota Int @default(12)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department  Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position    Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  components   EmployeeComponent[]
+  attendances  Attendance[]
+  leaveRequests LeaveRequest[]
+  overtimes    Overtime[]
+  payrollItems PayrollItem[]
+  loans        Loan[]
+
+  @@index([status])
+  @@index([departmentId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Komponen gaji (tunjangan & potongan)
+// ─────────────────────────────────────────────────────────────
+
+model SalaryComponent {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  type      String   // ALLOWANCE | DEDUCTION
+  calcType  String   @default("FIXED") // FIXED | PERCENT_OF_BASE
+  amount    Int      @default(0)  // rupiah bila FIXED
+  percent   Float    @default(0)  // persen bila PERCENT_OF_BASE
+  taxable   Boolean  @default(true)
+  isDefault Boolean  @default(false) // otomatis diberikan ke karyawan baru
+  active    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now())
+
+  assignments EmployeeComponent[]
+}
+
+model EmployeeComponent {
+  id          String @id @default(cuid())
+  employeeId  String
+  componentId String
+  overrideAmount Int?   // menimpa nilai default komponen
+  createdAt   DateTime @default(now())
+
+  employee  Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  component SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, componentId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Kehadiran, lembur, cuti, pinjaman
+// ─────────────────────────────────────────────────────────────
+
+model Attendance {
+  id         String   @id @default(cuid())
+  employeeId String
+  date       DateTime
+  clockIn    DateTime?
+  clockOut   DateTime?
+  status     String   @default("PRESENT") // PRESENT | LATE | ABSENT | LEAVE | HOLIDAY | WFH
+  lateMinutes Int     @default(0)
+  workMinutes Int     @default(0)
+  note       String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
+model Overtime {
+  id         String   @id @default(cuid())
+  employeeId String
+  date       DateTime
+  hours      Float
+  isHoliday  Boolean  @default(false)
+  reason     String
+  status     String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  amount     Int      @default(0) // dihitung saat approve
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([date])
+}
+
+model LeaveRequest {
+  id         String   @id @default(cuid())
+  employeeId String
+  type       String   // ANNUAL | SICK | UNPAID | MATERNITY | SPECIAL
+  startDate  DateTime
+  endDate    DateTime
+  days       Int
+  reason     String
+  status     String   @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  reviewedBy String?
+  reviewedAt DateTime?
+  reviewNote String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model Loan {
+  id           String   @id @default(cuid())
+  employeeId   String
+  principal    Int
+  tenorMonths  Int
+  monthlyDeduction Int
+  remaining    Int
+  startPeriod  String   // "YYYY-MM"
+  status       String   @default("ACTIVE") // ACTIVE | SETTLED
+  note         String?
+  createdAt    DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────
+// Payroll
+// ─────────────────────────────────────────────────────────────
+
+model PayrollRun {
+  id          String   @id @default(cuid())
+  period      String   @unique // "YYYY-MM"
+  label       String
+  status      String   @default("DRAFT") // DRAFT | CALCULATED | APPROVED | PAID
+  payDate     DateTime
+  note        String?
+
+  totalGross    Int @default(0)
+  totalDeduction Int @default(0)
+  totalTax      Int @default(0)
+  totalNet      Int @default(0)
+  totalEmployerCost Int @default(0)
+  headcount     Int @default(0)
+
+  calculatedAt DateTime?
+  approvedAt   DateTime?
+  approvedBy   String?
+  paidAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items PayrollItem[]
+}
+
+model PayrollItem {
+  id          String @id @default(cuid())
+  runId       String
+  employeeId  String
+
+  baseSalary       Int @default(0)
+  allowanceTaxable Int @default(0)
+  allowanceNonTax  Int @default(0)
+  overtimePay      Int @default(0)
+  grossPay         Int @default(0)
+
+  bpjsKesEmployee  Int @default(0)
+  bpjsJhtEmployee  Int @default(0)
+  bpjsJpEmployee   Int @default(0)
+  bpjsKesEmployer  Int @default(0)
+  bpjsJhtEmployer  Int @default(0)
+  bpjsJpEmployer   Int @default(0)
+  bpjsJkkEmployer  Int @default(0)
+  bpjsJkmEmployer  Int @default(0)
+
+  otherDeduction   Int @default(0)
+  loanDeduction    Int @default(0)
+  unpaidLeaveCut   Int @default(0)
+  lateCut          Int @default(0)
+
+  taxableIncome    Int @default(0)
+  terRate          Float @default(0)
+  pph21            Int @default(0)
+  taxMethod        String @default("TER") // TER | PROGRESSIVE
+
+  totalDeduction   Int @default(0)
+  netPay           Int @default(0)
+  employerCost     Int @default(0)
+
+  presentDays      Int @default(0)
+  absentDays       Int @default(0)
+  leaveDays        Int @default(0)
+  overtimeHours    Float @default(0)
+
+  breakdown String? // JSON detail baris komponen untuk slip gaji
+  createdAt DateTime @default(now())
+
+  run      PayrollRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  employee Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, employeeId])
+  @@index([employeeId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Konfigurasi
+// ─────────────────────────────────────────────────────────────
+
+model CompanySetting {
+  id          String @id @default("singleton")
+  name        String @default("PT Nusantara Digital Karya")
+  legalName   String @default("PT Nusantara Digital Karya")
+  npwp        String @default("01.234.567.8-901.000")
+  address     String @default("Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan 12190")
+  phone       String @default("+62 21 5150 8888")
+  email       String @default("payroll@nusantaradigital.id")
+  logoInitials String @default("ND")
+
+  // jam kerja
+  workStart   String @default("09:00")
+  workEnd     String @default("18:00")
+  workDays    Int    @default(5)
+  lateToleranceMin Int @default(15)
+
+  // payroll
+  payDay      Int    @default(25)
+  cutoffDay   Int    @default(20)
+  currency    String @default("IDR")
+
+  // BPJS
+  bpjsKesEmployeeRate  Float @default(1.0)
+  bpjsKesEmployerRate  Float @default(4.0)
+  bpjsKesCap           Int   @default(12000000)
+  bpjsJhtEmployeeRate  Float @default(2.0)
+  bpjsJhtEmployerRate  Float @default(3.7)
+  bpjsJpEmployeeRate   Float @default(1.0)
+  bpjsJpEmployerRate   Float @default(2.0)
+  bpjsJpCap            Int   @default(10547400)
+  bpjsJkkRate          Float @default(0.24)
+  bpjsJkmRate          Float @default(0.30)
+
+  // potongan
+  lateCutPerMinute     Int   @default(0)
+  absentCutPerDay      Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+}
