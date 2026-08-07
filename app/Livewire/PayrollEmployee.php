@@ -105,17 +105,26 @@ class PayrollEmployee extends Component
             $this->periodStart = $payroll->payroll_period_start;
             $this->periodEnd = $payroll->payroll_period_end;
             $this->paymentDate = $payroll->payment_date;
-            $this->notes = $payroll->notes;
+
+            // Perbaikan: Konversi array ke string jika diperlukan
+            $notes = $payroll->notes;
+            $this->notes = is_array($notes)
+                ? implode(' ', $notes)
+                : ($notes ?: '');
         } else {
             $this->isEditing = false;
+            $this->notes = '';
         }
         $this->dispatch('open-modal', name: 'main-modal');
     }
 
     public function save()
     {
+        // Perbaikan: Konversi array ke string sebelum validasi
         if (is_array($this->notes)) {
             $this->notes = implode(' ', $this->notes);
+        } else {
+            $this->notes = (string) $this->notes;
         }
 
         $this->validate([
@@ -181,8 +190,6 @@ class PayrollEmployee extends Component
         $this->periodStart = $payroll->payroll_period_start;
         $this->periodEnd = $payroll->payroll_period_end;
         $this->paymentDate = $payroll->payment_date;
-        $this->notes = $payroll->notes;
-
         $this->dispatch('open-modal', name: 'generate-modal');
     }
 

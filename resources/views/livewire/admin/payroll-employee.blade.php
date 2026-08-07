@@ -37,7 +37,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
                                 @if($payroll->payroll_details_count > 0)
-                                <a href="{{ route('admin.payroll_employee') }}"
+                                <a href="{{ route('admin.payroll-employee') }}"
                                     class="text-blue-600 hover:text-blue-900">
                                     Detail
                                 </a>
