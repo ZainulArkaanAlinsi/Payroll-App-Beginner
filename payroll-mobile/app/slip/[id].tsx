@@ -32,10 +32,12 @@ export default function RincianSlip() {
   if (galat) return <Galat pesan={galat} coba={muat} />;
   if (!data) return <MemuatDaftar jumlah={3} baris={5} />;
 
-  // Rincian dipisah jadi dua kelompok supaya karyawan bisa membaca "yang
-  // menambah" dan "yang mengurangi" tanpa harus menafsirkan tanda minus.
-  const pendapatan = data.rincian.filter((r) => r.amount > 0);
-  const potongan = data.rincian.filter((r) => r.amount < 0);
+  // Dikelompokkan memakai kolom `group`, bukan tanda bilangannya: seluruh
+  // nilai di rincian disimpan positif, jadi memilah berdasarkan tanda
+  // menempatkan PPh 21 dan iuran BPJS di daftar pendapatan.
+  const pendapatan = data.rincian.filter((r) => r.group === 'EARNING');
+  const potongan = data.rincian.filter((r) => r.group === 'DEDUCTION');
+  const perusahaan = data.rincian.filter((r) => r.group === 'EMPLOYER' && r.amount > 0);
 
   return (
     <ScrollView contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}>
@@ -95,12 +97,32 @@ export default function RincianSlip() {
             {potongan.map((r, i) => (
               <View key={`${r.label}-${i}`}>
                 {i > 0 ? <Garis /> : null}
-                <Baris kiri={r.label} kanan={rupiah(Math.abs(r.amount))} warna={t.bahaya} />
+                <Baris kiri={r.label} kanan={rupiah(r.amount)} warna={t.bahaya} />
               </View>
             ))}
             <Garis />
             <Baris kiri="Total potongan" kanan={rupiah(data.totalDeduction)} tebal warna={t.bahaya} />
           </View>
+        </Kartu>
+        </Muncul>
+      ) : null}
+
+      {perusahaan.length ? (
+        <Muncul jeda={160}>
+        <Kartu>
+          <Label>Ditanggung perusahaan</Label>
+          <View style={{ marginTop: jarak.sm }}>
+            {perusahaan.map((r, i) => (
+              <View key={`${r.label}-${i}`}>
+                {i > 0 ? <Garis /> : null}
+                <Baris kiri={r.label} kanan={rupiah(r.amount)} />
+              </View>
+            ))}
+          </View>
+          <Text style={[teks.mikro, { color: t.redup, marginTop: jarak.md }]}>
+            Iuran ini dibayar perusahaan di luar gaji Anda, jadi tidak mengurangi
+            jumlah yang diterima.
+          </Text>
         </Kartu>
         </Muncul>
       ) : null}

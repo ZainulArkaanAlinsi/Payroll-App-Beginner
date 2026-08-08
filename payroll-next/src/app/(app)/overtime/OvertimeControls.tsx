@@ -7,7 +7,7 @@ import Modal from '@/components/ui/Modal';
 import { ActionButton, SubmitButton, Toast } from '@/components/ui/Feedback';
 import { reviewOvertime, submitOvertime } from '@/actions/requests';
 import type { ActionState } from '@/lib/types';
-import { overtimePay } from '@/lib/payroll-engine';
+import { OVERTIME_DEFAULT, hitungUpahLembur } from '@/lib/policy';
 import { rupiah } from '@/lib/format';
 
 export function ReviewOvertime({ id, name, estimate }: { id: string; name: string; estimate: string }) {
@@ -36,12 +36,12 @@ export function ReviewOvertime({ id, name, estimate }: { id: string; name: strin
 export function OvertimeDialog({
   employees,
   fixedEmployeeId,
-  baseSalary,
+  upahLembur,
   label = 'Ajukan lembur',
 }: {
-  employees?: { id: string; fullName: string; employeeNo: string; baseSalary: number }[];
+  employees?: { id: string; fullName: string; employeeNo: string; upahLembur: number }[];
   fixedEmployeeId?: string;
-  baseSalary?: number;
+  upahLembur?: number;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -58,11 +58,14 @@ export function OvertimeDialog({
     }
   }, [state, router]);
 
-  // pratinjau memakai rumus yang sama dengan mesin gaji
-  const upah = baseSalary ?? employees?.find((e) => e.id === empId)?.baseSalary ?? 0;
-  const hariLibur = date ? [0, 6].includes(new Date(date).getDay()) : false;
+  // Pratinjau memakai rumus dan dasar upah yang sama dengan mesin gaji:
+  // gaji pokok ditambah tunjangan tetap, bukan gaji pokok saja.
+  const upah = upahLembur ?? employees?.find((e) => e.id === empId)?.upahLembur ?? 0;
+  // Tanggalnya berupa "YYYY-MM-DD"; dibaca sebagai UTC supaya harinya tidak
+  // bergeser bagi pengguna di sebelah barat Greenwich.
+  const hariLibur = date ? [0, 6].includes(new Date(`${date}T00:00:00Z`).getUTCDay()) : false;
   const perkiraan = upah
-    ? overtimePay(upah, hariLibur ? 0 : hours, hariLibur ? hours : 0).amount
+    ? hitungUpahLembur(upah, hariLibur ? 0 : hours, hariLibur ? hours : 0, OVERTIME_DEFAULT).amount
     : 0;
 
   return (

@@ -20,7 +20,9 @@ import 'server-only';
 
 import { prisma } from './prisma';
 import { audit, notify, type Session } from './auth';
-import { overtimePay } from './payroll-engine';
+import { upahDasarLembur } from './payroll-engine';
+import { hitungUpahLembur, overtimeConfigDari, pilihAturan } from './policy';
+import { tunjanganTetap } from './components';
 import { tanggal } from './format';
 import { FAIL, OK, type ActionState } from './types';
 import { akhirPekan, hariIni, isoTanggal, kalender, pukul, tambahHari } from './waktu';
@@ -192,15 +194,73 @@ export async function ajukanLembur(aktor: Aktor, input: InputLembur): Promise<Ac
   return OK(`Pengajuan lembur ${input.hours} jam terkirim.`);
 }
 
-/** Perkiraan rupiah lembur, untuk ditampilkan sebelum karyawan mengirim. */
-export async function perkiraanLembur(employeeId: string, hours: number, date: string) {
+/**
+ * Upah sebulan seorang karyawan sebagai dasar perhitungan lembur.
+ *
+ * Memakai penyelesai komponen yang sama dengan mesin gaji, termasuk penyaring
+ * cakupan per departemen dan tingkat jabatan, supaya angka yang disebut saat
+ * menyetujui benar-benar angka yang nanti dibayarkan.
+ *
+ * Komponen berumus dilewati: nilainya bergantung kehadiran, sehingga belum
+ * diketahui saat lembur diajukan maupun disetujui. Mesin gaji menandainya
+ * sebagai bukan tunjangan tetap, jadi keduanya sepakat.
+ */
+export async function upahLemburKaryawan(employeeId: string): Promise<number> {
   const emp = await prisma.employee.findUnique({
     where: { id: employeeId },
-    select: { baseSalary: true },
+    select: {
+      baseSalary: true,
+      departmentId: true,
+      position: { select: { level: true } },
+      components: { include: { component: true } },
+    },
   });
   if (!emp) return 0;
-  const libur = akhirPekan(kalender(date));
-  return overtimePay(emp.baseSalary, libur ? 0 : hours, libur ? hours : 0).amount;
+
+  const ctx = {
+    departmentId: emp.departmentId,
+    level: emp.position?.level ?? null,
+    baseSalary: emp.baseSalary,
+    // Tidak ada rumus yang dievaluasi di sini, jadi variabelnya tidak terpakai.
+    variables: {} as never,
+  };
+
+  return upahDasarLembur(emp.baseSalary, tunjanganTetap(emp.components, ctx));
+}
+
+/**
+ * Nilai rupiah lembur seorang karyawan.
+ *
+ * Satu-satunya tempat perhitungan ini dilakukan di luar mesin gaji, dipakai
+ * oleh pratinjau sebelum mengajukan, pratinjau antrean HR, dan penguncian
+ * nilai saat persetujuan. Memakai dasar upah dan aturan divisi yang sama
+ * dengan mesin gaji, supaya angka yang disebut sama dengan yang dibayarkan.
+ */
+export async function nilaiLembur(
+  employeeId: string,
+  jam: number,
+  hariLibur: boolean,
+): Promise<{ amount: number; detail: string[] }> {
+  const [upah, emp] = await Promise.all([
+    upahLemburKaryawan(employeeId),
+    prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { departmentId: true, position: { select: { level: true } } },
+    }),
+  ]);
+  if (!upah) return { amount: 0, detail: [] };
+
+  const aturan = await prisma.policyRule.findMany({ where: { kind: 'OVERTIME', active: true } });
+  const config = overtimeConfigDari(
+    pilihAturan(aturan, 'OVERTIME', emp?.departmentId ?? null, emp?.position?.level ?? null),
+  );
+
+  return hitungUpahLembur(upah, hariLibur ? 0 : jam, hariLibur ? jam : 0, config);
+}
+
+/** Perkiraan rupiah lembur, untuk ditampilkan sebelum karyawan mengirim. */
+export async function perkiraanLembur(employeeId: string, hours: number, date: string) {
+  return (await nilaiLembur(employeeId, hours, akhirPekan(kalender(date)))).amount;
 }
 
 // ─────────────────────────── Kehadiran ───────────────────────────

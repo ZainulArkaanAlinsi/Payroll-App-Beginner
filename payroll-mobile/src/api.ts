@@ -152,7 +152,19 @@ export interface RingkasSlip {
   run: { period: string; label: string; kind: string; holidayName: string | null; payDate: string };
 }
 
-export interface BarisSlip { label: string; amount: number; kind?: string; note?: string }
+/**
+ * Satu baris rincian slip.
+ *
+ * Nilainya selalu positif; yang membedakan pendapatan dari potongan adalah
+ * `group`, bukan tandanya. Memilah berdasarkan tanda membuat seluruh potongan
+ * tampil sebagai pendapatan.
+ */
+export interface BarisSlip {
+  group: 'EARNING' | 'DEDUCTION' | 'EMPLOYER';
+  label: string;
+  amount: number;
+  note?: string;
+}
 
 export interface SlipDetail extends RingkasSlip {
   baseSalary: number; allowanceTaxable: number; allowanceNonTax: number;

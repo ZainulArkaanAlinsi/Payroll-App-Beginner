@@ -79,11 +79,15 @@ export function resolveComponent(
     taxable: c.taxable,
     countsForBpjs: c.countsForBpjs,
     prorate: c.prorate,
+    // Nilai tetap dan persentase gaji pokok sudah pasti sejak awal periode;
+    // komponen berumus baru diketahui setelah kehadiran lengkap.
+    tetap: c.calcType !== 'FORMULA',
   };
 
   // Nilai yang ditimpa per karyawan selalu menang atas cara hitung apa pun.
   if (overrideAmount !== undefined && overrideAmount !== null) {
-    return { line: { ...dasar, amount: overrideAmount, note: 'nilai khusus karyawan' } };
+    // Nilai khusus per karyawan selalu tetap, apa pun cara hitung aslinya.
+    return { line: { ...dasar, amount: overrideAmount, tetap: true, note: 'nilai khusus karyawan' } };
   }
 
   if (c.calcType === 'PERCENT_OF_BASE') {
@@ -106,6 +110,36 @@ export function resolveComponent(
   }
 
   return { line: { ...dasar, amount: c.amount } };
+}
+
+/**
+ * Total tunjangan tetap yang melekat pada seorang karyawan.
+ *
+ * Inilah tambahan atas gaji pokok yang membentuk "upah sebulan" — dasar
+ * perhitungan lembur menurut PP 36/2021 jo. Kepmenaker 102/2004.
+ *
+ * Komponen berumus dilewati: nilainya bergantung kehadiran, sehingga belum
+ * diketahui saat lembur diajukan maupun disetujui, padahal nilai lembur harus
+ * dikunci pada saat persetujuan.
+ *
+ * Murni, tanpa menyentuh basis data, supaya bisa dipakai mesin gaji, layanan
+ * mandiri, maupun skrip seed tanpa ada yang menghitung sendiri-sendiri.
+ */
+export function tunjanganTetap(
+  assignments: { component: RawComponent; overrideAmount: number | null }[],
+  ctx: KonteksKaryawan,
+): number {
+  let total = 0;
+  for (const a of assignments) {
+    const c = a.component;
+    if (!c.active || c.type === 'DEDUCTION') continue;
+    if (c.calcType === 'FORMULA' && a.overrideAmount == null) continue;
+    if (!berlakuUntuk(c, ctx)) continue;
+
+    const { line } = resolveComponent(c, ctx, a.overrideAmount);
+    if (line.type === 'ALLOWANCE' && line.tetap) total += line.amount;
+  }
+  return total;
 }
 
 /** Menyelesaikan seluruh komponen yang melekat pada seorang karyawan. */

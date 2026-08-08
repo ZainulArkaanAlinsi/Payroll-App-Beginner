@@ -3,6 +3,7 @@ import { CircleUser, Receipt, TriangleAlert } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { hariIni as tanggalHariIni } from '@/lib/waktu';
+import { upahLemburKaryawan } from '@/lib/self-service';
 import {
   jamMenit, labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal,
 } from '@/lib/format';
@@ -45,6 +46,8 @@ export default async function MePage() {
   const [y, m] = period.split('-').map(Number);
   const today = new Date();
   const todayKey = tanggalHariIni(today);
+  // Dasar upah lembur, dipakai pratinjau di formulir pengajuan.
+  const upahLembur = await upahLemburKaryawan(id);
 
   const [employee, setting, hariIni, bulanIni, slips, cuti, lembur, pinjaman] = await Promise.all([
     prisma.employee.findUnique({
@@ -129,7 +132,7 @@ export default async function MePage() {
 
         <div className="page-head-actions">
           <LeaveDialog fixedEmployeeId={id} />
-          <OvertimeDialog fixedEmployeeId={id} baseSalary={employee.baseSalary} />
+          <OvertimeDialog fixedEmployeeId={id} upahLembur={upahLembur} />
         </div>
       </div>
 

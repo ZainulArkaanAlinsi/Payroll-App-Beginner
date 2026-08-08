@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Timer } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { overtimePay } from '@/lib/payroll-engine';
+import { nilaiLembur, upahLemburKaryawan } from '@/lib/self-service';
 import { rupiah, rupiahRingkas, sejak, tanggal } from '@/lib/format';
 import {
   Avatar, Chip, EmptyState, GlassCard, SectionTitle, StatusChip,
@@ -52,11 +52,28 @@ export default async function OvertimePage({
     prisma.employee.findMany({
       where: { status: 'ACTIVE' },
       orderBy: { fullName: 'asc' },
-      select: { id: true, fullName: true, employeeNo: true, baseSalary: true },
+      select: { id: true, fullName: true, employeeNo: true },
     }),
     prisma.overtime.groupBy({ by: ['status'], _count: true, _sum: { hours: true } }),
     prisma.overtime.aggregate({ where: { status: 'APPROVED' }, _sum: { amount: true } }),
   ]);
+
+  // Dasar upah lembur bukan gaji pokok, melainkan gaji pokok ditambah
+  // tunjangan tetap — sama dengan yang dipakai mesin gaji. Dihitung sekali di
+  // sini lalu dipakai bersama oleh ringkasan, antrean, dan formulir.
+  const perluUpah = [...new Set([...employees.map((e) => e.id), ...pending.map((r) => r.employeeId)])];
+  const upahLembur = new Map<string, number>(
+    await Promise.all(perluUpah.map(async (id) => [id, await upahLemburKaryawan(id)] as const)),
+  );
+  const upah = (id: string) => upahLembur.get(id) ?? 0;
+
+  // Nilai antrean dihitung memakai jalur yang sama dengan penguncian saat
+  // persetujuan, termasuk aturan lembur per divisi.
+  const nilaiAntrean = new Map(
+    await Promise.all(
+      pending.map(async (r) => [r.id, await nilaiLembur(r.employeeId, r.hours, r.isHoliday)] as const),
+    ),
+  );
 
   const jml = (s: string) => ringkas.find((r) => r.status === s)?._count ?? 0;
   const jam = (s: string) => ringkas.find((r) => r.status === s)?._sum.hours ?? 0;
@@ -66,7 +83,7 @@ export default async function OvertimePage({
   const perkiraanTotal = pending.reduce(
     (t, r) =>
       t +
-      overtimePay(r.employee.baseSalary, r.isHoliday ? 0 : r.hours, r.isHoliday ? r.hours : 0).amount,
+      (nilaiAntrean.get(r.id)?.amount ?? 0),
     0,
   );
 
@@ -79,7 +96,7 @@ export default async function OvertimePage({
           </h1>
           <p className="mt-1 t-small">{pending.length} pengajuan menunggu ditinjau</p>
         </div>
-        <OvertimeDialog employees={employees} label="Ajukan atas nama karyawan" />
+        <OvertimeDialog employees={employees.map((e) => ({ ...e, upahLembur: upah(e.id) }))} label="Ajukan atas nama karyawan" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -111,11 +128,7 @@ export default async function OvertimePage({
         ) : (
           <ul className="space-y-2.5">
             {pending.map((r) => {
-              const perkiraan = overtimePay(
-                r.employee.baseSalary,
-                r.isHoliday ? 0 : r.hours,
-                r.isHoliday ? r.hours : 0,
-              );
+              const perkiraan = nilaiAntrean.get(r.id) ?? { amount: 0, detail: [] };
               const lama = Math.floor((Date.now() - r.createdAt.getTime()) / 86_400_000);
 
               return (

@@ -136,7 +136,7 @@ export async function calculateRun(runId: string): Promise<ActionState> {
     }),
     prisma.overtime.findMany({
       where: { employeeId: { in: ids }, status: 'APPROVED', date: { gte: awal, lt: akhir } },
-      select: { employeeId: true, hours: true, isHoliday: true },
+      select: { employeeId: true, hours: true, isHoliday: true, amount: true },
     }),
     // Satu cicilan dipotong per periode: yang paling lama dulu.
     // Urutan wajib deterministik agar pinjaman yang dipotong di slip sama
@@ -192,6 +192,8 @@ export async function calculateRun(runId: string): Promise<ActionState> {
     const ot = otMap.get(e.id) ?? [];
     const otWeekday = ot.filter((o) => !o.isHoliday).reduce((s, o) => s + o.hours, 0);
     const otHoliday = ot.filter((o) => o.isHoliday).reduce((s, o) => s + o.hours, 0);
+    // Jumlah nilai yang sudah dikunci saat masing-masing lembur disetujui.
+    const otLocked = ot.reduce((s, o) => s + o.amount, 0);
 
     const loan = (loanMap.get(e.id) ?? [])[0];
     const loanDeduction = loan ? Math.min(loan.monthlyDeduction, loan.remaining) : 0;
@@ -255,6 +257,7 @@ export async function calculateRun(runId: string): Promise<ActionState> {
       components: lines,
       overtimeHours: otWeekday,
       overtimeHolidayHours: otHoliday,
+      overtimeLocked: otLocked,
       taxMethod: e.taxMethod as TaxMethod,
       paidDays,
       presentDays,

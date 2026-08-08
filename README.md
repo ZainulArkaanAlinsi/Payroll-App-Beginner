@@ -41,7 +41,8 @@ Kata sandi untuk semua akun: `password123`
 ```bash
 npm run build     # build produksi
 npm start         # jalankan hasil build
-npm test          # 131 uji mesin perhitungan
+npm test          # 201 uji
+npm run periksa   # periksa keutuhan data
 npm run db:reset  # kosongkan lalu isi ulang data demo
 npm run db:seed   # isi ulang data demo saja
 ```

@@ -8,6 +8,7 @@ import TableToolbar from '@/components/ui/TableToolbar';
 import StatTile from '@/components/ui/StatTile';
 import KepatuhanPanel from './KepatuhanPanel';
 import { periksaKepatuhan } from '@/lib/kepatuhan';
+import { tunjanganTetap } from '@/lib/components';
 import EmployeeDialog from './EmployeeDialog';
 
 export const metadata = { title: 'Karyawan' };
@@ -73,6 +74,9 @@ export default async function EmployeesPage({
         fullName: true,
         baseSalary: true,
         status: true,
+        // dibutuhkan untuk menyaring komponen yang cakupannya per divisi
+        departmentId: true,
+        position: { select: { level: true } },
         components: {
           where: { component: { type: 'ALLOWANCE', active: true, calcType: { not: 'FORMULA' } } },
           include: { component: true },
@@ -89,15 +93,16 @@ export default async function EmployeesPage({
       id: e.id,
       nama: e.fullName,
       gajiPokok: e.baseSalary,
-      tunjanganTetap: e.components.reduce(
-        (t, a) =>
-          t +
-          (a.overrideAmount ??
-            (a.component.calcType === 'PERCENT_OF_BASE'
-              ? Math.round((e.baseSalary * a.component.percent) / 100)
-              : a.component.amount)),
-        0,
-      ),
+      // Memakai fungsi yang sama dengan mesin gaji dan dasar upah lembur.
+      // Perhitungan sendiri di sini sebelumnya ikut menjumlahkan komponen
+      // potongan sebagai tunjangan, dan mengabaikan komponen yang tidak aktif
+      // maupun yang cakupannya tidak berlaku bagi karyawan bersangkutan.
+      tunjanganTetap: tunjanganTetap(e.components, {
+        departmentId: e.departmentId,
+        level: e.position?.level ?? null,
+        baseSalary: e.baseSalary,
+        variables: {} as never,
+      }),
       status: e.status,
     })),
     {

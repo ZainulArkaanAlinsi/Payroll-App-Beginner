@@ -49,6 +49,16 @@ export interface ComponentLine {
   countsForBpjs?: boolean;
   /** dipotong proporsional bila karyawan tidak bekerja sebulan penuh */
   prorate?: boolean;
+  /**
+   * Tunjangan tetap — nilainya tidak bergantung kehadiran.
+   *
+   * Dipakai sebagai dasar upah lembur menurut PP 36/2021 jo. Kepmenaker
+   * 102/2004: "upah sebulan" berarti gaji pokok ditambah tunjangan tetap.
+   * Komponen berumus dikecualikan karena nilainya baru diketahui setelah
+   * periode berakhir, sedangkan lembur disetujui jauh sebelum itu — dan angka
+   * yang disebut saat menyetujui harus sama dengan yang dibayarkan.
+   */
+  tetap?: boolean;
   /** penjelasan asal angka, ditampilkan di slip */
   note?: string;
 }
@@ -66,6 +76,17 @@ export interface PayrollInput {
   components: ComponentLine[];
   overtimeHours: number;
   overtimeHolidayHours: number;
+  /**
+   * Nilai rupiah lembur yang sudah dikunci saat persetujuan.
+   *
+   * Bila diisi, dipakai apa adanya dan jam lembur hanya menjadi keterangan.
+   * Ini yang membuat angka pada slip sama dengan angka yang disebutkan kepada
+   * karyawan waktu lemburnya disetujui — termasuk bila gajinya naik di tengah
+   * periode, yang seharusnya tidak mengubah lembur yang sudah lampau.
+   *
+   * Dikosongkan hanya untuk simulasi, ketika belum ada persetujuan apa pun.
+   */
+  overtimeLocked?: number | null;
   presentDays: number;
   absentDays: number;
   leaveDays: number;
@@ -143,6 +164,20 @@ export interface PayrollResult {
  *  · Hari kerja  : jam ke-1 ×1,5 ; jam berikutnya ×2
  *  · Hari libur  : jam 1–8 ×2 ; jam ke-9 ×3 ; jam ke-10+ ×4
  */
+/**
+ * Upah sebulan yang dipakai sebagai dasar perhitungan lembur.
+ *
+ * Kepmenaker 102/2004 memakai istilah "upah sebulan", dan PP 36/2021 Pasal 7
+ * menjelaskannya sebagai upah pokok ditambah tunjangan tetap. Diletakkan
+ * sebagai fungsi tersendiri karena dipakai tiga jalur yang harus sepakat:
+ * mesin gaji, persetujuan lembur oleh HR, dan pratinjau yang dilihat karyawan
+ * sebelum mengajukan. Sebelumnya ketiganya menghitung sendiri-sendiri, dan
+ * angka yang disebut saat menyetujui tidak sama dengan yang dibayarkan.
+ */
+export function upahDasarLembur(gajiPokok: number, tunjanganTetap: number): number {
+  return gajiPokok + tunjanganTetap;
+}
+
 export function overtimePay(
   monthlyWage: number,
   weekdayHours: number,
@@ -215,6 +250,8 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
 
   // ── 2. Tunjangan & potongan komponen ──
   let allowanceTaxable = 0;
+  // hanya tunjangan tetap yang menjadi dasar upah lembur
+  let allowanceTetap = 0;
   let allowanceNonTax = 0;
   let otherDeduction = 0;
   // sebagian komponen ikut menaikkan dasar pengali BPJS
@@ -231,6 +268,7 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
     if (c.type === 'ALLOWANCE') {
       if (c.taxable) allowanceTaxable += amount;
       else allowanceNonTax += amount;
+      if (c.tetap) allowanceTetap += amount;
       if (c.countsForBpjs) bpjsExtra += amount;
       rows.push({
         group: 'EARNING',
@@ -244,13 +282,23 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
     }
   }
 
-  // ── 3. Lembur, menurut aturan divisi yang berlaku ──
-  const ot = hitungUpahLembur(
-    input.baseSalary + allowanceTaxable,
-    input.overtimeHours,
-    input.overtimeHolidayHours,
-    input.overtimePolicy ?? OVERTIME_DEFAULT,
-  );
+  // ── 3. Lembur ──
+  // Nilai yang sudah dikunci saat persetujuan menang atas perhitungan ulang.
+  // Menghitung ulang di sini berarti nilainya bisa berubah setelah disetujui,
+  // dan penguncian saat persetujuan menjadi tidak ada artinya.
+  const jamTotal = input.overtimeHours + input.overtimeHolidayHours;
+  const ot =
+    input.overtimeLocked != null
+      ? {
+          amount: input.overtimeLocked,
+          detail: [`${jamTotal} jam, nilai dikunci saat persetujuan`],
+        }
+      : hitungUpahLembur(
+          upahDasarLembur(input.baseSalary, allowanceTetap),
+          input.overtimeHours,
+          input.overtimeHolidayHours,
+          input.overtimePolicy ?? OVERTIME_DEFAULT,
+        );
   if (ot.amount > 0) {
     rows.push({
       group: 'EARNING',

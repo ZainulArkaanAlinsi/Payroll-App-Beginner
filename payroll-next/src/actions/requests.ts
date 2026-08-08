@@ -4,9 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { audit, canManage, notify, requireRole, requireSession } from '@/lib/auth';
 import { FAIL, OK, type ActionState } from '@/lib/types';
-import { overtimePay } from '@/lib/payroll-engine';
 
-import { absen, ajukanCuti, ajukanLembur, type InputCuti } from '@/lib/self-service';
+import { absen, ajukanCuti, ajukanLembur, nilaiLembur, type InputCuti } from '@/lib/self-service';
 
 // ───────────────────────────── Cuti ─────────────────────────────
 
@@ -140,15 +139,15 @@ export async function reviewOvertime(
   if (!req) return FAIL('Pengajuan tidak ditemukan.');
   if (req.status !== 'PENDING') return FAIL('Pengajuan ini sudah ditinjau sebelumnya.');
 
-  // Nilai rupiah dikunci saat persetujuan, memakai upah yang berlaku
-  // saat itu — kenaikan gaji nanti tidak mengubah lembur yang lampau.
+  // Nilai rupiah dikunci saat persetujuan, memakai upah yang berlaku saat itu
+  // — kenaikan gaji nanti tidak mengubah lembur yang lampau.
+  //
+  // Dasarnya gaji pokok ditambah tunjangan tetap, sama persis dengan yang
+  // dipakai mesin gaji. Sebelumnya di sini hanya gaji pokok, sehingga angka
+  // yang disebut saat menyetujui lebih kecil daripada yang dibayarkan.
   const { amount } =
     decision === 'APPROVED'
-      ? overtimePay(
-          req.employee.baseSalary,
-          req.isHoliday ? 0 : req.hours,
-          req.isHoliday ? req.hours : 0,
-        )
+      ? await nilaiLembur(req.employeeId, req.hours, req.isHoliday)
       : { amount: 0 };
 
   await prisma.overtime.update({

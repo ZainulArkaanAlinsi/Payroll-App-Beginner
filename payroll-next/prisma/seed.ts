@@ -7,9 +7,11 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { dariYMD, pukul, akhirPekan } from '../src/lib/waktu';
+import { akhirPekan, dariYMD, hariIni as hariIniKalender, pukul, tambahHari } from '../src/lib/waktu';
 import bcrypt from 'bcryptjs';
-import { calculatePayroll, workingDaysInPeriod } from '../src/lib/payroll-engine';
+import { calculatePayroll, upahDasarLembur, workingDaysInPeriod } from '../src/lib/payroll-engine';
+import { tunjanganTetap } from '../src/lib/components';
+import { OVERTIME_DEFAULT, hitungUpahLembur, overtimeConfigDari, pilihAturan } from '../src/lib/policy';
 import { resolveAll, buildVariables } from '../src/lib/components';
 import { hitungThr, masaKerjaBulan, pajakThr } from '../src/lib/thr';
 import { pph21Ter } from '../src/lib/tax';
@@ -438,6 +440,34 @@ async function main() {
   console.log(`  ${attendanceRows.length} baris kehadiran`);
 
   console.log('› Lembur…');
+
+  // Dasar upah lembur per karyawan, memakai fungsi yang sama dengan mesin gaji
+  // dan dengan persetujuan di aplikasi — bukan gaji pokok saja.
+  const aturanLembur = await prisma.policyRule.findMany({ where: { kind: 'OVERTIME', active: true } });
+  const upahLemburPer = new Map<string, number>();
+  const konfigLembur = new Map<string, ReturnType<typeof overtimeConfigDari>>();
+  for (const e of employees) {
+    const asg = await prisma.employeeComponent.findMany({
+      where: { employeeId: e.id },
+      include: { component: true },
+    });
+    const emp = await prisma.employee.findUnique({
+      where: { id: e.id },
+      select: { departmentId: true, position: { select: { level: true } } },
+    });
+    const ctx = {
+      departmentId: emp?.departmentId ?? null,
+      level: emp?.position?.level ?? null,
+      baseSalary: e.gaji,
+      variables: {} as never,
+    };
+    upahLemburPer.set(e.id, upahDasarLembur(e.gaji, tunjanganTetap(asg, ctx)));
+    konfigLembur.set(
+      e.id,
+      overtimeConfigDari(pilihAturan(aturanLembur, 'OVERTIME', ctx.departmentId, ctx.level)),
+    );
+  }
+
   const overtimeRows: any[] = [];
   for (let back = 3; back >= 0; back--) {
     const [y, m] = periodeMundur(back).split('-').map(Number);
@@ -464,6 +494,18 @@ async function main() {
         ]),
         status,
         reviewedAt: status === 'PENDING' ? null : new Date(y, m - 1, Math.min(28, d + 2)),
+        // Nilainya dikunci saat disetujui, sama seperti yang dilakukan
+        // reviewOvertime() di aplikasi. Tanpa ini, lembur yang sudah disetujui
+        // tercatat Rp 0 dan ringkasan di halaman lembur ikut nol.
+        amount:
+          status === 'APPROVED'
+            ? hitungUpahLembur(
+                upahLemburPer.get(e.id) ?? e.gaji,
+                isHoliday ? 0 : hours,
+                isHoliday ? hours : 0,
+                konfigLembur.get(e.id) ?? OVERTIME_DEFAULT,
+              ).amount
+            : 0,
       });
     }
   }
@@ -473,11 +515,12 @@ async function main() {
   // Tanpa ini, bulan berjalan yang baru berumur beberapa hari sering tidak
   // menghasilkan satu pun pengajuan menunggu, sehingga halamannya terlihat
   // kosong dan fiturnya tidak terlihat sama sekali.
-  const hariIni = new Date();
+  // Tanggalnya harus tanggal kalender, bukan waktu sekarang: new Date()
+  // membawa jam saat seed dijalankan, sehingga barisnya tidak seragam dengan
+  // tanggal lain dan bisa bergeser sehari saat dibaca di zona berbeda.
   for (let n = 0; n < 5; n++) {
     const e = employees[between(0, employees.length - 1)];
-    const d = new Date(hariIni);
-    d.setDate(d.getDate() - between(1, 9));
+    const d = tambahHari(hariIniKalender(), -between(1, 9));
     if (d < e.joinDate) continue;
     const sudahAda = await prisma.overtime.findFirst({ where: { employeeId: e.id, date: d } });
     if (sudahAda) continue;
@@ -575,12 +618,12 @@ async function main() {
 
       const att = await prisma.attendance.groupBy({
         by: ['status'],
-        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) } },
+        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lt: dariYMD(y, m + 1, 1) } },
         _count: true,
       });
       const cnt = (s: string) => att.find((a) => a.status === s)?._count ?? 0;
       const lateAgg = await prisma.attendance.aggregate({
-        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) } },
+        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lt: dariYMD(y, m + 1, 1) } },
         _sum: { lateMinutes: true },
       });
 
@@ -588,11 +631,15 @@ async function main() {
         where: {
           employeeId: e.id,
           status: 'APPROVED',
-          date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) },
+          date: { gte: dariYMD(y, m, 1), lt: dariYMD(y, m + 1, 1) },
         },
       });
       const otWeekday = otAgg.filter((o) => !o.isHoliday).reduce((s, o) => s + o.hours, 0);
       const otHoliday = otAgg.filter((o) => o.isHoliday).reduce((s, o) => s + o.hours, 0);
+      // Nilai yang sudah dikunci saat persetujuan, sama seperti yang
+      // diteruskan calculateRun — supaya slip hasil seed juga cocok dengan
+      // angka yang tercatat pada pengajuan lemburnya.
+      const otLocked = otAgg.reduce((s, o) => s + o.amount, 0);
 
       const loan = await prisma.loan.findFirst({
         where: { employeeId: e.id, status: 'ACTIVE' },
@@ -640,6 +687,7 @@ async function main() {
         components: lines,
         overtimeHours: otWeekday,
         overtimeHolidayHours: otHoliday,
+        overtimeLocked: otLocked,
         presentDays: cnt('PRESENT') + cnt('LATE') + cnt('WFH'),
         absentDays: cnt('ABSENT'),
         leaveDays: cnt('LEAVE'),

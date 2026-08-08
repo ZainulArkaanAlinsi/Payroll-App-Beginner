@@ -14,7 +14,8 @@
     "setup": "node scripts/ensure-env.mjs && node scripts/db-provider.mjs && prisma generate && prisma db push && tsx prisma/seed.ts",
     "test": "node scripts/test.mjs",
     "db:provider": "node scripts/db-provider.mjs",
-    "vercel-build": "node scripts/db-provider.mjs && prisma generate && prisma db push --skip-generate && node scripts/seed-if-empty.mjs && next build"
+    "vercel-build": "node scripts/db-provider.mjs && prisma generate && prisma db push --skip-generate && node scripts/seed-if-empty.mjs && next build",
+    "periksa": "tsx scripts/periksa-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
