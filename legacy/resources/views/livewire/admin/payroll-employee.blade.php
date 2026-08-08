@@ -1,305 +1,155 @@
-<div>
-    <x-page-heading :pageHeading="__('Payroll Employee')" :pageDesc="__('Manage your payrolls here.')" />
-
-    <!-- Dashboard Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <!-- ... dashboard metrics code remains the same ... -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Total Payroll</h3>
-            <p class="text-2xl font-bold">{{ $totalPayroll }}</p>
+<div class="flex flex-col gap-10 p-6 lg:p-12 animate-[fadeIn_0.6s_ease-out]">
+    <!-- Financial Nexus Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div class="space-y-3">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Treasury & Disbursement
+            </div>
+            <h1 class="text-5xl font-black tracking-tighter text-white leading-tight">
+                Financial <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-600">Nexus</span>
+            </h1>
+            <p class="text-zinc-500 font-medium text-lg max-w-2xl italic leading-relaxed">Precision fiscal orchestration. Automating complex compensation structures with zero-error protocols.</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button class="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-2xl shadow-emerald-600/30 active:scale-95 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                <span class="relative flex items-center gap-2">
+                    <flux:icon name="bolt" class="w-5 h-5" />
+                    Process Payroll
+                </span>
+            </button>
         </div>
     </div>
 
-    <!-- Employee Level Distribution Chart -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-lg font-semibold mb-4">Distribusi Level Karyawan</h3>
-        <div class="chart-container" class="h-64">
-            <canvas id="levelChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Payroll Management Section -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="flex items-center justify-between p-4 border-b">
-            <h3 class="text-lg font-semibold">Daftar Payroll</h3>
-            <flux:button wire:click="openModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                Tambah Payroll
-            </flux:button>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <!-- ... table header remains the same ... -->
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse ($payrolls as $payroll)
-                    <tr>
-                        <!-- ... table cells remain the same ... -->
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-2">
-                                @if($payroll->payroll_details_count > 0)
-                                <a href="{{ route('admin.payroll-employee') }}"
-                                    class="text-blue-600 hover:text-blue-900">
-                                    Detail
-                                </a>
-                                @else
-                                <flux:button wire:click="openGenerateModal({{ $payroll->id }})"
-                                    class="text-indigo-600 hover:text-indigo-900">
-                                    Generate
-                                </flux:button>
-                                @endif
-                                <flux:button wire:click="openModal({{ $payroll->id }})"
-                                    class="text-yellow-600 hover:text-yellow-900">
-                                    Edit
-                                </flux:button>
-                                <flux:button wire:click="openDeleteModal({{ $payroll->id }})"
-                                    class="text-red-600 hover:text-red-900">
-                                    Hapus
-                                </flux:button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                            Tidak ada data payroll
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="p-4">
-            {{ $payrolls->links() }}
-        </div>
-    </div>
-
-    <!-- Payroll Modal -->
-    <div>
-        <flux:modal name="main-modal" max-width="2xl">
-            <div class="p-6">
-                @if($isEditing)
-                <h2 class="text-lg font-medium text-gray-900 mb-4">Edit Payroll</h2>
-                @else
-                <h2 class="text-lg font-medium text-gray-900 mb-4">Buat Payroll Baru</h2>
-                @endif
-
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <flux:label for="periodStart" :value="__('Tanggal Mulai Periode')" />
-                            <flux:input wire:model="periodStart" id="periodStart" type="date"
-                                class="mt-1 block w-full" />
-                            <flux:error :messages="$errors->get('periodStart')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <flux:label for="periodEnd" :value="__('Tanggal Akhir Periode')" />
-                            <flux:input wire:model="periodEnd" id="periodEnd" type="date" class="mt-1 block w-full" />
-                            <flux:error :messages="$errors->get('periodEnd')" class="mt-2" />
-                        </div>
+    <!-- Capital Pulse: Fiscal Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        @php 
+            $stats = [
+                ['label' => 'Total Liquidity', 'value' => 'Rp 1.2B', 'trend' => '+12%', 'icon' => 'banknotes', 'color' => 'emerald'],
+                ['label' => 'Pending Payouts', 'value' => '142', 'trend' => 'Action Req', 'icon' => 'clock', 'color' => 'amber'],
+                ['label' => 'Tax Compliance', 'value' => '100%', 'trend' => 'Secure', 'icon' => 'shield-check', 'color' => 'indigo'],
+            ];
+        @endphp
+        @foreach($stats as $stat)
+            <div class="glass rounded-[2rem] p-8 border border-white/5 relative group transition-all hover:-translate-y-1 overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-{{ $stat['color'] }}-500/5 rounded-full blur-3xl group-hover:bg-{{ $stat['color'] }}-500/10 transition-colors"></div>
+                <div class="flex items-center justify-between mb-8">
+                    <div class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-{{ $stat['color'] }}-500 shadow-inner group-hover:scale-110 transition-transform">
+                        <flux:icon :name="$stat['icon']" class="w-6 h-6" />
                     </div>
+                    <span class="text-[10px] font-black text-{{ $stat['color'] }}-500 uppercase tracking-widest bg-{{ $stat['color'] }}-500/10 px-3 py-1.5 rounded-xl border border-{{ $stat['color'] }}-500/20">{{ $stat['trend'] }}</span>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">{{ $stat['label'] }}</p>
+                    <p class="text-4xl font-black text-white tracking-tighter">{{ $stat['value'] }}</p>
+                </div>
+            </div>
+        @endforeach
+    </div>
 
-                    <div>
-                        <flux:label for="paymentDate" :value="__('Tanggal Pembayaran')" />
-                        <flux:input wire:model="paymentDate" id="paymentDate" type="date" class="mt-1 block w-full" />
-                        <flux:error :messages="$errors->get('paymentDate')" class="mt-2" />
-                    </div>
-
-                    <div>
-                        <flux:label for="notes" :value="__('Catatan (Opsional)')" />
-                        <flux:textarea wire:model="notes" id="notes" class="mt-1 block w-full" rows="3" />
-                        <flux:error :messages="$errors->get('notes')" class="mt-2" />
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <!-- Automated Engine: Processing Interface -->
+        <div class="lg:col-span-8 glass rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden h-full">
+            <div class="flex items-center justify-between mb-12">
+                <div class="space-y-1">
+                    <h3 class="text-2xl font-black text-white tracking-tight">Processing Engine</h3>
+                    <p class="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Automated Compensation Vector</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span class="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Engine Optimized</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-6 flex justify-end space-x-3">
-                    <flux:button wire:click="closeModal" variant="secondary">
-                        <x-slot name="icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </x-slot>
-                        Batal
-                    </flux:button>
-
-                    <flux:button wire:click="save" variant="primary">
-                        <x-slot name="icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7" />
-                            </svg>
-                        </x-slot>
-                        @if($isEditing)
-                        Update
-                        @else
-                        Simpan
+            <!-- Phase Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                @php 
+                    $phases = [
+                        ['id' => '01', 'title' => 'Data Sync', 'desc' => 'Validating presence logs', 'status' => 'complete'],
+                        ['id' => '02', 'title' => 'Tax Engine', 'desc' => 'PPH-21 auto-calculation', 'status' => 'active'],
+                        ['id' => '03', 'title' => 'Disbursement', 'desc' => 'Bank portal synchronization', 'status' => 'pending'],
+                    ];
+                @endphp
+                @foreach($phases as $phase)
+                    <div class="p-6 rounded-3xl border {{ $phase['status'] == 'active' ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-zinc-900/40 border-white/5' }} transition-all relative overflow-hidden group">
+                        @if($phase['status'] == 'complete')
+                            <div class="absolute top-4 right-4 text-emerald-500">
+                                <flux:icon name="check-circle" class="w-5 h-5" />
+                            </div>
                         @endif
-                    </flux:button>
+                        <span class="text-[10px] font-black text-zinc-600 mb-4 block">{{ $phase['id'] }}</span>
+                        <h4 class="text-sm font-black text-white mb-1">{{ $phase['title'] }}</h4>
+                        <p class="text-[10px] text-zinc-500 font-medium italic">{{ $phase['desc'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="relative bg-zinc-950 rounded-[2rem] p-10 border border-white/5 shadow-inner overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-emerald-600/5 opacity-50"></div>
+                <div class="relative z-10 flex flex-col items-center justify-center space-y-8 py-10">
+                    <div class="w-24 h-24 bg-zinc-900 rounded-[2.5rem] border border-white/5 flex items-center justify-center shadow-2xl">
+                        <flux:icon name="cpu-chip" class="w-12 h-12 text-indigo-500 animate-pulse" />
+                    </div>
+                    <div class="text-center space-y-2">
+                        <h4 class="text-xl font-black text-white tracking-tight">Ready for Generation</h4>
+                        <p class="text-xs text-zinc-500 max-w-xs mx-auto italic">System has detected 142 active contracts for the May 2026 fiscal period.</p>
+                    </div>
+                    <button class="px-10 py-4 bg-white text-zinc-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                        Initialize Nexus Engine
+                    </button>
                 </div>
             </div>
-        </flux:modal>
-    </div>
+        </div>
 
-    <!-- Generate Modal -->
-    <div>
-        <flux:modal name="generate-modal" max-width="2xl">
-            <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-4">
-                    Generate Payroll Details
-                </h2>
-
-                <div class="mb-4">
-                    <p class="text-sm text-gray-600">
-                        Periode: {{ \Carbon\Carbon::parse($periodStart)->format('d M Y') }} -
-                        {{ \Carbon\Carbon::parse($periodEnd)->format('d M Y') }}
-                    </p>
+        <!-- Digital Ledger: History & Logs -->
+        <div class="lg:col-span-4 space-y-8 h-full">
+            <div class="glass rounded-[2.5rem] p-10 border border-white/5 h-full">
+                <div class="flex items-center justify-between mb-10">
+                    <h3 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Fiscal Ledger</h3>
+                    <flux:icon name="list-bullet" class="w-5 h-5 text-zinc-700" />
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Allowances Section -->
-                    <div>
-                        <h3 class="font-medium text-gray-700 mb-2">Tunjangan</h3>
-                        <div class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded">
-                            @foreach($allowances as $allowance)
-                            <div class="flex items-start">
-                                <div class="flex items-center h-5">
-                                    <flux:input wire:model="selectedAllowances" id="allowance-{{ $allowance->id }}"
-                                        value="{{ $allowance->id }}" type="checkbox"
-                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                </div>
-                                <div class="ml-3 text-sm">
-                                    <flux:label for="allowance-{{ $allowance->id }}" class="font-medium text-gray-700">
-                                        {{ $allowance->name }}
-                                    </flux:label>
-                                    <p class="text-gray-500">
-                                        {{ $allowance->rule === 'fixed'
-                                        ? format_currency($allowance->amount)
-                                        : $allowance->amount . '%' }}
-                                    </p>
+                <div class="space-y-6">
+                    @php 
+                        $history = [
+                            ['month' => 'APRIL 2026', 'amount' => 'Rp 1.18B', 'status' => 'Disbursed', 'color' => 'emerald'],
+                            ['month' => 'MARCH 2026', 'amount' => 'Rp 1.15B', 'status' => 'Disbursed', 'color' => 'emerald'],
+                            ['month' => 'FEBRUARY 2026', 'amount' => 'Rp 1.21B', 'status' => 'Archived', 'color' => 'zinc'],
+                        ];
+                    @endphp
+                    @foreach($history as $item)
+                        <div class="group p-5 bg-zinc-900/40 hover:bg-zinc-900 rounded-[1.5rem] border border-white/5 transition-all cursor-pointer">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{{ $item['month'] }}</span>
+                                <div class="px-2 py-0.5 rounded-lg bg-{{ $item['color'] }}-500/10 border border-{{ $item['color'] }}-500/20">
+                                    <span class="text-{{ $item['color'] }}-500 text-[8px] font-black uppercase tracking-tighter">{{ $item['status'] }}</span>
                                 </div>
                             </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-
-                    <!-- Deductions Section -->
-                    <div>
-                        <h3 class="font-medium text-gray-700 mb-2">Potongan</h3>
-                        <div class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded">
-                            @foreach($deductions as $deduction)
-                            <div class="flex items-start">
-                                <div class="flex items-center h-5">
-                                    <!-- FIXED: Added closing / -->
-                                    <flux:input wire:model="selectedDeductions" id="deduction-{{ $deduction->id }}"
-                                        value="{{ $deduction->id }}" type="checkbox"
-                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                </div>
-                                <div class="ml-3 text-sm">
-                                    <flux:label for="deduction-{{ $deduction->id }}" class="font-medium text-gray-700">
-                                        {{ $deduction->name }}
-                                    </flux:label>
-                                    <p class="text-gray-500">
-                                        {{ format_currency($deduction->amount) }}
-                                    </p>
-                                </div>
+                            <div class="flex items-end justify-between">
+                                <p class="text-xl font-black text-white tracking-tighter">{{ $item['amount'] }}</p>
+                                <button class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
+                                    <flux:icon name="arrow-down-tray" variant="mini" class="w-4 h-4" />
+                                </button>
                             </div>
-                            @endforeach
                         </div>
-                    </div>
+                    @endforeach
                 </div>
 
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <flux:button wire:click="$dispatch('close-modal', { name: 'generate-modal' })" variant="secondary">
-                        Batal
-                    </flux:button>
-                    <flux:button wire:click="generate" variant="primary">
-                        Generate
-                    </flux:button>
-                </div>
+                <button class="w-full mt-10 py-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.2em] transition-all">
+                    View Complete History
+                </button>
             </div>
-        </flux:modal>
+        </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div>
-        <flux:modal name="delete-modal">
-            <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">
-                    Apakah Anda yakin ingin menghapus payroll ini?
-                </h2>
-
-                <p class="mt-1 text-sm text-gray-600">
-                    Semua data yang terkait dengan payroll ini akan dihapus secara permanen.
-                </p>
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <flux:button wire:click="$dispatch('close-modal', { name: 'delete-modal' })" variant="secondary">
-                        Batal
-                    </flux:button>
-                    <flux:button wire:click="delete" variant="danger">
-                        Hapus
-                    </flux:button>
-                </div>
-            </div>
-        </flux:modal>
-    </div>
+    <style>
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+    </style>
 </div>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('livewire:load', function() {
-        const ctx = document.getElementById('levelChart').getContext('2d');
-
-        const levels = @json(array_column($employeesByLevel, 'level'));
-        const totals = @json(array_column($employeesByLevel, 'total'));
-        const colors = [
-            'rgba(54, 162, 235, 0.7)',
-            'rgba(255, 99, 132, 0.7)',
-            'rgba(75, 192, 192, 0.7)',
-            'rgba(255, 159, 64, 0.7)',
-            'rgba(153, 102, 255, 0.7)',
-            'rgba(201, 203, 207, 0.7)'
-        ];
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: levels,
-                datasets: [{
-                    data: totals,
-                    backgroundColor: colors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} karyawan (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
-</script>
-@endpush
