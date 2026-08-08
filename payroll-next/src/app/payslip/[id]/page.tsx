@@ -69,14 +69,21 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
       label: 'Kehadiran',
       value: `${item.presentDays} hadir · ${item.leaveDays} cuti · ${item.absentDays} mangkir`,
     },
+    masakerja: {
+      label: 'Masa kerja',
+      value: `${item.serviceMonths} bulan`,
+    },
   };
 
   const identitas = fields
     .filter((f) => f.section === 'IDENTITAS' && f.visible && NILAI_IDENTITAS[f.key])
+    // Kehadiran tidak punya arti pada slip THR — dasarnya masa kerja.
+    .filter((f) => !(item.run.kind === 'THR' && f.key === 'kehadiran'))
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((f) => ({ key: f.key, ...NILAI_IDENTITAS[f.key] }));
 
   const dibayar = item.run.status === 'PAID';
+  const isThr = item.run.kind === 'THR';
   // Kode ringkas untuk mencocokkan slip cetak dengan catatan sistem.
   const kode = item.id.slice(-10).toUpperCase();
 
@@ -125,9 +132,11 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                   className="t-micro font-semibold tracking-[0.2em] uppercase"
                   style={{ color: 'var(--accent)' }}
                 >
-                  Slip Gaji
+                  {isThr ? 'Slip THR' : 'Slip Gaji'}
                 </p>
-                <p className="mt-0.5 t-title">{labelPeriode(item.run.period)}</p>
+                <p className="mt-0.5 t-title">
+                  {isThr ? item.run.holidayName : labelPeriode(item.run.period)}
+                </p>
                 <p className="t-micro">
                   Dibayarkan {tanggalPanjang(item.run.paidAt ?? item.run.payDate)}
                 </p>
@@ -171,9 +180,9 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
           {/* ── Penerimaan & potongan ── */}
           <section className="grid gap-x-9 gap-y-7 px-9 pt-7 sm:grid-cols-2">
             <Kolom
-              judul="Penerimaan"
+              judul={isThr ? 'Tunjangan Hari Raya' : 'Penerimaan'}
               baris={penerimaan}
-              totalLabel="Penghasilan bruto"
+              totalLabel={isThr ? 'THR bruto' : 'Penghasilan bruto'}
               total={item.grossPay}
               nada="jade"
             />
@@ -199,7 +208,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
             >
               <div>
                 <p className="t-micro font-semibold tracking-[0.14em] uppercase">
-                  Gaji bersih diterima
+                  {isThr ? 'THR diterima' : 'Gaji bersih diterima'}
                 </p>
                 <p
                   className="tnum mt-1"
@@ -255,9 +264,11 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                     <Kecil k="PPh 21 dipotong" v={rupiah(item.pph21)} tegas />
                   </dl>
                   <p className="mt-2 t-micro leading-snug">
-                    {item.taxMethod === 'TER'
-                      ? 'PP 58/2023 tentang tarif efektif pemotongan PPh Pasal 21.'
-                      : 'Pasal 17 UU HPP — perhitungan tahunan masa Desember.'}
+                    {isThr
+                      ? 'THR adalah penghasilan tidak teratur. Pajaknya dihitung sebagai selisih antara pajak atas penghasilan termasuk THR dan pajak atas penghasilan reguler saja.'
+                      : item.taxMethod === 'TER'
+                        ? 'PP 58/2023 tentang tarif efektif pemotongan PPh Pasal 21.'
+                        : 'Pasal 17 UU HPP — perhitungan tahunan masa Desember.'}
                     {!item.employee.npwp && ' Tanpa NPWP, tarif ditambah 20%.'}
                   </p>
                 </div>

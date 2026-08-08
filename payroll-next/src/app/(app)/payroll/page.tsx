@@ -244,10 +244,18 @@ export default async function PayrollPage() {
                       >
                         {labelPeriode(r.period)}
                       </Link>
-                      {r.period === periodeKini && (
+                      {r.kind === 'THR' && (
+                        <span className="ml-1.5">
+                          <Chip tone="brass">THR</Chip>
+                        </span>
+                      )}
+                      {r.period === periodeKini && r.kind !== 'THR' && (
                         <span className="ml-1.5">
                           <Chip tone="jade">berjalan</Chip>
                         </span>
+                      )}
+                      {r.kind === 'THR' && r.holidayName && (
+                        <span className="block t-micro">{r.holidayName}</span>
                       )}
                     </td>
                     <td>

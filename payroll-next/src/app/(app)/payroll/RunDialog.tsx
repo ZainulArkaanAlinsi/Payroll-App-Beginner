@@ -21,6 +21,7 @@ export default function RunDialog({
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<ActionState, FormData>(createRun, {});
   const [period, setPeriod] = useState(suggestedPeriod);
+  const [kind, setKind] = useState<'REGULAR' | 'THR'>('REGULAR');
   const router = useRouter();
 
   useEffect(() => {
@@ -48,9 +49,68 @@ export default function RunDialog({
         open={open}
         onClose={() => setOpen(false)}
         title="Buat proses gaji"
-        description="Satu periode hanya boleh punya satu proses gaji."
+        description="Satu periode hanya boleh punya satu proses. THR dihitung terpisah dari gaji bulanan."
       >
         <form action={action} className="space-y-4">
+          <div>
+            <span className="label">Jenis proses</span>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {([
+                ['REGULAR', 'Gaji bulanan', 'Kehadiran, lembur, tunjangan, BPJS, dan PPh 21'],
+                ['THR', 'Tunjangan Hari Raya', 'Prorata masa kerja, tanpa BPJS, PPh 21 metode selisih'],
+              ] as const).map(([v, judul, ket]) => (
+                <label
+                  key={v}
+                  className="glass-thin cursor-pointer px-3.5 py-3"
+                  style={{
+                    borderColor:
+                      kind === v ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : undefined,
+                    background: kind === v ? 'var(--accent-soft)' : undefined,
+                  }}
+                >
+                  <span className="flex items-start gap-2.5">
+                    <input
+                      type="radio"
+                      name="kind"
+                      value={v}
+                      checked={kind === v}
+                      onChange={() => setKind(v)}
+                      className="mt-0.5 size-4 shrink-0"
+                      style={{ accentColor: 'var(--color-jade-600)' }}
+                    />
+                    <span className="min-w-0">
+                      <span className="block t-small font-semibold" style={{ color: 'var(--text-strong)' }}>
+                        {judul}
+                      </span>
+                      <span className="block t-micro leading-snug">{ket}</span>
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {kind === 'THR' && (
+            <label className="block">
+              <span className="label">Hari raya</span>
+              <input
+                name="holidayName"
+                required
+                className="field"
+                placeholder="mis. Idulfitri 1447 H"
+                list="hari-raya"
+              />
+              <datalist id="hari-raya">
+                <option value="Idulfitri 1447 H" />
+                <option value="Natal 2026" />
+                <option value="Nyepi 1948 Saka" />
+                <option value="Waisak 2570 BE" />
+              </datalist>
+              <span className="mt-1 block t-micro">
+                Permenaker 6/2016: THR wajib dibayarkan paling lambat 7 hari sebelum hari raya.
+              </span>
+            </label>
+          )}
           <label className="block">
             <span className="label">Periode</span>
             <input
@@ -68,7 +128,9 @@ export default function RunDialog({
               >
                 {sudahAda
                   ? `${labelPeriode(period)} sudah pernah dibuat — pilih periode lain.`
-                  : `Akan dibuat sebagai “Gaji ${labelPeriode(period)}”.`}
+                  : kind === 'THR'
+                    ? 'Masa kerja dihitung sampai tanggal pembayaran di bawah.'
+                    : `Akan dibuat sebagai “Gaji ${labelPeriode(period)}”.`}
               </span>
             )}
           </label>
@@ -94,7 +156,7 @@ export default function RunDialog({
               Batal
             </button>
             <SubmitButton className="btn btn-primary btn-sm" pendingLabel="Membuat…">
-              Buat proses gaji
+              {kind === 'THR' ? 'Buat proses THR' : 'Buat proses gaji'}
             </SubmitButton>
           </div>
         </form>

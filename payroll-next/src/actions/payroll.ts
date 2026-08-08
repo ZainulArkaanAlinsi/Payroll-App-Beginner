@@ -5,7 +5,13 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { audit, notify, requireRole } from '@/lib/auth';
 import { FAIL, OK, type ActionState } from '@/lib/types';
-import { calculatePayroll, workingDaysInPeriod, type BpjsConfig, type TaxMethod } from '@/lib/payroll-engine';
+import {
+  calculatePayroll,
+  workingDaysInPeriod,
+  type BpjsConfig,
+  type BreakdownRow,
+  type TaxMethod,
+} from '@/lib/payroll-engine';
 import { resolveAll, buildVariables } from '@/lib/components';
 import {
   pilihAturan,
@@ -15,6 +21,8 @@ import {
 } from '@/lib/policy';
 import type { PtkpStatus } from '@/lib/tax';
 import { labelPeriode } from '@/lib/format';
+import { hitungThr, masaKerjaBulan, pajakThr } from '@/lib/thr';
+import { pph21Ter } from '@/lib/tax';
 
 async function bpjsConfig(): Promise<{ bpjs: BpjsConfig; cutAbsent: boolean }> {
   const c =
@@ -40,6 +48,8 @@ async function bpjsConfig(): Promise<{ bpjs: BpjsConfig; cutAbsent: boolean }> {
 const createSchema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/, 'Periode harus berformat YYYY-MM'),
   payDate: z.string().min(1, 'Tanggal bayar wajib diisi'),
+  kind: z.enum(['REGULAR', 'THR']),
+  holidayName: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
 });
 
@@ -48,9 +58,14 @@ export async function createRun(_prev: ActionState, fd: FormData): Promise<Actio
   const parsed = createSchema.safeParse({
     period: fd.get('period'),
     payDate: fd.get('payDate'),
+    kind: fd.get('kind') || 'REGULAR',
+    holidayName: fd.get('holidayName') || null,
     note: fd.get('note'),
   });
   if (!parsed.success) return FAIL(parsed.error.issues[0].message);
+  if (parsed.data.kind === 'THR' && !parsed.data.holidayName?.trim()) {
+    return FAIL('Sebutkan nama hari rayanya — ikut tercetak di slip THR.');
+  }
 
   const ada = await prisma.payrollRun.findUnique({ where: { period: parsed.data.period } });
   if (ada) return FAIL(`Periode ${labelPeriode(parsed.data.period)} sudah pernah dibuat.`);
@@ -58,7 +73,12 @@ export async function createRun(_prev: ActionState, fd: FormData): Promise<Actio
   const run = await prisma.payrollRun.create({
     data: {
       period: parsed.data.period,
-      label: `Gaji ${labelPeriode(parsed.data.period)}`,
+      label:
+        parsed.data.kind === 'THR'
+          ? `THR ${parsed.data.holidayName}`
+          : `Gaji ${labelPeriode(parsed.data.period)}`,
+      kind: parsed.data.kind,
+      holidayName: parsed.data.holidayName ?? null,
       payDate: new Date(parsed.data.payDate),
       note: parsed.data.note ?? null,
       status: 'DRAFT',
@@ -82,6 +102,8 @@ export async function calculateRun(runId: string): Promise<ActionState> {
   const run = await prisma.payrollRun.findUnique({ where: { id: runId } });
   if (!run) return FAIL('Proses gaji tidak ditemukan.');
   if (run.status === 'PAID') return FAIL('Periode yang sudah dibayarkan tidak bisa dihitung ulang.');
+
+  if (run.kind === 'THR') return hitungRunThr(runId);
 
   const [y, m] = run.period.split('-').map(Number);
   const awal = new Date(y, m - 1, 1);
@@ -548,4 +570,188 @@ export async function deleteRun(runId: string): Promise<ActionState> {
   revalidatePath('/payroll');
   revalidatePath('/dashboard');
   return OK('Proses gaji dihapus.');
+}
+
+/**
+ * Menghitung satu proses THR.
+ *
+ * Dipisah dari perhitungan gaji bulanan karena dasarnya berbeda: tidak ada
+ * kehadiran, lembur, potongan komponen, maupun iuran BPJS — THR bukan upah
+ * bulanan, jadi tidak menjadi dasar pengali BPJS. Yang dipotong hanya
+ * PPh 21, dan itu pun memakai metode selisih karena THR tergolong
+ * penghasilan tidak teratur.
+ */
+async function hitungRunThr(runId: string): Promise<ActionState> {
+  const session = await requireRole('ADMIN', 'HR');
+
+  const run = await prisma.payrollRun.findUnique({ where: { id: runId } });
+  if (!run) return FAIL('Proses THR tidak ditemukan.');
+  if (run.status === 'PAID') return FAIL('Periode yang sudah dibayarkan tidak bisa dihitung ulang.');
+
+  // Masa kerja diukur sampai tanggal pembayaran THR.
+  const acuan = run.payDate;
+
+  const employees = await prisma.employee.findMany({
+    where: { status: { in: ['ACTIVE', 'ON_LEAVE'] }, joinDate: { lte: acuan } },
+    include: {
+      components: { include: { component: true } },
+      position: { select: { level: true } },
+    },
+  });
+
+  if (employees.length === 0) return FAIL('Tidak ada karyawan aktif untuk diproses.');
+
+  // Bruto reguler terakhir dipakai sebagai dasar pajak selisih. Bila belum
+  // ada riwayat, dihitung dari struktur upah yang berlaku sekarang.
+  const terakhir = await prisma.payrollItem.findMany({
+    where: {
+      employeeId: { in: employees.map((e) => e.id) },
+      run: { kind: 'REGULAR', status: { in: ['APPROVED', 'PAID'] } },
+    },
+    orderBy: { run: { period: 'desc' } },
+    select: { employeeId: true, taxableIncome: true },
+  });
+  const petaBruto = new Map<string, number>();
+  for (const t of terakhir) if (!petaBruto.has(t.employeeId)) petaBruto.set(t.employeeId, t.taxableIncome);
+
+  let tg = 0, td = 0, tt = 0, tn = 0, tec = 0;
+  const rows = [];
+  let belumBerhak = 0;
+
+  for (const e of employees) {
+    // Upah dasar THR: gaji pokok ditambah tunjangan tetap. Komponen berumus
+    // dikecualikan karena nilainya bergantung kehadiran, sehingga bukan
+    // tunjangan tetap menurut PP 36/2021.
+    const tunjanganTetap = e.components
+      .filter(
+        (a) =>
+          a.component.active &&
+          a.component.type === 'ALLOWANCE' &&
+          a.component.calcType !== 'FORMULA',
+      )
+      .reduce(
+        (t, a) =>
+          t +
+          (a.overrideAmount ??
+            (a.component.calcType === 'PERCENT_OF_BASE'
+              ? Math.round((e.baseSalary * a.component.percent) / 100)
+              : a.component.amount)),
+        0,
+      );
+
+    const upah = e.baseSalary + tunjanganTetap;
+    const bulan = masaKerjaBulan(e.joinDate, acuan);
+    const thr = hitungThr(upah, bulan);
+
+    if (thr.amount === 0) {
+      belumBerhak++;
+      continue;
+    }
+
+    const brutoReguler = petaBruto.get(e.id) ?? upah;
+    const ptkp = e.ptkpStatus as PtkpStatus;
+    const punyaNpwp = Boolean(e.npwp);
+
+    const { pajak, pajakDenganThr, pajakTanpaThr } = pajakThr(brutoReguler, thr.amount, (b) =>
+      pph21Ter(Math.max(0, b), ptkp, punyaNpwp).tax,
+    );
+
+    const netPay = Math.max(0, thr.amount - pajak);
+    const tarif = pph21Ter(Math.max(0, brutoReguler + thr.amount), ptkp, punyaNpwp).rate;
+
+    const breakdown: BreakdownRow[] = [
+      {
+        group: 'EARNING',
+        label: 'Tunjangan Hari Raya',
+        amount: thr.amount,
+        note: `${thr.note} Dasar upah ${upah.toLocaleString('id-ID')}.`,
+      },
+    ];
+    if (pajak > 0) {
+      breakdown.push({
+        group: 'DEDUCTION',
+        label: `PPh 21 atas THR (TER ${tarif}%)`,
+        amount: pajak,
+        note: `Selisih pajak: ${pajakDenganThr.toLocaleString('id-ID')} dengan THR − ${pajakTanpaThr.toLocaleString('id-ID')} tanpa THR.`,
+      });
+    }
+
+    rows.push({
+      runId,
+      employeeId: e.id,
+      baseSalary: 0,
+      allowanceTaxable: thr.amount,
+      allowanceNonTax: 0,
+      overtimePay: 0,
+      grossPay: thr.amount,
+      thrAmount: thr.amount,
+      serviceMonths: bulan,
+      bpjsKesEmployee: 0,
+      bpjsJhtEmployee: 0,
+      bpjsJpEmployee: 0,
+      bpjsKesEmployer: 0,
+      bpjsJhtEmployer: 0,
+      bpjsJpEmployer: 0,
+      bpjsJkkEmployer: 0,
+      bpjsJkmEmployer: 0,
+      otherDeduction: 0,
+      loanDeduction: 0,
+      unpaidLeaveCut: 0,
+      lateCut: 0,
+      taxableIncome: thr.amount,
+      taxAllowance: 0,
+      prorateDays: 0,
+      terRate: tarif,
+      pph21: pajak,
+      taxMethod: 'TER',
+      totalDeduction: pajak,
+      netPay,
+      // THR tidak dikenai iuran BPJS, jadi biaya perusahaan sama dengan bruto
+      employerCost: thr.amount,
+      presentDays: 0,
+      absentDays: 0,
+      leaveDays: 0,
+      overtimeHours: 0,
+      breakdown: JSON.stringify(breakdown),
+    });
+
+    tg += thr.amount;
+    td += pajak;
+    tt += pajak;
+    tn += netPay;
+    tec += thr.amount;
+  }
+
+  if (rows.length === 0) {
+    return FAIL('Tidak ada karyawan yang berhak menerima THR pada tanggal pembayaran ini.');
+  }
+
+  await prisma.$transaction([
+    prisma.runApproval.deleteMany({ where: { runId } }),
+    prisma.payrollItem.deleteMany({ where: { runId } }),
+    prisma.payrollItem.createMany({ data: rows }),
+    prisma.payrollRun.update({
+      where: { id: runId },
+      data: {
+        status: 'CALCULATED',
+        totalGross: tg,
+        totalDeduction: td,
+        totalTax: tt,
+        totalNet: tn,
+        totalEmployerCost: tec,
+        headcount: rows.length,
+        calculatedAt: new Date(),
+      },
+    }),
+  ]);
+
+  await audit(session, 'RUN', 'PayrollRun', runId, `THR ${run.holidayName ?? ''} dihitung untuk ${rows.length} karyawan`);
+  revalidatePath('/payroll');
+  revalidatePath(`/payroll/${runId}`);
+  revalidatePath('/dashboard');
+
+  const dasar = `${rows.length} karyawan berhak THR. Total bersih Rp ${tn.toLocaleString('id-ID')}.`;
+  return belumBerhak > 0
+    ? OK(`${dasar} ${belumBerhak} karyawan belum genap sebulan masa kerja sehingga belum berhak.`)
+    : OK(dasar);
 }

@@ -354,6 +354,10 @@ model PayrollRun {
   id          String   @id @default(cuid())
   period      String   @unique // "YYYY-MM"
   label       String
+  // REGULER = gaji bulanan · THR = tunjangan hari raya (Permenaker 6/2016)
+  kind        String   @default("REGULAR")
+  // nama hari raya, tampil di slip THR
+  holidayName String?
   status      String   @default("DRAFT") // DRAFT | CALCULATED | APPROVED | PAID
   payDate     DateTime
   note        String?
@@ -403,6 +407,10 @@ model PayrollItem {
 
   taxAllowance     Int @default(0) // tunjangan pajak bila metode GROSS / GROSS_UP
   prorateDays      Int @default(0)  // hari dibayar bila masuk/keluar tengah bulan
+
+  // Khusus proses THR
+  thrAmount        Int @default(0)
+  serviceMonths    Int @default(0) // masa kerja saat THR dihitung, dalam bulan
 
   taxableIncome    Int @default(0)
   terRate          Float @default(0)

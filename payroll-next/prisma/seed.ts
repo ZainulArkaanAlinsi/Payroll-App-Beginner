@@ -10,6 +10,8 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { calculatePayroll, workingDaysInPeriod } from '../src/lib/payroll-engine';
 import { resolveAll, buildVariables } from '../src/lib/components';
+import { hitungThr, masaKerjaBulan, pajakThr } from '../src/lib/thr';
+import { pph21Ter } from '../src/lib/tax';
 import type { PtkpStatus } from '../src/lib/tax';
 
 const prisma = new PrismaClient();
@@ -706,6 +708,100 @@ async function main() {
       },
     });
     console.log(`  ${period}: ${hc} karyawan, net Rp ${tn.toLocaleString('id-ID')}`);
+  }
+
+  console.log('› Proses THR Idulfitri…');
+  {
+    // THR memakai fungsi yang sama dengan aksi di aplikasi, bukan salinan
+    // logika, supaya angkanya tidak pernah berbeda.
+    const periodeThr = periodeMundur(2);
+    const [ty, tm] = periodeThr.split('-').map(Number);
+    const tanggalBayar = new Date(ty, tm - 1, 13);
+
+    const runThr = await prisma.payrollRun.create({
+      data: {
+        period: periodeThr + '-THR',
+        label: 'THR Idulfitri 1447 H',
+        kind: 'THR',
+        holidayName: 'Idulfitri 1447 H',
+        status: 'PAID',
+        payDate: tanggalBayar,
+        calculatedAt: tanggalBayar,
+        approvedAt: tanggalBayar,
+        approvedBy: 'Zainul Arkaan',
+        paidAt: tanggalBayar,
+      },
+    });
+
+    let tg = 0, tt = 0, tn = 0, hc = 0;
+    for (const e of employees) {
+      const assignments = await prisma.employeeComponent.findMany({
+        where: { employeeId: e.id },
+        include: { component: true },
+      });
+      const tunjanganTetap = assignments
+        .filter((a) => a.component.active && a.component.type === 'ALLOWANCE' && a.component.calcType !== 'FORMULA')
+        .reduce(
+          (t, a) =>
+            t +
+            (a.overrideAmount ??
+              (a.component.calcType === 'PERCENT_OF_BASE'
+                ? Math.round((e.gaji * a.component.percent) / 100)
+                : a.component.amount)),
+          0,
+        );
+
+      const bulan = masaKerjaBulan(e.joinDate, tanggalBayar);
+      const thr = hitungThr(e.gaji + tunjanganTetap, bulan);
+      if (thr.amount === 0) continue;
+
+      const brutoReguler = e.gaji + tunjanganTetap;
+      const { pajak } = pajakThr(brutoReguler, thr.amount, (b) => pph21Ter(Math.max(0, b), e.ptkp, true).tax);
+      const netPay = Math.max(0, thr.amount - pajak);
+
+      await prisma.payrollItem.create({
+        data: {
+          runId: runThr.id,
+          employeeId: e.id,
+          baseSalary: 0,
+          allowanceTaxable: thr.amount,
+          grossPay: thr.amount,
+          thrAmount: thr.amount,
+          serviceMonths: bulan,
+          taxableIncome: thr.amount,
+          terRate: pph21Ter(Math.max(0, brutoReguler + thr.amount), e.ptkp, true).rate,
+          pph21: pajak,
+          taxMethod: 'TER',
+          totalDeduction: pajak,
+          netPay,
+          employerCost: thr.amount,
+          transferStatus: 'SENT',
+          transferredAt: tanggalBayar,
+          breakdown: JSON.stringify([
+            {
+              group: 'EARNING',
+              label: 'Tunjangan Hari Raya',
+              amount: thr.amount,
+              note: `${thr.note} Dasar upah ${brutoReguler.toLocaleString('id-ID')}.`,
+            },
+            ...(pajak > 0
+              ? [{ group: 'DEDUCTION', label: 'PPh 21 atas THR', amount: pajak, note: 'Metode selisih atas penghasilan tidak teratur.' }]
+              : []),
+          ]),
+        },
+      });
+
+      tg += thr.amount;
+      tt += pajak;
+      tn += netPay;
+      hc++;
+    }
+
+    await prisma.payrollRun.update({
+      where: { id: runThr.id },
+      data: { totalGross: tg, totalDeduction: tt, totalTax: tt, totalNet: tn, totalEmployerCost: tg, headcount: hc },
+    });
+    console.log(`  ${hc} karyawan · THR bersih Rp ${tn.toLocaleString('id-ID')}`);
   }
 
   console.log('› Jejak audit & notifikasi…');

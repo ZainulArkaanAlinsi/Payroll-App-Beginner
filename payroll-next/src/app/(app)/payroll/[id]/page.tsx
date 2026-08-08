@@ -124,9 +124,10 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="t-display" style={{ fontSize: '1.5rem' }}>
-                {labelPeriode(run.period)}
+                {run.kind === 'THR' ? `THR ${run.holidayName ?? ''}`.trim() : labelPeriode(run.period)}
               </h1>
               <StatusChip status={run.status} />
+              {run.kind === 'THR' && <Chip tone="brass">Permenaker 6/2016</Chip>}
             </div>
             <p className="mt-1 t-small">
               Tanggal bayar {tanggalPanjang(run.payDate)}
