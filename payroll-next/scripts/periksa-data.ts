@@ -17,6 +17,7 @@
 import { PrismaClient } from '@prisma/client';
 import { periksaKepatuhan } from '../src/lib/kepatuhan';
 import { periksaTransfer } from '../src/lib/transfer';
+import { tunjanganTetap } from '../src/lib/components';
 
 const prisma = new PrismaClient();
 const rupiah = (n: number) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
@@ -197,7 +198,10 @@ async function main() {
   // ── 7. Kepatuhan ──────────────────────────────────────────────────
   judul('7. Kepatuhan ketenagakerjaan');
   const karyawan = await prisma.employee.findMany({
-    include: { components: { include: { component: true } } },
+    include: {
+      position: { select: { level: true } },
+      components: { include: { component: true } },
+    },
   });
   const setting = await prisma.companySetting.findUnique({ where: { id: 'singleton' } });
   const kep = periksaKepatuhan(
@@ -206,11 +210,16 @@ async function main() {
       nama: e.fullName,
       status: e.status,
       gajiPokok: e.baseSalary,
-      // Hanya tunjangan tetap yang dihitung. Komponen berumus nilainya
-      // bergantung kehadiran, jadi bukan tunjangan tetap menurut PP 36/2021.
-      tunjanganTetap: e.components
-        .filter((c) => c.component.type === 'EARNING' && c.component.calcType === 'FIXED')
-        .reduce((a, c) => a + (c.overrideAmount ?? c.component.amount), 0),
+      // Memakai fungsi bersama, sama dengan halaman kepatuhan dan dasar upah
+      // lembur. Perhitungan sendiri di sini sebelumnya hanya menjumlahkan
+      // komponen bernilai tetap dan melewatkan yang berupa persentase gaji
+      // pokok, sehingga rasionya tampak lebih sehat daripada kenyataannya.
+      tunjanganTetap: tunjanganTetap(e.components, {
+        departmentId: e.departmentId,
+        level: e.position?.level ?? null,
+        baseSalary: e.baseSalary,
+        variables: {} as never,
+      }),
     })),
     {
       upahMinimum: setting?.minimumWage ?? 0,
@@ -220,7 +229,14 @@ async function main() {
   );
   const pelanggaran = kep.filter((k) => k.tingkat === 'PELANGGARAN');
   baris('temuan kepatuhan', `${pelanggaran.length} pelanggaran · ${kep.length - pelanggaran.length} peringatan`);
-  for (const p of kep) baris('  ·', `${p.judul} — ${p.terdampak.length} orang (${p.dasar})`);
+  for (const p of kep) {
+    baris('  ·', `${p.judul} — ${p.terdampak.length} orang`);
+    for (const t of p.terdampak.slice(0, 3)) baris('     ', `${t.nama}: ${t.catatan}`);
+  }
+  // Pelanggaran upah minimum berakibat pidana, jadi diperlakukan sebagai
+  // masalah. Rasio gaji pokok cukup jadi peringatan.
+  periksa('kepatuhan', pelanggaran.length === 0,
+    `${pelanggaran.length} pelanggaran upah minimum: ${pelanggaran.map((p) => p.judul).join('; ')}`);
 
   // ── 8. Keterkaitan akun ───────────────────────────────────────────
   judul('8. Keterkaitan akun dan karyawan');

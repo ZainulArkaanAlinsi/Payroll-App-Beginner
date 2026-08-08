@@ -12,14 +12,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#226a53",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "id.racik.karyawan",
-      "edgeToEdgeEnabled": true
+      "package": "id.racik.karyawan"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -29,7 +28,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#226a53",
+          "dark": {
+            "backgroundColor": "#14372e"
+          }
+        }
+      ],
+      "expo-font"
     ],
     "scheme": "racik",
     "extra": {

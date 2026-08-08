@@ -29,9 +29,9 @@ export default function TataLetakTab() {
         headerShadowVisible: false,
         headerTitleStyle: { fontSize: 17, fontWeight: '600' },
         sceneStyle: { backgroundColor: t.bg },
-        // app.json menyalakan edge-to-edge di Android, jadi isi layar
-        // menggambar sampai ke bawah bilah navigasi sistem. Tanpa menambahkan
-        // inset ini, label tab tertutup tombol navigasi perangkat.
+        // Di Android, isi layar menggambar sampai ke bawah bilah navigasi
+        // sistem — edge-to-edge adalah perilaku bawaan sejak React Native 0.81.
+        // Tanpa menambahkan inset ini, label tab tertutup tombol navigasi.
         tabBarStyle: {
           backgroundColor: t.kartu,
           borderTopWidth: StyleSheet.hairlineWidth,
