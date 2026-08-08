@@ -75,11 +75,24 @@ function tokenize(src: string): Tok[] {
       continue;
     }
 
-    // angka — titik dan koma sama-sama diterima sebagai desimal, karena
-    // HR Indonesia terbiasa mengetik koma
+    // Angka. Titik dan koma hanya ikut terbaca sebagai bagian angka bila
+    // langsung diikuti digit — "1,5" desimal, tetapi "1, 5" bukan. Tanpa
+    // syarat itu, koma pemisah argumen ikut termakan dan MIN(1000, 500)
+    // terbaca sebagai satu argumen saja.
     if (/[0-9]/.test(c)) {
       let j = i;
-      while (j < src.length && /[0-9._,]/.test(src[j])) j++;
+      while (j < src.length) {
+        const ch = src[j];
+        if (/[0-9]/.test(ch)) {
+          j++;
+          continue;
+        }
+        if ((ch === ',' || ch === '.') && /[0-9]/.test(src[j + 1] ?? '')) {
+          j++;
+          continue;
+        }
+        break;
+      }
       const raw = src.slice(i, j);
       // pemisah ribuan dibuang, koma desimal jadi titik
       const cleaned = raw.replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
@@ -116,11 +129,21 @@ function tokenize(src: string): Tok[] {
       i++;
       continue;
     }
-    // titik koma dan koma sama-sama memisahkan argumen
-    if (c === ';' || c === ',') {
+    if (c === ';') {
       toks.push({ kind: 'sep', value: ';', pos: i });
       i++;
       continue;
+    }
+
+    // Koma yang sampai di sini bukan tanda desimal. Sengaja ditolak, bukan
+    // ditebak: MIN(1,5; 2) bisa berarti MIN(1,5 dan 2) atau MIN(1 dan 5 dan 2),
+    // dan menebak salah satunya pada rumus yang menghitung gaji orang jauh
+    // lebih berbahaya daripada memaksa penulisnya memperjelas.
+    if (c === ',') {
+      throw new FormulaError(
+        'Pakai titik koma (;) untuk memisahkan argumen. Koma hanya untuk desimal, misalnya 0,05.',
+        i,
+      );
     }
 
     // operator dua karakter lebih dulu
