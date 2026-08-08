@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, API, ApiError, type Beranda } from '../../src/api';
 import { useSesi } from '../../src/auth';
 import { tanggal } from '../../src/format';
-import { Baris, Galat, Garis, Kartu, Label, Memuat, Tombol, useTema } from '../../src/ui';
+import { Baris, Galat, Garis, Kartu, Label, MemuatDaftar, Muncul, Tombol, useTema } from '../../src/ui';
 import { jarak, teks } from '../../src/theme';
 
 const JENIS_KERJA: Record<string, string> = {
@@ -27,7 +27,7 @@ export default function LayarProfil() {
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !data) return <Galat pesan={galat} coba={muat} />;
-  if (!data) return <Memuat />;
+  if (!data) return <MemuatDaftar jumlah={3} baris={4} />;
 
   const p = data.profil;
   const inisial = p.fullName.split(' ').slice(0, 2).map((x) => x[0]).join('');
@@ -58,6 +58,7 @@ export default function LayarProfil() {
           onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }} />
       }
     >
+      <Muncul>
       <Kartu>
         <View style={{ alignItems: 'center', gap: jarak.sm }}>
           <View style={{
@@ -72,7 +73,9 @@ export default function LayarProfil() {
           </Text>
         </View>
       </Kartu>
+      </Muncul>
 
+      <Muncul jeda={60}>
       <Kartu>
         <Label>Kepegawaian</Label>
         <View style={{ marginTop: jarak.sm }}>
@@ -85,7 +88,9 @@ export default function LayarProfil() {
           <Baris kiri="Status PTKP" kanan={p.ptkpStatus} />
         </View>
       </Kartu>
+      </Muncul>
 
+      <Muncul jeda={120}>
       <Kartu>
         <Label>Kontak & rekening</Label>
         <View style={{ marginTop: jarak.sm }}>
@@ -99,6 +104,7 @@ export default function LayarProfil() {
           Ada yang keliru? Hubungi HRD — data ini dipakai untuk transfer gaji.
         </Text>
       </Kartu>
+      </Muncul>
 
       <Tombol judul="Keluar" jenis="bahaya" onPress={konfirmasiKeluar} />
 

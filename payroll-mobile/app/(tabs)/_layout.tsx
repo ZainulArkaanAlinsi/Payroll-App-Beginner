@@ -1,12 +1,14 @@
 import { Redirect, Tabs } from 'expo-router';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSesi } from '../../src/auth';
 import { useTema } from '../../src/ui';
 
 export default function TataLetakTab() {
   const t = useTema();
   const { pengguna, memuat } = useSesi();
+  const insets = useSafeAreaInsets();
 
   if (memuat) {
     return (
@@ -27,12 +29,16 @@ export default function TataLetakTab() {
         headerShadowVisible: false,
         headerTitleStyle: { fontSize: 17, fontWeight: '600' },
         sceneStyle: { backgroundColor: t.bg },
+        // app.json menyalakan edge-to-edge di Android, jadi isi layar
+        // menggambar sampai ke bawah bilah navigasi sistem. Tanpa menambahkan
+        // inset ini, label tab tertutup tombol navigasi perangkat.
         tabBarStyle: {
           backgroundColor: t.kartu,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: t.kartuTepi,
-          height: 62,
+          height: 62 + insets.bottom,
           paddingTop: 6,
+          paddingBottom: insets.bottom,
         },
         tabBarActiveTintColor: t.aksen,
         tabBarInactiveTintColor: t.redup,

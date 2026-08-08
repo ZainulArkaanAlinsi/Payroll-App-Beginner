@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { api, ApiError, type SlipDetail } from '../../src/api';
 import { namaPeriode, rupiah, tanggal } from '../../src/format';
-import { Baris, Galat, Garis, Kartu, Label, Lencana, Memuat, useTema } from '../../src/ui';
+import { Baris, Galat, Garis, Kartu, Label, Lencana, MemuatDaftar, Muncul, useTema } from '../../src/ui';
 import { jarak, lengkung, teks } from '../../src/theme';
 
 export default function RincianSlip() {
@@ -30,7 +30,7 @@ export default function RincianSlip() {
   }, [data, navigation]);
 
   if (galat) return <Galat pesan={galat} coba={muat} />;
-  if (!data) return <Memuat />;
+  if (!data) return <MemuatDaftar jumlah={3} baris={5} />;
 
   // Rincian dipisah jadi dua kelompok supaya karyawan bisa membaca "yang
   // menambah" dan "yang mengurangi" tanpa harus menafsirkan tanda minus.
@@ -40,6 +40,7 @@ export default function RincianSlip() {
   return (
     <ScrollView contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}>
       {/* yang paling dicari duluan: berapa yang masuk rekening */}
+      <Muncul>
       <Kartu>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Label>Diterima</Label>
@@ -54,6 +55,7 @@ export default function RincianSlip() {
           {data.employee.bankAccount ? ` ···${data.employee.bankAccount.slice(-4)}` : ''}
         </Text>
       </Kartu>
+      </Muncul>
 
       {data.run.kind === 'THR' ? (
         <View style={{ padding: jarak.md, borderRadius: lengkung.md, backgroundColor: t.aksenLembut }}>
@@ -68,6 +70,7 @@ export default function RincianSlip() {
       ) : null}
 
       {pendapatan.length ? (
+        <Muncul jeda={60}>
         <Kartu>
           <Label>Pendapatan</Label>
           <View style={{ marginTop: jarak.sm }}>
@@ -81,9 +84,11 @@ export default function RincianSlip() {
             <Baris kiri="Bruto" kanan={rupiah(data.grossPay)} tebal />
           </View>
         </Kartu>
+        </Muncul>
       ) : null}
 
       {potongan.length ? (
+        <Muncul jeda={120}>
         <Kartu>
           <Label>Potongan</Label>
           <View style={{ marginTop: jarak.sm }}>
@@ -97,6 +102,7 @@ export default function RincianSlip() {
             <Baris kiri="Total potongan" kanan={rupiah(data.totalDeduction)} tebal warna={t.bahaya} />
           </View>
         </Kartu>
+        </Muncul>
       ) : null}
 
       <Kartu>

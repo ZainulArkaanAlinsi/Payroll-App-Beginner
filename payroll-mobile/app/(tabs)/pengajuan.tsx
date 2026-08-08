@@ -6,7 +6,8 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Cuti, type Kuota, type Lembur } from '../../src/api';
 import { isoHariIni, rupiah, tanggal } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Label, Lencana, Memuat, Tombol, useTema } from '../../src/ui';
+import { Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatDaftar, Muncul, Tombol, useTema } from '../../src/ui';
+import { getar } from '../../src/getar';
 import { jarak, lengkung, teks } from '../../src/theme';
 
 const JENIS_CUTI: { nilai: string; label: string }[] = [
@@ -48,7 +49,7 @@ export default function LayarPengajuan() {
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !cuti) return <Galat pesan={galat} coba={muat} />;
-  if (!cuti || !lembur) return <Memuat />;
+  if (!cuti || !lembur) return <MemuatDaftar jumlah={3} baris={3} />;
 
   return (
     <View style={{ flex: 1 }}>
@@ -59,7 +60,9 @@ export default function LayarPengajuan() {
           return (
             <Pressable
               key={k}
-              onPress={() => setTab(k)}
+              onPress={() => { getar.ketuk(); setTab(k); }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: aktif }}
               style={{
                 flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center',
                 borderRadius: lengkung.md, borderWidth: 1,
@@ -102,9 +105,9 @@ export default function LayarPengajuan() {
             ) : null}
 
             {cuti.length === 0 ? (
-              <Kosong pesan="Belum ada pengajuan cuti." />
-            ) : cuti.map((c) => (
-              <Kartu key={c.id}>
+              <Kosong pesan="Belum ada pengajuan cuti. Ketuk tombol di bawah untuk mengajukan." ikon="sunny-outline" />
+            ) : cuti.map((c, i) => (
+              <Muncul key={c.id} jeda={i * 45}><Kartu>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: jarak.md }}>
                   <View style={{ flex: 1 }}>
                     <Text style={[teks.sedang, { color: t.kuat }]}>
@@ -123,15 +126,15 @@ export default function LayarPengajuan() {
                     <Badan style={{ fontSize: 13, marginTop: 2 }}>{c.reviewNote}</Badan>
                   </View>
                 ) : null}
-              </Kartu>
+              </Kartu></Muncul>
             ))}
           </>
         ) : (
           <>
             {lembur.length === 0 ? (
-              <Kosong pesan="Belum ada pengajuan lembur." />
-            ) : lembur.map((l) => (
-              <Kartu key={l.id}>
+              <Kosong pesan="Belum ada pengajuan lembur. Ketuk tombol di bawah untuk mengajukan." ikon="moon-outline" />
+            ) : lembur.map((l, i) => (
+              <Muncul key={l.id} jeda={i * 45}><Kartu>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: jarak.md }}>
                   <View style={{ flex: 1 }}>
                     <Text style={[teks.sedang, { color: t.kuat }]}>
@@ -147,7 +150,7 @@ export default function LayarPengajuan() {
                     {rupiah(l.amount)}
                   </Text>
                 ) : null}
-              </Kartu>
+              </Kartu></Muncul>
             ))}
           </>
         )}
@@ -155,7 +158,9 @@ export default function LayarPengajuan() {
 
       {/* tombol apung */}
       <Pressable
-        onPress={() => setFormulir(tab)}
+        onPress={() => { getar.ketuk(); setFormulir(tab); }}
+        accessibilityRole="button"
+        accessibilityLabel={`Ajukan ${tab}`}
         style={({ pressed }) => ({
           position: 'absolute', right: jarak.lg, bottom: jarak.lg,
           minHeight: 52, paddingHorizontal: jarak.lg, borderRadius: 999,
@@ -241,11 +246,13 @@ function FormulirCuti({ tutup, selesai }: { tutup: () => void; selesai: () => vo
     setSibuk(true); setGalat('');
     try {
       const r = await api.ajukanCuti({ type: jenis, startDate: mulai, endDate: akhir, reason: alasan });
+      getar.berhasil();
       Alert.alert('Terkirim', r.pesan);
       selesai();
     } catch (e) {
       // Pesan penolakan datang dari aturan yang sama dengan web — sisa kuota,
       // tumpang tindih tanggal — jadi ditampilkan apa adanya.
+      getar.gagal();
       setGalat(e instanceof ApiError ? e.message : 'Pengajuan gagal.');
     } finally { setSibuk(false); }
   }
@@ -321,9 +328,11 @@ function FormulirLembur({ tutup, selesai }: { tutup: () => void; selesai: () => 
     setSibuk(true); setGalat('');
     try {
       const r = await api.ajukanLembur({ date: tgl, hours: Number(jam.replace(',', '.')), reason: alasan });
+      getar.berhasil();
       Alert.alert('Terkirim', r.pesan);
       selesai();
     } catch (e) {
+      getar.gagal();
       setGalat(e instanceof ApiError ? e.message : 'Pengajuan gagal.');
     } finally { setSibuk(false); }
   }

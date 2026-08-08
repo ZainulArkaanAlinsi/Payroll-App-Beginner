@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type RingkasSlip } from '../../src/api';
 import { namaPeriode, rupiah, tanggal } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Label, Lencana, Memuat, useTema } from '../../src/ui';
+import { Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatDaftar, Muncul, useTema } from '../../src/ui';
 import { jarak, teks } from '../../src/theme';
 
 export default function LayarSlip() {
@@ -26,7 +26,7 @@ export default function LayarSlip() {
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !daftar) return <Galat pesan={galat} coba={muat} />;
-  if (!daftar) return <Memuat />;
+  if (!daftar) return <MemuatDaftar jumlah={4} baris={2} />;
 
   const totalTahunIni = daftar
     .filter((s) => s.run.period.startsWith(String(new Date().getFullYear())))
@@ -41,17 +41,20 @@ export default function LayarSlip() {
       }
     >
       {daftar.length === 0 ? (
-        <Kosong pesan="Belum ada slip gaji yang diterbitkan untuk Anda." />
+        <Kosong pesan="Belum ada slip gaji yang diterbitkan untuk Anda." ikon="receipt-outline" />
       ) : (
         <>
+          <Muncul>
           <Kartu>
             <Label>Diterima sepanjang {new Date().getFullYear()}</Label>
             <Text style={[teks.judul, { color: t.kuat, marginTop: 4 }]}>{rupiah(totalTahunIni)}</Text>
             <Badan style={{ fontSize: 12 }}>dari {daftar.length} slip</Badan>
           </Kartu>
+          </Muncul>
 
-          {daftar.map((s) => (
-            <Pressable key={s.id} onPress={() => router.push(`/slip/${s.id}`)}>
+          {daftar.map((s, i) => (
+            <Muncul key={s.id} jeda={60 + i * 45}>
+            <Pressable onPress={() => router.push(`/slip/${s.id}`)}>
               {({ pressed }) => (
                 <Kartu style={{ opacity: pressed ? 0.75 : 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
@@ -77,6 +80,7 @@ export default function LayarSlip() {
                 </Kartu>
               )}
             </Pressable>
+            </Muncul>
           ))}
         </>
       )}

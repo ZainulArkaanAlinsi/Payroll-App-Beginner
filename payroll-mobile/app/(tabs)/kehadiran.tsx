@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, RefreshControl, StyleSheet } from 'r
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type RiwayatKehadiran } from '../../src/api';
 import { bulanIni, durasi, geserBulan, hariKalender, jam, namaPeriode } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Label, Lencana, Memuat, useTema } from '../../src/ui';
+import { Badan, Galat, Kartu, Kosong, Lencana, Muncul, RangkaKartu, useTema } from '../../src/ui';
 import { jarak, lengkung, teks } from '../../src/theme';
 
 export default function LayarKehadiran() {
@@ -52,8 +52,13 @@ export default function LayarKehadiran() {
         </Pressable>
       </View>
 
-      {galat ? <Galat pesan={galat} coba={() => muat(bulan)} /> : !data ? <Memuat /> : (
+      {galat ? <Galat pesan={galat} coba={() => muat(bulan)} /> : !data ? (
         <>
+          <RangkaKartu baris={2} />
+          <RangkaKartu baris={5} />
+        </>
+      ) : (
+        <Muncul style={{ gap: jarak.md }}>
           {/* ringkasan */}
           <View style={{ flexDirection: 'row', gap: jarak.sm, flexWrap: 'wrap' }}>
             {(['PRESENT', 'WFH', 'LATE', 'LEAVE', 'ABSENT'] as const)
@@ -76,7 +81,7 @@ export default function LayarKehadiran() {
 
           {/* daftar hari */}
           {data.hari.length === 0 ? (
-            <Kosong pesan="Belum ada catatan kehadiran pada bulan ini." />
+            <Kosong pesan="Belum ada catatan kehadiran pada bulan ini." ikon="calendar-outline" />
           ) : (
             <Kartu style={{ padding: 0, overflow: 'hidden' }}>
               {data.hari.map((h, i) => {
@@ -109,7 +114,7 @@ export default function LayarKehadiran() {
               })}
             </Kartu>
           )}
-        </>
+        </Muncul>
       )}
     </ScrollView>
   );

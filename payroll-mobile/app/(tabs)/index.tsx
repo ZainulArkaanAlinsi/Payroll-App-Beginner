@@ -4,7 +4,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Beranda } from '../../src/api';
 import { jam, namaPeriode, rupiah, salam, tanggal, tanggalPanjang } from '../../src/format';
-import { Badan, Galat, Judul, Kartu, Label, Lencana, Memuat, Tombol, useTema } from '../../src/ui';
+import { Badan, Galat, Judul, Kartu, Label, Lencana, MemuatDaftar, Muncul, Tombol, useTema } from '../../src/ui';
+import { getar } from '../../src/getar';
 import { jarak, lengkung, teks } from '../../src/theme';
 
 export default function LayarBeranda() {
@@ -44,16 +45,35 @@ export default function LayarBeranda() {
     try {
       const hasil = await api.absen(kind);
       setData((d) => (d ? { ...d, hariIni: hasil.hariIni } : d));
+      getar.berhasil();
       Alert.alert(kind === 'IN' ? 'Absen masuk' : 'Absen pulang', hasil.pesan);
     } catch (e) {
+      getar.gagal();
       Alert.alert('Gagal', e instanceof ApiError ? e.message : 'Coba lagi.');
     } finally {
       setAbsenSibuk(false);
     }
   }
 
+  /**
+   * Absen pulang dikonfirmasi lebih dulu, absen masuk tidak.
+   *
+   * Masuk kepagian tidak merugikan, tetapi pulang yang terlanjur tercatat
+   * memotong jam kerja hari itu dan hanya bisa diperbaiki lewat HRD.
+   */
+  function mintaPulang() {
+    Alert.alert(
+      'Absen pulang sekarang?',
+      'Jam pulang akan tercatat dan tidak bisa Anda ubah sendiri.',
+      [
+        { text: 'Belum', style: 'cancel' },
+        { text: 'Absen pulang', onPress: () => absen('OUT') },
+      ],
+    );
+  }
+
   if (galat && !data) return <Galat pesan={galat} coba={muat} />;
-  if (!data) return <Memuat />;
+  if (!data) return <MemuatDaftar jumlah={3} baris={4} />;
 
   const { profil, hariIni, kuotaCuti, slipTerakhir, tertunda, kehadiranBulanIni } = data;
   const hadir = (kehadiranBulanIni.PRESENT ?? 0) + (kehadiranBulanIni.WFH ?? 0) + (kehadiranBulanIni.LATE ?? 0);
@@ -70,15 +90,16 @@ export default function LayarBeranda() {
         />
       }
     >
-      <View>
+      <Muncul>
         <Badan>{salam()},</Badan>
         <Judul style={{ marginTop: 2 }}>{profil.fullName.split(' ')[0]}</Judul>
         <Badan style={{ marginTop: 2 }}>
           {profil.position?.title ?? '—'} · {profil.department?.name ?? '—'}
         </Badan>
-      </View>
+      </Muncul>
 
       {/* ── kartu absen ── */}
+      <Muncul jeda={60}>
       <Kartu>
         <Label>{tanggalPanjang(sekarang)}</Label>
         <Text style={{ fontSize: 42, fontWeight: '700', color: t.kuat, letterSpacing: -1.5, marginTop: 4, fontVariant: ['tabular-nums'] }}>
@@ -126,7 +147,7 @@ export default function LayarBeranda() {
           <Tombol
             judul="Absen pulang"
             jenis="garis"
-            onPress={() => absen('OUT')}
+            onPress={mintaPulang}
             memuat={absenSibuk}
             ikon={<Ionicons name="log-out-outline" size={18} color={t.kuat} />}
           />
@@ -138,9 +159,10 @@ export default function LayarBeranda() {
           </View>
         )}
       </Kartu>
+      </Muncul>
 
       {/* ── ubin ringkasan ── */}
-      <View style={{ flexDirection: 'row', gap: jarak.md }}>
+      <Muncul jeda={120} style={{ flexDirection: 'row', gap: jarak.md }}>
         <Kartu rapat style={{ flex: 1 }}>
           <Label>Sisa cuti</Label>
           <Text style={[teks.judul, { color: t.kuat, marginTop: 4 }]}>{kuotaCuti.sisa}</Text>
@@ -153,10 +175,11 @@ export default function LayarBeranda() {
             {kehadiranBulanIni.LATE ? `${kehadiranBulanIni.LATE} kali terlambat` : 'tanpa keterlambatan'}
           </Badan>
         </Kartu>
-      </View>
+      </Muncul>
 
       {/* ── slip terakhir ── */}
       {slipTerakhir ? (
+        <Muncul jeda={180}>
         <Kartu>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Label>Slip terakhir</Label>
@@ -175,6 +198,7 @@ export default function LayarBeranda() {
             onPress={() => router.push(`/slip/${slipTerakhir.id}`)}
           />
         </Kartu>
+        </Muncul>
       ) : null}
 
       {/* ── pengajuan menunggu ── */}
