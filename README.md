@@ -1,6 +1,15 @@
 # Racik — Payroll yang bisa diracik sendiri
 
-Repositori ini memuat dua aplikasi penggajian: yang aktif dan pendahulunya.
+Repositori ini memuat tiga bagian:
+
+| Folder           | Isi                                                                 |
+| ---------------- | ------------------------------------------------------------------- |
+| `payroll-next/`  | aplikasi web untuk HR — mesin penggajian, Racik, laporan             |
+| `payroll-mobile/`| aplikasi ponsel untuk karyawan — absen, slip gaji, cuti, lembur      |
+| `legacy/`        | versi Laravel pendahulunya, disimpan sebagai riwayat                 |
+
+Web dan ponsel berbagi satu mesin perhitungan dan satu berkas aturan layanan
+mandiri, jadi pengajuan lewat ponsel tunduk pada batasan yang sama dengan web.
 
 ## Cara menjalankan
 
@@ -32,9 +41,25 @@ Kata sandi untuk semua akun: `password123`
 ```bash
 npm run build     # build produksi
 npm start         # jalankan hasil build
+npm test          # 131 uji mesin perhitungan
 npm run db:reset  # kosongkan lalu isi ulang data demo
 npm run db:seed   # isi ulang data demo saja
 ```
+
+### Aplikasi ponsel
+
+Portal karyawan berjalan terpisah dan menghubungi API aplikasi web. Jalankan
+server webnya lebih dulu, lalu:
+
+```bash
+cd payroll-mobile
+npm install
+npm start        # pindai kode QR dengan Expo Go, atau tekan w untuk peramban
+```
+
+Perangkat asli tidak mengenal `localhost` milik komputer Anda — isi
+`EXPO_PUBLIC_API_URL` dengan alamat IP jaringan lokal. Rinciannya di
+[`payroll-mobile/README.md`](payroll-mobile/README.md).
 
 ### Kalau gagal jalan
 
