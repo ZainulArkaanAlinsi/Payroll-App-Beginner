@@ -6,6 +6,8 @@ import { rupiah, rupiahRingkas, tanggal } from '@/lib/format';
 import { Avatar, Chip, EmptyState, GlassCard, StatusChip } from '@/components/ui/Glass';
 import TableToolbar from '@/components/ui/TableToolbar';
 import StatTile from '@/components/ui/StatTile';
+import KepatuhanPanel from './KepatuhanPanel';
+import { periksaKepatuhan } from '@/lib/kepatuhan';
 import EmployeeDialog from './EmployeeDialog';
 
 export const metadata = { title: 'Karyawan' };
@@ -61,6 +63,49 @@ export default async function EmployeesPage({
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const jml = (s: string) => ringkas.find((r) => r.status === s)?._count ?? 0;
+
+  const [setting, semuaAktif] = await Promise.all([
+    prisma.companySetting.findUnique({ where: { id: 'singleton' } }),
+    prisma.employee.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        fullName: true,
+        baseSalary: true,
+        status: true,
+        components: {
+          where: { component: { type: 'ALLOWANCE', active: true, calcType: { not: 'FORMULA' } } },
+          include: { component: true },
+        },
+      },
+    }),
+  ]);
+
+  // Tunjangan tetap = komponen bernilai pasti. Komponen berumus dikecualikan
+  // karena nilainya bergantung kehadiran, jadi bukan "tunjangan tetap"
+  // menurut PP 36/2021.
+  const temuanKepatuhan = periksaKepatuhan(
+    semuaAktif.map((e) => ({
+      id: e.id,
+      nama: e.fullName,
+      gajiPokok: e.baseSalary,
+      tunjanganTetap: e.components.reduce(
+        (t, a) =>
+          t +
+          (a.overrideAmount ??
+            (a.component.calcType === 'PERCENT_OF_BASE'
+              ? Math.round((e.baseSalary * a.component.percent) / 100)
+              : a.component.amount)),
+        0,
+      ),
+      status: e.status,
+    })),
+    {
+      upahMinimum: setting?.minimumWage ?? 0,
+      wilayah: setting?.minimumWageRegion ?? '—',
+      periksaRasioPokok: setting?.enforceBasicRatio ?? true,
+    },
+  );
 
   const [gajiAktif, tanpaNpwp, kontrak, barusanMasuk] = await Promise.all([
     prisma.employee.aggregate({ where: { status: 'ACTIVE' }, _avg: { baseSalary: true }, _sum: { baseSalary: true } }),
@@ -127,6 +172,8 @@ export default async function EmployeesPage({
           sub={barusanMasuk > 0 ? 'periksa kelengkapan datanya' : 'tidak ada karyawan baru'}
         />
       </div>
+
+      {temuanKepatuhan.length > 0 && <KepatuhanPanel temuan={temuanKepatuhan} />}
 
       <GlassCard>
         <TableToolbar

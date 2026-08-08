@@ -413,6 +413,14 @@ model PayrollItem {
   netPay           Int @default(0)
   employerCost     Int @default(0)
 
+  // Status penyaluran dana. Berkas transfer yang diunggah ke bank bisa
+  // ditolak sebagian — rekening tutup, nama tidak cocok, saldo kurang —
+  // dan kegagalan itu harus terlacak per karyawan, bukan diasumsikan
+  // semuanya berhasil.
+  transferStatus   String @default("PENDING") // PENDING | SENT | FAILED | HOLD
+  transferNote     String?
+  transferredAt    DateTime?
+
   presentDays      Int @default(0)
   absentDays       Int @default(0)
   leaveDays        Int @default(0)
@@ -468,6 +476,14 @@ model CompanySetting {
   // potongan
   lateCutPerMinute     Int   @default(0)
   absentCutPerDay      Boolean @default(true)
+
+  // Kepatuhan ketenagakerjaan
+  // UMK yang berlaku di wilayah perusahaan — dipakai memperingatkan bila
+  // ada gaji pokok di bawahnya.
+  minimumWage          Int   @default(5396761)
+  minimumWageRegion    String @default("DKI Jakarta")
+  // PP 36/2021: gaji pokok minimal 75% dari total upah (pokok + tunjangan tetap)
+  enforceBasicRatio    Boolean @default(true)
 
   updatedAt DateTime @updatedAt
 }

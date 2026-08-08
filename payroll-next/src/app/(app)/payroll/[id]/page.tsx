@@ -16,6 +16,8 @@ import StatTile from '@/components/ui/StatTile';
 import { approveRun, calculateRun, deleteRun, payRun, reopenRun } from '@/actions/payroll';
 import ApprovalChain, { type StepView } from './ApprovalChain';
 import Stepper from '@/components/ui/Stepper';
+import TransferPanel from './TransferPanel';
+import { periksaTransfer, ringkasTransfer } from '@/lib/transfer';
 
 export const metadata = { title: 'Detail Proses Gaji' };
 
@@ -39,6 +41,7 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
             ptkpStatus: true,
             bankName: true,
             bankAccount: true,
+            bankHolder: true,
             position: { select: { title: true } },
             department: { select: { name: true } },
           },
@@ -52,6 +55,34 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
     prisma.runApproval.findMany({ where: { runId: id } }),
     prisma.bankFormat.findMany({ orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] }),
   ]);
+
+  // Gaji bersih periode sebelumnya dipakai mendeteksi lonjakan yang
+  // biasanya berarti salah input, bukan kenaikan sungguhan.
+  const runSebelum = await prisma.payrollRun.findFirst({
+    where: { period: { lt: run.period }, status: { in: ['APPROVED', 'PAID'] } },
+    orderBy: { period: 'desc' },
+    select: { id: true },
+  });
+  const lalu = runSebelum
+    ? await prisma.payrollItem.findMany({
+        where: { runId: runSebelum.id },
+        select: { employeeId: true, netPay: true },
+      })
+    : [];
+  const petaLalu = new Map(lalu.map((l) => [l.employeeId, l.netPay]));
+
+  const barisTransfer = items.map((it) => ({
+    employeeId: it.employee.id,
+    nama: it.employee.fullName,
+    bankName: it.employee.bankName,
+    bankAccount: it.employee.bankAccount,
+    bankHolder: it.employee.bankHolder,
+    netPay: it.netPay,
+    netPayLalu: petaLalu.get(it.employee.id) ?? null,
+  }));
+
+  const temuanTransfer = periksaTransfer(barisTransfer);
+  const ringkasanTransfer = ringkasTransfer(barisTransfer);
 
   // Gabungkan tahap dengan keputusan yang sudah ada supaya komponen klien
   // menerima satu bentuk data yang siap ditampilkan.
@@ -258,6 +289,26 @@ export default async function RunDetail({ params }: { params: Promise<{ id: stri
                 runStatus={run.status}
               />
             </GlassCard>
+          )}
+
+          {(run.status === 'APPROVED' || run.status === 'PAID') && (
+            <TransferPanel
+              runId={run.id}
+              runStatus={run.status}
+              temuan={temuanTransfer}
+              ringkasan={ringkasanTransfer}
+              formats={bankFormats.map((f) => ({ id: f.id, name: f.name }))}
+              baris={items.map((it) => ({
+                itemId: it.id,
+                employeeId: it.employee.id,
+                nama: it.employee.fullName,
+                bank: it.employee.bankName ?? '',
+                rekening: it.employee.bankAccount ?? '',
+                netPay: it.netPay,
+                status: it.transferStatus,
+                catatan: it.transferNote,
+              }))}
+            />
           )}
 
           {/* ── ringkasan angka ── */}

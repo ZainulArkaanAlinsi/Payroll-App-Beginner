@@ -37,6 +37,10 @@ const schema = z.object({
 
   lateCutPerMinute: z.coerce.number().int().min(0),
   absentCutPerDay: z.boolean(),
+
+  minimumWage: z.coerce.number().int().min(0),
+  minimumWageRegion: z.string().min(2, 'Nama wilayah minimal 2 karakter'),
+  enforceBasicRatio: z.boolean(),
 });
 
 export async function saveSettings(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -45,6 +49,7 @@ export async function saveSettings(_prev: ActionState, fd: FormData): Promise<Ac
   const raw: Record<string, unknown> = {};
   for (const [k, v] of fd.entries()) raw[k] = v;
   raw.absentCutPerDay = fd.get('absentCutPerDay') === 'on';
+  raw.enforceBasicRatio = fd.get('enforceBasicRatio') === 'on';
 
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {

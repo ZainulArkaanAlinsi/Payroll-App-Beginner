@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Building2, Clock, KeyRound, Percent, Save, Wallet } from 'lucide-react';
+import { Building2, Clock, KeyRound, Percent, Save, Scale, Wallet } from 'lucide-react';
 import { SubmitButton, Toast } from '@/components/ui/Feedback';
 import { GlassCard, SectionTitle } from '@/components/ui/Glass';
 import { changePassword, saveSettings } from '@/actions/settings';
@@ -33,6 +33,9 @@ export interface SettingsData {
   bpjsJkmRate: number;
   lateCutPerMinute: number;
   absentCutPerDay: boolean;
+  minimumWage: number;
+  minimumWageRegion: string;
+  enforceBasicRatio: boolean;
 }
 
 export default function SettingsForm({ data }: { data: SettingsData }) {
@@ -166,6 +169,54 @@ export default function SettingsForm({ data }: { data: SettingsData }) {
                   style={{ accentColor: 'var(--color-jade-600)' }}
                 />
                 Potong gaji saat mangkir
+              </label>
+            </div>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionTitle
+            title="Kepatuhan ketenagakerjaan"
+            subtitle="Dipakai memeriksa struktur upah karyawan; peringatannya muncul di halaman Karyawan"
+            action={<Scale size={15} style={{ color: 'var(--text-muted)' }} />}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <F label="Upah minimum berlaku" hint="UMP atau UMK yang berlaku di wilayah perusahaan">
+              <input
+                name="minimumWage"
+                type="number"
+                min={0}
+                step={50000}
+                required
+                defaultValue={data.minimumWage}
+                className="field tnum"
+              />
+            </F>
+            <F label="Wilayah" hint="Ditampilkan pada peringatan agar jelas acuannya">
+              <input
+                name="minimumWageRegion"
+                required
+                defaultValue={data.minimumWageRegion}
+                className="field"
+                placeholder="DKI Jakarta"
+              />
+            </F>
+            <div className="sm:col-span-2">
+              <label className="flex cursor-pointer items-start gap-2.5 t-small">
+                <input
+                  type="checkbox"
+                  name="enforceBasicRatio"
+                  defaultChecked={data.enforceBasicRatio}
+                  className="mt-0.5 size-4 shrink-0 rounded"
+                  style={{ accentColor: 'var(--color-jade-600)' }}
+                />
+                <span>
+                  Periksa rasio gaji pokok minimal 75%
+                  <span className="block t-micro">
+                    PP 36/2021 Pasal 7 ayat 2. Rasio yang terlalu rendah juga mengecilkan dasar
+                    pengali BPJS dan perhitungan pesangon.
+                  </span>
+                </span>
               </label>
             </div>
           </div>

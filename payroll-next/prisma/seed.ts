@@ -343,6 +343,22 @@ async function main() {
     }
   }
 
+  // Satu kasus pelanggaran PP 36/2021 yang sengaja ditanam pada data demo.
+  // Polanya nyata: perusahaan menahan gaji pokok tetap rendah lalu
+  // membesarkan tunjangan tetap, sehingga dasar pengali BPJS dan
+  // perhitungan pesangon ikut mengecil. Aturan 75% melarang persis ini.
+  const contohPelanggaran = employees.find((e) => e.gaji < 7_000_000);
+  const komun = komponen.find((k) => k.code === 'TJ-KOMUN');
+  if (contohPelanggaran && komun) {
+    await prisma.employeeComponent.upsert({
+      where: {
+        employeeId_componentId: { employeeId: contohPelanggaran.id, componentId: komun.id },
+      },
+      create: { employeeId: contohPelanggaran.id, componentId: komun.id, overrideAmount: 3_000_000 },
+      update: { overrideAmount: 3_000_000 },
+    });
+  }
+
   console.log('› Pinjaman karyawan…');
   for (let i = 0; i < 4; i++) {
     const e = employees[between(0, employees.length - 1)];

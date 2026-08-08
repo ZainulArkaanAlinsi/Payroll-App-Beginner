@@ -51,6 +51,9 @@ export default async function SettingsPage() {
           bpjsJkmRate: setting.bpjsJkmRate,
           lateCutPerMinute: setting.lateCutPerMinute,
           absentCutPerDay: setting.absentCutPerDay,
+          minimumWage: setting.minimumWage,
+          minimumWageRegion: setting.minimumWageRegion,
+          enforceBasicRatio: setting.enforceBasicRatio,
         }}
       />
       </div>
