@@ -11,6 +11,12 @@
 import { prisma } from '../../src/lib/prisma';
 import { hashPassword } from '../../src/lib/auth';
 import { dariYMD } from '../../src/lib/waktu';
+import { SignJWT } from 'jose';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __ujiToken: string | undefined;
+}
 
 export const SANDI = 'sandi-uji-123';
 
@@ -43,6 +49,7 @@ export async function siapkan(): Promise<Bekal> {
   await prisma.user.deleteMany();
   await prisma.position.deleteMany();
   await prisma.department.deleteMany();
+  await prisma.approvalStep.deleteMany();
   await prisma.companySetting.deleteMany();
 
   await prisma.companySetting.create({
@@ -99,6 +106,19 @@ export async function siapkan(): Promise<Bekal> {
   // ── HR: dipakai menguji bahwa pengelola boleh bertindak untuk orang lain ──
   await prisma.user.create({
     data: { email: 'hr@uji.id', name: 'HR Uji', password: sandi, role: 'HR' },
+  });
+
+  await prisma.user.create({
+    data: { email: 'admin@uji.id', name: 'Admin Uji', password: sandi, role: 'ADMIN' },
+  });
+
+  // Dua tahap persetujuan: satu tahap saja tidak bisa membuktikan bahwa
+  // urutannya ditegakkan maupun bahwa penolakan menghapus persetujuan sebelumnya.
+  await prisma.approvalStep.createMany({
+    data: [
+      { sortOrder: 1, name: 'Diperiksa HRD', role: 'HR' },
+      { sortOrder: 2, name: 'Disetujui Direksi', role: 'ADMIN' },
+    ],
   });
 
   // ── akun nonaktif, untuk memastikan penonaktifan benar-benar menutup akses ──
@@ -181,7 +201,42 @@ export async function siapkan(): Promise<Bekal> {
 }
 
 export async function tutup() {
+  globalThis.__ujiToken = undefined;
   await prisma.$disconnect();
+}
+
+/**
+ * Masuk sebagai pengguna tertentu untuk memanggil server action.
+ *
+ * Tokennya JWT sungguhan yang ditandatangani kunci yang sama dan diverifikasi
+ * lib/auth.ts seperti biasa — yang dipalsukan hanya jar cookie-nya, karena
+ * `cookies()` milik Next hanya ada di dalam lingkup permintaan. Dengan begitu
+ * pembatasan peran benar-benar diuji, bukan dilewati.
+ */
+export async function masuk(email: string) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { employee: { select: { id: true } } },
+  });
+  if (!user) throw new Error(`akun uji tidak ditemukan: ${email}`);
+
+  const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
+  globalThis.__ujiToken = await new SignJWT({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    employeeId: user.employee?.id ?? null,
+    avatarHue: user.avatarHue,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('1h')
+    .sign(secret);
+}
+
+export function keluar() {
+  globalThis.__ujiToken = undefined;
 }
 
 /** Aktor bergaya sesi, seperti yang diterima lapisan layanan mandiri. */
