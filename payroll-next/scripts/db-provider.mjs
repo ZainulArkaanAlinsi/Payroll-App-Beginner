@@ -26,13 +26,21 @@ const postgres = /^postgres(ql)?:\/\//i.test(url);
  * Neon dan penyedia serupa memberi dua alamat: satu lewat pooler untuk
  * permintaan biasa, satu langsung untuk perubahan skema. `prisma db push`
  * membutuhkan yang langsung; bila tidak disediakan, alamat biasa dipakai.
+ *
+ * Namanya berbeda-beda antar penyedia, dan integrasi Neon di Vercel memasang
+ * DATABASE_URL_UNPOOLED tanpa bertanya. Keduanya dikenali di sini supaya tidak
+ * ada variabel yang perlu ditambahkan sendiri setelah menyambungkan basis data.
  */
-const punyaDirect = Boolean(process.env.DIRECT_URL);
+const namaDirect = process.env.DIRECT_URL
+  ? 'DIRECT_URL'
+  : process.env.DATABASE_URL_UNPOOLED
+    ? 'DATABASE_URL_UNPOOLED'
+    : null;
 
 const blok = postgres
   ? `datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")${punyaDirect ? '\n  directUrl = env("DIRECT_URL")' : ''}
+  url       = env("DATABASE_URL")${namaDirect ? `\n  directUrl = env("${namaDirect}")` : ''}
 }`
   : `datasource db {
   provider = "sqlite"
