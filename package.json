@@ -5,9 +5,11 @@
   "scripts": {
     "setup": "npm --prefix payroll-next install && npm --prefix payroll-next run setup",
     "dev": "npm --prefix payroll-next run dev",
-    "build": "npm --prefix payroll-next run build",
+    "build": "npm --prefix payroll-next install && npm --prefix payroll-next run build",
     "start": "npm --prefix payroll-next run start",
     "db:seed": "npm --prefix payroll-next run db:seed",
-    "db:reset": "npm --prefix payroll-next run db:reset"
+    "db:reset": "npm --prefix payroll-next run db:reset",
+    "vercel-build": "npm --prefix payroll-next install && npm --prefix payroll-next run vercel-build",
+    "test": "npm --prefix payroll-next run test"
   }
 }
