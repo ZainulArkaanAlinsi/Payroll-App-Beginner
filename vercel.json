@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm --prefix payroll-next install && npm --prefix payroll-next run vercel-build",
+  "outputDirectory": "payroll-next/.next",
+  "installCommand": "npm install"
+}
