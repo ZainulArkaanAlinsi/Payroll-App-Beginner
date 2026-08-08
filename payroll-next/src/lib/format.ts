@@ -39,14 +39,16 @@ export function tanggal(d: Date | string | null | undefined): string {
   if (!d) return '—';
   const date = typeof d === 'string' ? new Date(d) : d;
   if (Number.isNaN(date.getTime())) return '—';
-  return `${date.getDate()} ${BULAN_PENDEK[date.getMonth()]} ${date.getFullYear()}`;
+  // Tanggal kalender disimpan sebagai tengah malam UTC, jadi dibaca dengan
+  // getter UTC — getter lokal menggesernya sehari di zona negatif.
+  return `${date.getUTCDate()} ${BULAN_PENDEK[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function tanggalPanjang(d: Date | string | null | undefined): string {
   if (!d) return '—';
   const date = typeof d === 'string' ? new Date(d) : d;
   if (Number.isNaN(date.getTime())) return '—';
-  return `${date.getDate()} ${BULAN[date.getMonth()]} ${date.getFullYear()}`;
+  return `${date.getUTCDate()} ${BULAN[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function jam(d: Date | string | null | undefined): string {

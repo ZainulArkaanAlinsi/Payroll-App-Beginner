@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CircleUser, Receipt, TriangleAlert } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { hariIni as tanggalHariIni } from '@/lib/waktu';
 import {
   jamMenit, labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal,
 } from '@/lib/format';
@@ -43,7 +44,7 @@ export default async function MePage() {
   const period = periodeSekarang();
   const [y, m] = period.split('-').map(Number);
   const today = new Date();
-  const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = tanggalHariIni(today);
 
   const [employee, setting, hariIni, bulanIni, slips, cuti, lembur, pinjaman] = await Promise.all([
     prisma.employee.findUnique({

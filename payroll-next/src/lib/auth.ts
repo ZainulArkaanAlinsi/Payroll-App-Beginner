@@ -64,6 +64,13 @@ export async function getSession(): Promise<Session | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
+
+    // Token ponsel ditandatangani kunci yang sama, tetapi berumur 30 hari dan
+    // tersimpan di perangkat yang bisa hilang. Token bertanda audiens ditolak
+    // di sini supaya token ponsel yang bocor tidak bisa ditempelkan sebagai
+    // cookie sesi web. Token web sendiri tidak beraudiens, jadi tidak terdampak.
+    if (payload.aud) return null;
+
     return {
       userId: payload.userId as string,
       email: payload.email as string,

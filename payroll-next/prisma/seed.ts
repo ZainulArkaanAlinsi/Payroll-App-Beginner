@@ -7,6 +7,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { dariYMD, pukul, akhirPekan } from '../src/lib/waktu';
 import bcrypt from 'bcryptjs';
 import { calculatePayroll, workingDaysInPeriod } from '../src/lib/payroll-engine';
 import { resolveAll, buildVariables } from '../src/lib/components';
@@ -280,7 +281,7 @@ async function main() {
     const email = o.nama.toLowerCase().split(' ')[0] + '.' + o.nama.toLowerCase().split(' ').slice(-1)[0] + '@nusantaradigital.id';
 
     const tahunGabung = between(2019, 2024);
-    const joinDate = new Date(tahunGabung, between(0, 11), between(1, 28));
+    const joinDate = dariYMD(tahunGabung, between(0, 11) + 1, between(1, 28));
 
     // HR Manager dapat akun HR, sisanya akun karyawan biasa.
     const role = o.posisi === 'HR Manager' ? 'HR' : 'EMPLOYEE';
@@ -304,7 +305,7 @@ async function main() {
         nik: `31${between(70, 79)}${between(100000000000, 999999999999)}`,
         // ~15% karyawan sengaja tidak punya NPWP → kena tarif PPh +20%
         npwp: rnd() > 0.15 ? `${between(10, 99)}.${between(100, 999)}.${between(100, 999)}.${between(1, 9)}-${between(100, 999)}.000` : null,
-        birthDate: new Date(between(1985, 2001), between(0, 11), between(1, 28)),
+        birthDate: dariYMD(between(1985, 2001), between(0, 11) + 1, between(1, 28)),
         gender: o.gender,
         address: `Jl. ${pick(['Melati', 'Kenanga', 'Cendana', 'Anggrek', 'Bougenville'])} No. ${between(1, 99)}, ${pick(['Jakarta Selatan', 'Depok', 'Tangerang Selatan', 'Bekasi', 'Bogor'])}`,
         departmentId: pos.deptId,
@@ -388,9 +389,9 @@ async function main() {
 
     for (const e of employees) {
       for (let d = 1; d <= jumlahHari; d++) {
-        const date = new Date(y, m - 1, d);
+        const date = dariYMD(y, m, d);
         if (date > new Date()) break;
-        const dow = date.getDay();
+        const dow = date.getUTCDay();
         if (dow === 0 || dow === 6) continue;
         if (date < e.joinDate) continue;
 
@@ -408,7 +409,7 @@ async function main() {
         } else {
           const wfh = rnd() < 0.22;
           const telat = rnd() < 0.18 ? between(5, 65) : 0;
-          const masuk = new Date(y, m - 1, d, 9, telat);
+          const masuk = pukul(dariYMD(y, m, d), 9, telat);
           const durasi = between(505, 600); // 8j25m – 10j
           const pulang = new Date(masuk.getTime() + durasi * 60000);
           clockIn = masuk;
@@ -443,9 +444,9 @@ async function main() {
     for (let n = 0; n < 18; n++) {
       const e = employees[between(0, employees.length - 1)];
       const d = between(1, 26);
-      const date = new Date(y, m - 1, d);
+      const date = dariYMD(y, m, d);
       if (date > new Date() || date < e.joinDate) continue;
-      const isHoliday = date.getDay() === 0 || date.getDay() === 6;
+      const isHoliday = akhirPekan(date);
       const hours = between(2, 8) / 2 + 1;
       const status = back === 0 && rnd() < 0.45 ? 'PENDING' : rnd() < 0.9 ? 'APPROVED' : 'REJECTED';
       overtimeRows.push({
@@ -485,7 +486,7 @@ async function main() {
         employeeId: e.id,
         date: d,
         hours: between(2, 8) / 2 + 1,
-        isHoliday: d.getDay() === 0 || d.getDay() === 6,
+        isHoliday: akhirPekan(d),
         reason: pick([
           'Menyelesaikan rilis fitur ke produksi',
           'Perbaikan insiden produksi malam hari',
@@ -506,14 +507,14 @@ async function main() {
       const e = employees[between(0, employees.length - 1)];
       const mulai = between(1, 20);
       const durasi = between(1, 4);
-      const start = new Date(y, m - 1, mulai);
+      const start = dariYMD(y, m, mulai);
       if (start < e.joinDate) continue;
       const status = back === 0 && rnd() < 0.5 ? 'PENDING' : rnd() < 0.85 ? 'APPROVED' : 'REJECTED';
       leaveRows.push({
         employeeId: e.id,
         type: pick(['ANNUAL', 'ANNUAL', 'ANNUAL', 'SICK', 'SICK', 'UNPAID', 'SPECIAL']),
         startDate: start,
-        endDate: new Date(y, m - 1, mulai + durasi - 1),
+        endDate: dariYMD(y, m, mulai + durasi - 1),
         days: durasi,
         reason: pick([
           'Acara keluarga di kampung halaman',
@@ -553,11 +554,11 @@ async function main() {
         period,
         label: `Gaji ${period}`,
         status: 'PAID',
-        payDate: new Date(y, m - 1, company.payDay),
-        calculatedAt: new Date(y, m - 1, company.cutoffDay),
-        approvedAt: new Date(y, m - 1, company.cutoffDay + 2),
+        payDate: dariYMD(y, m, company.payDay),
+        calculatedAt: dariYMD(y, m, company.cutoffDay),
+        approvedAt: dariYMD(y, m, company.cutoffDay + 2),
         approvedBy: 'Zainul Arkaan',
-        paidAt: new Date(y, m - 1, company.payDay),
+        paidAt: dariYMD(y, m, company.payDay),
       },
     });
 
@@ -565,7 +566,7 @@ async function main() {
     const workingDays = workingDaysInPeriod(period);
 
     for (const e of employees) {
-      if (e.joinDate > new Date(y, m - 1, 28)) continue;
+      if (e.joinDate > dariYMD(y, m, 28)) continue;
 
       const assignments = await prisma.employeeComponent.findMany({
         where: { employeeId: e.id },
@@ -574,12 +575,12 @@ async function main() {
 
       const att = await prisma.attendance.groupBy({
         by: ['status'],
-        where: { employeeId: e.id, date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) } },
+        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) } },
         _count: true,
       });
       const cnt = (s: string) => att.find((a) => a.status === s)?._count ?? 0;
       const lateAgg = await prisma.attendance.aggregate({
-        where: { employeeId: e.id, date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) } },
+        where: { employeeId: e.id, date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) } },
         _sum: { lateMinutes: true },
       });
 
@@ -587,7 +588,7 @@ async function main() {
         where: {
           employeeId: e.id,
           status: 'APPROVED',
-          date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m - 1, 31) },
+          date: { gte: dariYMD(y, m, 1), lte: dariYMD(y, m, 31) },
         },
       });
       const otWeekday = otAgg.filter((o) => !o.isHoliday).reduce((s, o) => s + o.hours, 0);
