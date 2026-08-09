@@ -2,8 +2,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import { StyleSheet } from 'react-native';
 import { PenyediaSesi } from '../src/auth';
 import { gelap, terang } from '../src/theme';
 
@@ -18,19 +16,10 @@ export default function TataLetakAkar() {
         <Stack
           screenOptions={{
             headerTransparent: true,
-            headerTintColor: t.kuat,
-            headerTitleStyle: { fontSize: 17, fontWeight: '700' },
+            headerTintColor: t.tinta,
+            headerTitleStyle: { fontSize: 16, fontWeight: '600' },
             headerShadowVisible: false,
-            // Header tembus pandang dengan blur, sama seperti di dalam tab —
-            // isi terlihat bergulir di belakangnya alih-alih terpotong garis.
-            headerBackground: () => (
-              <BlurView
-                intensity={40}
-                tint={malam ? 'dark' : 'light'}
-                style={StyleSheet.absoluteFill}
-              />
-            ),
-            contentStyle: { backgroundColor: t.bg },
+            contentStyle: { backgroundColor: t.kertas },
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />

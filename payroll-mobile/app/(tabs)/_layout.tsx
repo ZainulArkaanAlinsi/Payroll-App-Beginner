@@ -1,17 +1,16 @@
 import { Redirect, Tabs } from 'expo-router';
-import { StyleSheet, View, ActivityIndicator, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSesi } from '../../src/auth';
-import { LatarHalaman, TINGGI_TAB, useTema } from '../../src/ui';
+import { TINGGI_TAB, useTema } from '../../src/ui';
 
 const TAB = [
-  { nama: 'index', judul: 'Beranda', ikon: 'home', ikonAktif: 'home' },
-  { nama: 'kehadiran', judul: 'Kehadiran', ikon: 'calendar-outline', ikonAktif: 'calendar' },
-  { nama: 'slip', judul: 'Slip gaji', ikon: 'receipt-outline', ikonAktif: 'receipt' },
-  { nama: 'pengajuan', judul: 'Pengajuan', ikon: 'paper-plane-outline', ikonAktif: 'paper-plane' },
-  { nama: 'profil', judul: 'Profil', ikon: 'person-outline', ikonAktif: 'person' },
+  { nama: 'index', judul: 'Beranda', ikon: 'ellipse-outline', aktif: 'ellipse' },
+  { nama: 'kehadiran', judul: 'Kehadiran', ikon: 'calendar-clear-outline', aktif: 'calendar-clear' },
+  { nama: 'slip', judul: 'Slip', ikon: 'document-text-outline', aktif: 'document-text' },
+  { nama: 'pengajuan', judul: 'Pengajuan', ikon: 'create-outline', aktif: 'create' },
+  { nama: 'profil', judul: 'Profil', ikon: 'person-outline', aktif: 'person' },
 ] as const;
 
 export default function TataLetakTab() {
@@ -21,8 +20,8 @@ export default function TataLetakTab() {
 
   if (memuat) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg }}>
-        <ActivityIndicator color={t.aksen} />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.kertas }}>
+        <ActivityIndicator color={t.tintaPudar} />
       </View>
     );
   }
@@ -31,79 +30,47 @@ export default function TataLetakTab() {
   if (!pengguna) return <Redirect href="/login" />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <LatarHalaman />
+    <Tabs
+      screenOptions={{
+        /*
+         * Header dan bilah tab memakai warna kertas yang sama dengan isinya,
+         * dipisahkan garis rambut saja. Blur dan bayangan di sini hanya akan
+         * menciptakan lapisan yang tidak berarti apa-apa — dokumen tidak
+         * mengambang di atas dokumen.
+         */
+        headerStyle: { backgroundColor: t.kertas, borderBottomWidth: 0 },
+        headerTintColor: t.tinta,
+        headerTitleStyle: { fontSize: 16, fontWeight: '600' },
+        headerShadowVisible: false,
+        headerTransparent: true,
+        sceneStyle: { backgroundColor: t.kertas },
 
-      <Tabs
-        screenOptions={{
-          headerTransparent: true,
-          headerTintColor: t.kuat,
-          headerTitleStyle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
-          headerShadowVisible: false,
-          headerBackground: () => (
-            <BlurView
-              intensity={40}
-              tint={t.gelap ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
-            />
-          ),
-          sceneStyle: { backgroundColor: 'transparent' },
-
-          /*
-           * Bilah tab mengambang di atas isi, bukan menempel di tepi layar.
-           * Blur di belakangnya membuat isi yang bergulir tetap terlihat
-           * sebagai bentuk tanpa bersaing dengan labelnya — pola yang sama
-           * dipakai iOS pada bilah bawahnya.
-           */
-          tabBarBackground: () => (
-            <BlurView
-              intensity={64}
-              tint={t.gelap ? 'dark' : 'light'}
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: t.kaca,
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                  borderTopColor: t.kacaTepi,
-                },
-              ]}
-            />
-          ),
-          tabBarStyle: {
-            position: 'absolute',
-            backgroundColor: 'transparent',
-            borderTopWidth: 0,
-            // Android menggambar sampai ke bawah bilah navigasi sistem sejak
-            // React Native 0.81, jadi insetnya ditambahkan sendiri.
-            height: TINGGI_TAB + insets.bottom,
-            paddingTop: 8,
-            // Label duduk tepat di tepi bawah bila ruangnya pas-pasan, dan
-            // terpotong pada perangkat tanpa area aman bawah.
-            paddingBottom: (insets.bottom || 0) + 12,
-            elevation: 0,
-          },
-          tabBarActiveTintColor: t.aksen,
-          tabBarInactiveTintColor: t.redup,
-          tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.1, marginTop: 1 },
-        }}
-      >
-        {TAB.map((tab) => (
-          <Tabs.Screen
-            key={tab.nama}
-            name={tab.nama}
-            options={{
-              title: tab.judul,
-              tabBarIcon: ({ color, size, focused }) => (
-                <Ionicons
-                  name={(focused ? tab.ikonAktif : tab.ikon) as never}
-                  size={size - 2}
-                  color={color}
-                />
-              ),
-            }}
-          />
-        ))}
-      </Tabs>
-    </View>
+        tabBarStyle: {
+          backgroundColor: t.kertas,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: t.garis,
+          height: TINGGI_TAB + insets.bottom,
+          paddingTop: 10,
+          paddingBottom: (insets.bottom || 0) + 14,
+          elevation: 0,
+        },
+        tabBarActiveTintColor: t.tinta,
+        tabBarInactiveTintColor: t.tintaPudar,
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginTop: 3 },
+      }}
+    >
+      {TAB.map((tab) => (
+        <Tabs.Screen
+          key={tab.nama}
+          name={tab.nama}
+          options={{
+            title: tab.judul,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={(focused ? tab.aktif : tab.ikon) as never} size={19} color={color} />
+            ),
+          }}
+        />
+      ))}
+    </Tabs>
   );
 }

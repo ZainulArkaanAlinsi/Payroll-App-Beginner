@@ -5,12 +5,16 @@ import { api, API, ApiError, type Beranda } from '../../src/api';
 import { useSesi } from '../../src/auth';
 import { tanggal } from '../../src/format';
 import {
-  Baris, Galat, Garis, Kartu, KartuUtama, Label, MemuatDaftar, Muncul, Tombol, useRuangAtas, useRuangBawah, useTema,
+  BarisBuku, Galat, Garis, Kertas, Kolom, MemuatDaftar, Muncul, Tombol,
+  useRuangAtas, useRuangBawah, useTema,
 } from '../../src/ui';
 import { jarak, teks } from '../../src/theme';
 
 const JENIS_KERJA: Record<string, string> = {
-  PERMANENT: 'Karyawan tetap', CONTRACT: 'Kontrak', PROBATION: 'Masa percobaan', INTERN: 'Magang',
+  PERMANENT: 'Karyawan tetap',
+  CONTRACT: 'Kontrak',
+  PROBATION: 'Masa percobaan',
+  INTERN: 'Magang',
 };
 
 export default function LayarProfil() {
@@ -19,22 +23,26 @@ export default function LayarProfil() {
   const ruangBawah = useRuangBawah();
   const router = useRouter();
   const { keluar } = useSesi();
+
   const [data, setData] = useState<Beranda | null>(null);
   const [galat, setGalat] = useState('');
   const [segar, setSegar] = useState(false);
 
   const muat = useCallback(async () => {
-    try { setData(await api.saya()); setGalat(''); }
-    catch (e) { setGalat(e instanceof ApiError ? e.message : 'Gagal memuat.'); }
+    try {
+      setData(await api.saya());
+      setGalat('');
+    } catch (e) {
+      setGalat(e instanceof ApiError ? e.message : 'Gagal memuat.');
+    }
   }, []);
 
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !data) return <Galat pesan={galat} coba={muat} />;
-  if (!data) return <MemuatDaftar jumlah={3} baris={4} />;
+  if (!data) return <MemuatDaftar jumlah={4} />;
 
   const p = data.profil;
-  const inisial = p.fullName.split(' ').slice(0, 2).map((x) => x[0]).join('');
 
   function konfirmasiKeluar() {
     Alert.alert('Keluar', 'Anda akan keluar dari akun ini.', [
@@ -48,83 +56,86 @@ export default function LayarProfil() {
   }
 
   // Rekening ditampilkan sebagian saja. Layar ini sering dibuka di tempat
-  // umum, dan nomor rekening penuh tidak perlu terpampang untuk memastikan
-  // bahwa yang tercatat sudah benar.
+  // umum, dan nomor penuh tidak perlu terpampang hanya untuk memastikan yang
+  // tercatat sudah benar.
   const rekening = p.bankAccount
     ? `${p.bankName ?? ''} ···${p.bankAccount.slice(-4)}`
     : 'Belum diisi';
 
   return (
-    <ScrollView
-      contentContainerStyle={{
-        padding: jarak.lg,
-        paddingTop: ruangAtas + jarak.md,
-        paddingBottom: ruangBawah,
-        gap: jarak.md,
-      }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={segar} tintColor={t.aksen}
-          onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }} />
-      }
-    >
-      <Muncul>
-        <KartuUtama>
-          <View style={{ alignItems: 'center', gap: jarak.sm }}>
-            <View
-              style={{
-                width: 72, height: 72, borderRadius: 999,
-                backgroundColor: 'rgba(255,255,255,0.18)',
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 25, fontWeight: '700', color: '#ffffff' }}>{inisial}</Text>
+    <Kertas>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: jarak.lg,
+          paddingTop: ruangAtas + jarak.sm,
+          paddingBottom: ruangBawah,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={segar}
+            tintColor={t.tintaPudar}
+            onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }}
+          />
+        }
+      >
+        <Muncul>
+          <Kolom atas>Kartu karyawan</Kolom>
+          <Text style={[teks.judul, { color: t.tinta, marginTop: jarak.sm }]}>{p.fullName}</Text>
+          <Text style={[teks.badan, { color: t.tintaSedang, marginTop: 3 }]}>
+            {p.position?.title ?? '—'} · {p.department?.name ?? '—'}
+          </Text>
+          <Garis tegas style={{ marginTop: jarak.lg }} />
+        </Muncul>
+
+        <Muncul jeda={60}>
+          <View style={{ paddingTop: jarak.lg }}>
+            <Kolom>Kepegawaian</Kolom>
+            <View style={{ marginTop: jarak.xs }}>
+              <BarisBuku kiri="Nomor karyawan" kanan={p.employeeNo} />
+              <BarisBuku kiri="Status" kanan={JENIS_KERJA[p.employmentType] ?? p.employmentType} />
+              <BarisBuku kiri="Bergabung" kanan={tanggal(p.joinDate)} />
+              <BarisBuku kiri="Status PTKP" kanan={p.ptkpStatus} />
             </View>
-            <Text style={[teks.kepala, { color: '#ffffff', textAlign: 'center' }]}>{p.fullName}</Text>
-            <Text style={[teks.badan, { color: 'rgba(255,255,255,0.72)', textAlign: 'center' }]}>
-              {p.position?.title ?? '—'} · {p.department?.name ?? '—'}
-            </Text>
           </View>
-        </KartuUtama>
-      </Muncul>
+          <Garis tegas style={{ marginTop: jarak.md }} />
+        </Muncul>
 
-      <Muncul jeda={60}>
-      <Kartu>
-        <Label>Kepegawaian</Label>
-        <View style={{ marginTop: jarak.sm }}>
-          <Baris kiri="Nomor karyawan" kanan={p.employeeNo} />
-          <Garis />
-          <Baris kiri="Status" kanan={JENIS_KERJA[p.employmentType] ?? p.employmentType} />
-          <Garis />
-          <Baris kiri="Bergabung" kanan={tanggal(p.joinDate)} />
-          <Garis />
-          <Baris kiri="Status PTKP" kanan={p.ptkpStatus} />
-        </View>
-      </Kartu>
-      </Muncul>
+        <Muncul jeda={120}>
+          <View style={{ paddingTop: jarak.lg }}>
+            <Kolom>Kontak & rekening</Kolom>
+            <View style={{ marginTop: jarak.xs }}>
+              <BarisBuku kiri="Surel" kanan={p.email} />
+              <BarisBuku kiri="Telepon" kanan={p.phone || 'Belum diisi'} />
+              <BarisBuku
+                kiri="Rekening gaji"
+                kanan={rekening}
+                catatan="Dipakai untuk transfer gaji — hubungi HRD bila keliru."
+              />
+            </View>
+          </View>
+          <Garis tegas style={{ marginTop: jarak.md }} />
+        </Muncul>
 
-      <Muncul jeda={120}>
-      <Kartu>
-        <Label>Kontak & rekening</Label>
-        <View style={{ marginTop: jarak.sm }}>
-          <Baris kiri="Surel" kanan={p.email} />
-          <Garis />
-          <Baris kiri="Telepon" kanan={p.phone || 'Belum diisi'} />
-          <Garis />
-          <Baris kiri="Rekening gaji" kanan={rekening} />
-        </View>
-        <Text style={[teks.mikro, { color: t.redup, marginTop: jarak.md }]}>
-          Ada yang keliru? Hubungi HRD — data ini dipakai untuk transfer gaji.
-        </Text>
-      </Kartu>
-      </Muncul>
+        <Muncul jeda={180}>
+          <Tombol
+            judul="Keluar"
+            jenis="bahaya"
+            onPress={konfirmasiKeluar}
+            style={{ marginTop: jarak.xl }}
+          />
 
-      <Tombol judul="Keluar" jenis="bahaya" onPress={konfirmasiKeluar} />
-
-      <Text style={[teks.mikro, { color: t.redup, textAlign: 'center', marginTop: jarak.sm }]}>
-        Racik · portal karyawan{'\n'}{API}
-      </Text>
-    </ScrollView>
+          <Text
+            style={[
+              teks.kolom,
+              { color: t.tintaPudar, textAlign: 'center', marginTop: jarak.xl, opacity: 0.7 },
+            ]}
+          >
+            RACIK · PORTAL KARYAWAN{'\n'}
+            {API.replace(/^https?:\/\//, '')}
+          </Text>
+        </Muncul>
+      </ScrollView>
+    </Kertas>
   );
 }

@@ -1,188 +1,175 @@
 import type { TextStyle } from 'react-native';
 
 /**
- * Sistem visual Racik.
+ * Sistem visual aplikasi karyawan.
  *
- * Diambil dari aplikasi web supaya keduanya terasa satu produk: grafit dingin
- * dengan satu aksen jade. Yang ditambahkan di sini adalah hal-hal yang hanya
- * ada di ponsel — permukaan kaca, elevasi berlapis, dan gradien untuk kartu
- * utama.
+ * Konsepnya sengaja berbeda dari aplikasi web HR. Web adalah ruang kerja:
+ * padat, dingin, banyak tabel. Aplikasi ini bukan itu. Yang dibuka karyawan
+ * hanyalah beberapa angka tentang dirinya sendiri — berapa yang masuk, berapa
+ * sisa cutinya, jam berapa ia masuk hari ini.
  *
- * Prinsipnya tetap sama: kedalaman dipakai untuk menjelaskan hierarki, bukan
- * sebagai hiasan. Bayangan menandai apa yang bisa disentuh; blur memisahkan
- * lapisan yang mengambang dari isi di bawahnya. Kalau sebuah efek tidak
- * membantu orang memahami apa yang penting, efek itu tidak dipakai.
+ * Maka acuannya bukan dasbor, melainkan dokumen cetak: slip gaji, amplop,
+ * buku besar. Kertas hangat alih-alih grafit dingin. Garis rambut alih-alih
+ * kotak di mana-mana. Angka besar yang berbaris rapi seperti kolom pembukuan.
+ * Satu warna aksen, dipakai sedikit tetapi berani.
+ *
+ * Yang sengaja tidak dipakai: kartu bergradien di setiap tempat, ikon dalam
+ * lingkaran, dan bayangan tebal pada semua permukaan. Ketiganya membuat setiap
+ * elemen tampak sama penting, dan justru itu yang membuat sebuah tampilan
+ * terasa dihasilkan mesin alih-alih dipilih.
  */
 
 export interface Tema {
   gelap: boolean;
 
-  // latar
-  bg: string;
-  bgDalam: string;
-  /** gradien latar halaman, dari atas ke bawah */
-  bgGradien: [string, string];
+  /** substrat halaman — kertas atau tinta */
+  kertas: string;
+  kertasTeduh: string;
+  /** permukaan yang terangkat sedikit dari halaman */
+  bidang: string;
 
-  // permukaan
-  kartu: string;
-  kartuTepi: string;
-  /** warna dasar permukaan kaca, di belakang blur */
-  kaca: string;
-  kacaTepi: string;
-  /** garis specular tipis di tepi atas permukaan kaca */
-  kilau: string;
+  /** garis rambut, setipis mungkin — pengganti bingkai kotak */
+  garis: string;
+  garisTegas: string;
 
-  // teks
-  kuat: string;
-  badan: string;
-  redup: string;
+  tinta: string;
+  tintaSedang: string;
+  tintaPudar: string;
 
-  // aksen
   aksen: string;
-  aksenLembut: string;
-  aksenTeks: string;
-  /** gradien kartu utama — kartu saldo, kartu absen */
-  aksenGradien: [string, string, string];
+  aksenPudar: string;
+  aksenAtas: string;
 
-  // status
-  bahaya: string;
-  bahayaLembut: string;
-  peringatan: string;
-  peringatanLembut: string;
+  positif: string;
+  negatif: string;
+  tunggu: string;
 
-  // isian formulir
   isian: string;
-  isianTepi: string;
-  isianFokus: string;
+  isianGaris: string;
 
-  // bayangan
-  bayangKartu: string;
-  bayangApung: string;
+  bayang: string;
+  /** kekuatan butiran di atas substrat */
+  butiran: number;
 }
 
 export const terang: Tema = {
   gelap: false,
 
-  bg: '#eef0ef',
-  bgDalam: '#e3e6e4',
-  bgGradien: ['#f2f4f3', '#e6e9e7'],
+  kertas: '#f4f1eb',
+  kertasTeduh: '#e9e5dc',
+  bidang: '#fffdf9',
 
-  kartu: '#ffffff',
-  kartuTepi: 'rgba(20,30,35,0.07)',
-  kaca: 'rgba(255,255,255,0.72)',
-  kacaTepi: 'rgba(255,255,255,0.9)',
-  kilau: 'rgba(255,255,255,0.75)',
+  garis: 'rgba(28,24,18,0.09)',
+  garisTegas: 'rgba(28,24,18,0.18)',
 
-  kuat: '#12171a',
-  badan: '#3a4247',
-  redup: '#68727a',
+  tinta: '#181512',
+  tintaSedang: '#4a443c',
+  tintaPudar: '#8a8176',
 
-  aksen: '#1f6b52',
-  aksenLembut: 'rgba(31,107,82,0.10)',
-  aksenTeks: '#ffffff',
-  aksenGradien: ['#2f9070', '#1f6b52', '#164e3c'],
+  aksen: '#186b4f',
+  aksenPudar: 'rgba(24,107,79,0.10)',
+  aksenAtas: '#fffdf9',
 
-  bahaya: '#a0524a',
-  bahayaLembut: 'rgba(160,82,74,0.11)',
-  peringatan: '#9b742f',
-  peringatanLembut: 'rgba(155,116,47,0.13)',
+  positif: '#186b4f',
+  negatif: '#9a4a3c',
+  tunggu: '#8a6420',
 
-  isian: '#ffffff',
-  isianTepi: 'rgba(20,30,35,0.13)',
-  isianFokus: 'rgba(31,107,82,0.45)',
+  isian: '#fffdf9',
+  isianGaris: 'rgba(28,24,18,0.16)',
 
-  bayangKartu: 'rgba(16,30,36,0.10)',
-  bayangApung: 'rgba(16,30,36,0.22)',
+  bayang: 'rgba(40,32,20,0.10)',
+  butiran: 0.5,
 };
 
 export const gelap: Tema = {
   gelap: true,
 
-  bg: '#0c0f11',
-  bgDalam: '#07090a',
-  bgGradien: ['#12171a', '#0a0d0f'],
+  kertas: '#14120f',
+  kertasTeduh: '#0d0c0a',
+  bidang: '#1d1a16',
 
-  kartu: '#161b1e',
-  kartuTepi: 'rgba(255,255,255,0.07)',
-  kaca: 'rgba(30,37,41,0.62)',
-  kacaTepi: 'rgba(255,255,255,0.10)',
-  kilau: 'rgba(255,255,255,0.14)',
+  garis: 'rgba(255,248,235,0.09)',
+  garisTegas: 'rgba(255,248,235,0.18)',
 
-  kuat: '#f1f5f6',
-  badan: '#c3cbd0',
-  redup: '#8e999f',
+  tinta: '#f5f1e9',
+  tintaSedang: '#c4bcae',
+  tintaPudar: '#8a8276',
 
-  aksen: '#4fa084',
-  aksenLembut: 'rgba(79,160,132,0.14)',
-  aksenTeks: '#07120e',
-  aksenGradien: ['#2f8a6c', '#20654f', '#144536'],
+  aksen: '#5fbc93',
+  aksenPudar: 'rgba(95,188,147,0.13)',
+  aksenAtas: '#0b1310',
 
-  bahaya: '#d99a92',
-  bahayaLembut: 'rgba(217,154,146,0.13)',
-  peringatan: '#d9b878',
-  peringatanLembut: 'rgba(217,184,120,0.13)',
+  positif: '#5fbc93',
+  negatif: '#d9938a',
+  tunggu: '#d8b273',
 
-  isian: 'rgba(255,255,255,0.05)',
-  isianTepi: 'rgba(255,255,255,0.11)',
-  isianFokus: 'rgba(79,160,132,0.5)',
+  isian: 'rgba(255,248,235,0.05)',
+  isianGaris: 'rgba(255,248,235,0.13)',
 
-  bayangKartu: 'rgba(0,0,0,0.5)',
-  bayangApung: 'rgba(0,0,0,0.65)',
+  bayang: 'rgba(0,0,0,0.55)',
+  butiran: 0.35,
 };
 
 /**
- * Skala ukuran huruf.
+ * Skala huruf.
  *
- * Teks isi tidak pernah di bawah 15 piksel: di layar kecil, ukuran yang lebih
- * kecil memaksa orang menyipitkan mata atau memperbesar layar. Angka uang
- * memakai angka bertabular supaya digitnya berbaris rapi antar baris.
+ * Lompatannya sengaja lebar, bukan bertahap halus. Skala yang landai membuat
+ * semua teks tampak setara, dan mata jadi tidak tahu harus ke mana lebih dulu.
+ * Angka uang mendapat dua ukuran tersendiri karena itulah yang dicari orang
+ * saat membuka aplikasi ini.
  */
 export const teks = {
-  raksasa: { fontSize: 40, fontWeight: '700' as const, letterSpacing: -1.4 },
-  judul: { fontSize: 27, fontWeight: '700' as const, letterSpacing: -0.6 },
-  kepala: { fontSize: 20, fontWeight: '700' as const, letterSpacing: -0.35 },
-  sedang: { fontSize: 16, fontWeight: '600' as const, letterSpacing: -0.1 },
+  angkaBesar: { fontSize: 46, fontWeight: '300' as const, letterSpacing: -2.2 },
+  angkaSedang: { fontSize: 30, fontWeight: '400' as const, letterSpacing: -1 },
+
+  judul: { fontSize: 25, fontWeight: '600' as const, letterSpacing: -0.5 },
+  kepala: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.25 },
+  sedang: { fontSize: 15.5, fontWeight: '600' as const, letterSpacing: -0.1 },
   badan: { fontSize: 15, fontWeight: '400' as const },
-  label: { fontSize: 13.5, fontWeight: '500' as const },
-  mikro: { fontSize: 11.5, fontWeight: '600' as const, letterSpacing: 0.4 },
+  kecil: { fontSize: 13, fontWeight: '400' as const },
+
+  /** label kolom, seperti kepala kolom pada slip cetak */
+  kolom: { fontSize: 10.5, fontWeight: '600' as const, letterSpacing: 1.1 },
 };
 
-/**
- * Angka uang: digit berbaris rapi antar baris.
- *
- * Tanpa `as const` supaya bisa dipakai langsung sebagai gaya teks — React
- * Native menuntut larik yang bisa diubah pada fontVariant.
- */
+/** Digit berbaris rapi antar baris, seperti kolom angka di buku besar. */
 export const angka: TextStyle = { fontVariant: ['tabular-nums'] };
 
-export const jarak = { xs: 4, sm: 8, md: 12, lg: 16, xl: 22, xxl: 32 };
-export const lengkung = { sm: 10, md: 14, lg: 20, xl: 26, penuh: 999 };
+export const jarak = { xs: 4, sm: 8, md: 12, lg: 18, xl: 26, xxl: 38 };
+
+/**
+ * Lengkung sudut.
+ *
+ * Kecil. Dokumen cetak punya sudut tajam; membulatkan segalanya membuat
+ * antarmuka kehilangan ketegasannya dan terlihat seperti semua aplikasi lain.
+ */
+export const lengkung = { sm: 6, md: 10, lg: 14, penuh: 999 };
 
 /**
  * Sasaran sentuh minimum.
  *
  * 48 piksel, bukan 44. Panduan Apple menyebut 44 sebagai batas bawah, dan
- * aplikasi ini sering dibuka sambil berjalan atau berdiri di angkutan umum —
- * di keadaan itu batas bawah terasa kurang.
+ * aplikasi ini sering dibuka sambil berdiri di angkutan umum — di keadaan itu
+ * batas bawah terasa kurang.
  */
 export const SENTUH = 48;
 
-/** Bayangan berlapis: satu tipis untuk kontur, satu lebar untuk kedalaman. */
-export function bayangan(t: Tema, tinggi: 'kartu' | 'apung') {
-  if (tinggi === 'apung') {
+/** Bayangan tipis, hanya untuk yang benar-benar mengambang. */
+export function bayangan(t: Tema, kuat: 'tipis' | 'apung' = 'tipis') {
+  if (kuat === 'apung') {
     return {
-      shadowColor: t.bayangApung,
+      shadowColor: t.bayang,
       shadowOpacity: 1,
-      shadowRadius: 22,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 10,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
     };
   }
   return {
-    shadowColor: t.bayangKartu,
+    shadowColor: t.bayang,
     shadowOpacity: 1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   };
 }
