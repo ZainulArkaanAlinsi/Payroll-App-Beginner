@@ -57,7 +57,7 @@ export const terang: Tema = {
   lembut: '#f4f6f8',
   lembutTepi: 'rgba(16,24,40,0.05)',
 
-  panel: ['#12433a', '#0a2620'],
+  panel: ['#2f5ad9', '#17307e'],
   panelTeks: '#ffffff',
   panelRedup: 'rgba(255,255,255,0.55)',
   panelIsian: 'rgba(255,255,255,0.12)',
@@ -66,8 +66,8 @@ export const terang: Tema = {
   tintaSedang: '#4b5563',
   tintaRedup: '#98a2b3',
 
-  merek: '#0f9d6e',
-  merekLembut: 'rgba(15,157,110,0.10)',
+  merek: '#2f5ad9',
+  merekLembut: 'rgba(47,90,217,0.10)',
 
   naik: '#0f9d6e',
   naikLembut: 'rgba(15,157,110,0.11)',
@@ -77,7 +77,7 @@ export const terang: Tema = {
   tungguLembut: 'rgba(197,138,26,0.12)',
 
   garis: 'rgba(16,24,40,0.07)',
-  bayang: 'rgba(16,24,40,0.10)',
+  bayang: 'rgba(23,32,66,0.16)',
 };
 
 export const gelap: Tema = {
@@ -88,7 +88,7 @@ export const gelap: Tema = {
   lembut: '#1c2026',
   lembutTepi: 'rgba(255,255,255,0.05)',
 
-  panel: ['#123b33', '#07120f'],
+  panel: ['#2c50c2', '#111f52'],
   panelTeks: '#ffffff',
   panelRedup: 'rgba(255,255,255,0.55)',
   panelIsian: 'rgba(255,255,255,0.11)',
@@ -97,8 +97,8 @@ export const gelap: Tema = {
   tintaSedang: '#b6bdc7',
   tintaRedup: '#7d8694',
 
-  merek: '#2fc48c',
-  merekLembut: 'rgba(47,196,140,0.14)',
+  merek: '#6d8dfb',
+  merekLembut: 'rgba(109,141,251,0.14)',
 
   naik: '#2fc48c',
   naikLembut: 'rgba(47,196,140,0.14)',
@@ -108,7 +108,7 @@ export const gelap: Tema = {
   tungguLembut: 'rgba(224,177,85,0.14)',
 
   garis: 'rgba(255,255,255,0.07)',
-  bayang: 'rgba(0,0,0,0.5)',
+  bayang: 'rgba(0,0,0,0.62)',
 };
 
 /**
@@ -119,12 +119,12 @@ export const gelap: Tema = {
  * kecil supaya kontrasnya tidak hilang.
  */
 export const teks = {
-  saldo: { fontSize: 36, fontWeight: '800' as const, letterSpacing: -1.4 },
-  saldoKecil: { fontSize: 26, fontWeight: '800' as const, letterSpacing: -0.9 },
-  angka: { fontSize: 21, fontWeight: '700' as const, letterSpacing: -0.4 },
+  saldo: { fontSize: 42, fontWeight: '800' as const, letterSpacing: -1.8 },
+  saldoKecil: { fontSize: 30, fontWeight: '800' as const, letterSpacing: -1.1 },
+  angka: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.5 },
 
   judul: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.4 },
-  kepala: { fontSize: 17, fontWeight: '700' as const, letterSpacing: -0.25 },
+  kepala: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
   sedang: { fontSize: 15, fontWeight: '600' as const, letterSpacing: -0.1 },
   badan: { fontSize: 14.5, fontWeight: '500' as const },
   kecil: { fontSize: 12.5, fontWeight: '500' as const },
@@ -134,15 +134,15 @@ export const teks = {
 /** Digit berbaris rapi antar baris. */
 export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
-export const jarak = { xs: 4, sm: 8, md: 12, lg: 16, xl: 22, xxl: 30 };
+export const jarak = { xs: 5, sm: 9, md: 14, lg: 18, xl: 26, xxl: 36 };
 
 /**
  * Lengkung sudut.
  *
- * Besar. Inilah yang paling menentukan kesan lembut dan modern pada pola ini —
- * panel utama 30, kartu 20, pil sepenuhnya bulat.
+ * Besar. Inilah yang paling menentukan kesan lembut pada pola ini — sudut
+ * bawah panel 36, kartu 22, dan tombol sepenuhnya bulat.
  */
-export const lengkung = { sm: 12, md: 16, lg: 20, xl: 26, xxl: 32, pil: 999 };
+export const lengkung = { sm: 13, md: 17, lg: 22, xl: 28, xxl: 36, pil: 999 };
 
 /** Sasaran sentuh minimum. Jempol tidak sepresisi tetikus. */
 export const SENTUH = 48;
@@ -153,16 +153,16 @@ export function bayangan(t: Tema, kuat: 'lembut' | 'apung' = 'lembut') {
     return {
       shadowColor: t.bayang,
       shadowOpacity: 1,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 12,
+      shadowRadius: 30,
+      shadowOffset: { width: 0, height: 14 },
+      elevation: 16,
     };
   }
   return {
     shadowColor: t.bayang,
     shadowOpacity: 1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 6,
   };
 }

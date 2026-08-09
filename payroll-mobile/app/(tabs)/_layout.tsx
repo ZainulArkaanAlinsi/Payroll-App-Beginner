@@ -70,7 +70,7 @@ function BilahTab({ state, navigation }: any) {
             flexDirection: 'row',
             height: TINGGI_TAB,
             borderRadius: lengkung.pil,
-            backgroundColor: t.gelap ? '#22262c' : '#14181d',
+            backgroundColor: t.gelap ? '#1b2340' : '#131a33',
             paddingHorizontal: 6,
             alignItems: 'center',
           },
