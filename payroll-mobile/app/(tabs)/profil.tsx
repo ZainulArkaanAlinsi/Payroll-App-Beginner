@@ -4,7 +4,9 @@ import { useRouter } from 'expo-router';
 import { api, API, ApiError, type Beranda } from '../../src/api';
 import { useSesi } from '../../src/auth';
 import { tanggal } from '../../src/format';
-import { Baris, Galat, Garis, Kartu, Label, MemuatDaftar, Muncul, Tombol, useTema } from '../../src/ui';
+import {
+  Baris, Galat, Garis, Kartu, KartuUtama, Label, MemuatDaftar, Muncul, Tombol, useRuangAtas, useRuangBawah, useTema,
+} from '../../src/ui';
 import { jarak, teks } from '../../src/theme';
 
 const JENIS_KERJA: Record<string, string> = {
@@ -13,6 +15,8 @@ const JENIS_KERJA: Record<string, string> = {
 
 export default function LayarProfil() {
   const t = useTema();
+  const ruangAtas = useRuangAtas();
+  const ruangBawah = useRuangBawah();
   const router = useRouter();
   const { keluar } = useSesi();
   const [data, setData] = useState<Beranda | null>(null);
@@ -52,27 +56,37 @@ export default function LayarProfil() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}
+      contentContainerStyle={{
+        padding: jarak.lg,
+        paddingTop: ruangAtas + jarak.md,
+        paddingBottom: ruangBawah,
+        gap: jarak.md,
+      }}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={segar} tintColor={t.aksen}
           onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }} />
       }
     >
       <Muncul>
-      <Kartu>
-        <View style={{ alignItems: 'center', gap: jarak.sm }}>
-          <View style={{
-            width: 68, height: 68, borderRadius: 999, backgroundColor: t.aksenLembut,
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Text style={{ fontSize: 24, fontWeight: '700', color: t.aksen }}>{inisial}</Text>
+        <KartuUtama>
+          <View style={{ alignItems: 'center', gap: jarak.sm }}>
+            <View
+              style={{
+                width: 72, height: 72, borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 25, fontWeight: '700', color: '#ffffff' }}>{inisial}</Text>
+            </View>
+            <Text style={[teks.kepala, { color: '#ffffff', textAlign: 'center' }]}>{p.fullName}</Text>
+            <Text style={[teks.badan, { color: 'rgba(255,255,255,0.72)', textAlign: 'center' }]}>
+              {p.position?.title ?? '—'} · {p.department?.name ?? '—'}
+            </Text>
           </View>
-          <Text style={[teks.kepala, { color: t.kuat, textAlign: 'center' }]}>{p.fullName}</Text>
-          <Text style={[teks.badan, { color: t.redup, textAlign: 'center' }]}>
-            {p.position?.title ?? '—'} · {p.department?.name ?? '—'}
-          </Text>
-        </View>
-      </Kartu>
+        </KartuUtama>
       </Muncul>
 
       <Muncul jeda={60}>

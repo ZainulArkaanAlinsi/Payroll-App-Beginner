@@ -3,11 +3,14 @@ import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { api, ApiError, type SlipDetail } from '../../src/api';
 import { namaPeriode, rupiah, tanggal } from '../../src/format';
-import { Baris, Galat, Garis, Kartu, Label, Lencana, MemuatDaftar, Muncul, useTema } from '../../src/ui';
-import { jarak, lengkung, teks } from '../../src/theme';
+import {
+  Baris, Galat, Garis, Kartu, KartuUtama, Label, Lencana, MemuatDaftar, Muncul, useRuangAtas, useTema,
+} from '../../src/ui';
+import { angka, jarak, lengkung, teks } from '../../src/theme';
 
 export default function RincianSlip() {
   const t = useTema();
+  const ruangAtas = useRuangAtas();
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
 
@@ -40,23 +43,40 @@ export default function RincianSlip() {
   const perusahaan = data.rincian.filter((r) => r.group === 'EMPLOYER' && r.amount > 0);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}>
+    <ScrollView contentContainerStyle={{
+        padding: jarak.lg,
+        paddingTop: ruangAtas + jarak.md,
+        paddingBottom: jarak.xxl,
+        gap: jarak.md,
+      }}
+      showsVerticalScrollIndicator={false}>
       {/* yang paling dicari duluan: berapa yang masuk rekening */}
       <Muncul>
-      <Kartu>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Label>Diterima</Label>
-          <Lencana status={data.transferStatus} />
-        </View>
-        <Text style={{ fontSize: 32, fontWeight: '700', color: t.kuat, letterSpacing: -1, marginTop: 4, fontVariant: ['tabular-nums'] }}>
-          {rupiah(data.netPay)}
-        </Text>
-        <Text style={[teks.badan, { color: t.redup, marginTop: 4 }]}>
-          Dibayarkan {tanggal(data.run.payDate)}
-          {data.employee.bankName ? ` ke ${data.employee.bankName}` : ''}
-          {data.employee.bankAccount ? ` ···${data.employee.bankAccount.slice(-4)}` : ''}
-        </Text>
-      </Kartu>
+        <KartuUtama>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Label terang>Diterima</Label>
+            <View
+              style={{
+                paddingHorizontal: 10, paddingVertical: 4.5, borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+              }}
+            >
+              <Text style={[teks.mikro, { color: '#ffffff', textTransform: 'none' }]}>
+                {data.transferStatus === 'SENT' ? 'Terkirim' : 'Dibayarkan'}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[teks.raksasa, angka, { color: '#ffffff', marginTop: 6, fontSize: 34 }]}>
+            {rupiah(data.netPay)}
+          </Text>
+
+          <Text style={[teks.label, { color: 'rgba(255,255,255,0.7)', marginTop: 5 }]}>
+            Dibayarkan {tanggal(data.run.payDate)}
+            {data.employee.bankName ? ` ke ${data.employee.bankName}` : ''}
+            {data.employee.bankAccount ? ` ···${data.employee.bankAccount.slice(-4)}` : ''}
+          </Text>
+        </KartuUtama>
       </Muncul>
 
       {data.run.kind === 'THR' ? (

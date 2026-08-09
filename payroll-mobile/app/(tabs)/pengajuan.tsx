@@ -6,9 +6,11 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Cuti, type Kuota, type Lembur } from '../../src/api';
 import { isoHariIni, rupiah, tanggal } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatDaftar, Muncul, Tombol, useTema } from '../../src/ui';
+import {
+  Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatDaftar, Muncul, Tekan, Tombol, useRuangAtas, useRuangBawah, useTema,
+} from '../../src/ui';
 import { getar } from '../../src/getar';
-import { jarak, lengkung, teks } from '../../src/theme';
+import { angka, jarak, lengkung, teks } from '../../src/theme';
 
 const JENIS_CUTI: { nilai: string; label: string }[] = [
   { nilai: 'ANNUAL', label: 'Tahunan' },
@@ -26,6 +28,8 @@ const hariIniISO = isoHariIni;
 
 export default function LayarPengajuan() {
   const t = useTema();
+  const ruangAtas = useRuangAtas();
+  const ruangBawah = useRuangBawah();
   const [tab, setTab] = useState<'cuti' | 'lembur'>('cuti');
   const [cuti, setCuti] = useState<Cuti[] | null>(null);
   const [kuota, setKuota] = useState<Kuota | null>(null);
@@ -54,32 +58,57 @@ export default function LayarPengajuan() {
   return (
     <View style={{ flex: 1 }}>
       {/* pengalih */}
-      <View style={{ flexDirection: 'row', gap: jarak.sm, padding: jarak.lg, paddingBottom: jarak.sm }}>
-        {(['cuti', 'lembur'] as const).map((k) => {
-          const aktif = tab === k;
-          return (
-            <Pressable
-              key={k}
-              onPress={() => { getar.ketuk(); setTab(k); }}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: aktif }}
-              style={{
-                flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center',
-                borderRadius: lengkung.md, borderWidth: 1,
-                backgroundColor: aktif ? t.aksenLembut : 'transparent',
-                borderColor: aktif ? t.aksen : t.kartuTepi,
-              }}
-            >
-              <Text style={[teks.label, { color: aktif ? t.aksen : t.redup }]}>
-                {k === 'cuti' ? 'Cuti' : 'Lembur'}
-              </Text>
-            </Pressable>
-          );
-        })}
+      {/* Pengalih tersegmen: dua pilihan dalam satu bidang, seperti pola
+          bawaan iOS — batas antar pilihan jadi jelas tanpa dua kotak terpisah. */}
+      <View style={{ padding: jarak.lg, paddingTop: ruangAtas + jarak.sm, paddingBottom: jarak.sm }}>
+        <View
+          style={{
+            flexDirection: 'row', padding: 4, borderRadius: lengkung.md,
+            backgroundColor: t.isian,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: t.kartuTepi,
+          }}
+        >
+          {(['cuti', 'lembur'] as const).map((k) => {
+            const aktif = tab === k;
+            return (
+              <Tekan
+                key={k}
+                onPress={() => setTab(k)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: aktif }}
+                style={{ flex: 1 }}
+              >
+                <View
+                  style={{
+                    minHeight: 40, alignItems: 'center', justifyContent: 'center',
+                    borderRadius: lengkung.sm,
+                    backgroundColor: aktif ? t.kartu : 'transparent',
+                    ...(aktif
+                      ? {
+                          shadowColor: t.bayangKartu, shadowOpacity: 1, shadowRadius: 6,
+                          shadowOffset: { width: 0, height: 2 }, elevation: 2,
+                        }
+                      : {}),
+                  }}
+                >
+                  <Text style={[teks.label, { color: aktif ? t.kuat : t.redup }]}>
+                    {k === 'cuti' ? 'Cuti' : 'Lembur'}
+                  </Text>
+                </View>
+              </Tekan>
+            );
+          })}
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: jarak.lg, paddingTop: jarak.sm, gap: jarak.md, paddingBottom: 100 }}
+        contentContainerStyle={{
+          padding: jarak.lg,
+          paddingTop: jarak.sm,
+          paddingBottom: ruangBawah + 56,
+          gap: jarak.md,
+        }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={segar} tintColor={t.aksen}
             onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }} />
@@ -91,7 +120,7 @@ export default function LayarPengajuan() {
               <Kartu>
                 <Label>Sisa cuti tahunan</Label>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-                  <Text style={[teks.judul, { color: t.kuat }]}>{kuota.sisa}</Text>
+                  <Text style={[teks.judul, angka, { color: t.kuat }]}>{kuota.sisa}</Text>
                   <Badan>dari {kuota.kuota} hari · {kuota.terpakai} terpakai</Badan>
                 </View>
                 {/* bilah sederhana, bukan grafik — informasinya cuma satu angka */}
@@ -157,23 +186,27 @@ export default function LayarPengajuan() {
       </ScrollView>
 
       {/* tombol apung */}
-      <Pressable
-        onPress={() => { getar.ketuk(); setFormulir(tab); }}
+      <Tekan
+        onPress={() => setFormulir(tab)}
         accessibilityRole="button"
         accessibilityLabel={`Ajukan ${tab}`}
-        style={({ pressed }) => ({
-          position: 'absolute', right: jarak.lg, bottom: jarak.lg,
-          minHeight: 52, paddingHorizontal: jarak.lg, borderRadius: 999,
-          backgroundColor: t.aksen, flexDirection: 'row', alignItems: 'center', gap: jarak.sm,
-          opacity: pressed ? 0.85 : 1,
-          shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-        })}
+        style={{ position: 'absolute', right: jarak.lg, bottom: ruangBawah + 6 }}
       >
-        <Ionicons name="add" size={20} color={t.aksenTeks} />
-        <Text style={[teks.sedang, { color: t.aksenTeks }]}>
-          Ajukan {tab === 'cuti' ? 'cuti' : 'lembur'}
-        </Text>
-      </Pressable>
+        <View
+          style={{
+            minHeight: 54, paddingHorizontal: jarak.xl, borderRadius: 999,
+            backgroundColor: t.aksen,
+            flexDirection: 'row', alignItems: 'center', gap: jarak.sm,
+            shadowColor: t.bayangApung, shadowOpacity: 1, shadowRadius: 18,
+            shadowOffset: { width: 0, height: 8 }, elevation: 10,
+          }}
+        >
+          <Ionicons name="add" size={20} color={t.aksenTeks} />
+          <Text style={[teks.sedang, { color: t.aksenTeks }]}>
+            Ajukan {tab === 'cuti' ? 'cuti' : 'lembur'}
+          </Text>
+        </View>
+      </Tekan>
 
       {formulir === 'cuti' ? (
         <FormulirCuti tutup={() => setFormulir(null)} selesai={async () => { setFormulir(null); await muat(); }} />

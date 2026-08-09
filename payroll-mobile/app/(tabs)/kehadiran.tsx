@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type RiwayatKehadiran } from '../../src/api';
 import { bulanIni, durasi, geserBulan, hariKalender, jam, namaPeriode } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Lencana, Muncul, RangkaKartu, useTema } from '../../src/ui';
-import { jarak, lengkung, teks } from '../../src/theme';
+import { Badan, Galat, Kartu, Kosong, Lencana, Muncul, RangkaKartu, Tekan, useRuangAtas, useRuangBawah, useTema } from '../../src/ui';
+import { angka, jarak, lengkung, teks } from '../../src/theme';
 
 export default function LayarKehadiran() {
   const t = useTema();
+  const ruangAtas = useRuangAtas();
+  const ruangBawah = useRuangBawah();
   const [bulan, setBulan] = useState(bulanIni());
   const [data, setData] = useState<RiwayatKehadiran | null>(null);
   const [galat, setGalat] = useState('');
@@ -30,7 +32,13 @@ export default function LayarKehadiran() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}
+      contentContainerStyle={{
+        padding: jarak.lg,
+        paddingTop: ruangAtas + jarak.md,
+        paddingBottom: ruangBawah,
+        gap: jarak.md,
+      }}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={segar} tintColor={t.aksen}
           onRefresh={async () => { setSegar(true); await muat(bulan); setSegar(false); }} />
@@ -38,18 +46,18 @@ export default function LayarKehadiran() {
     >
       {/* pemilih bulan */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable onPress={() => setBulan((b) => geserBulan(b, -1))} hitSlop={12} style={{ padding: 6 }}>
+        <Tekan onPress={() => setBulan((b) => geserBulan(b, -1))} hitSlop={12} style={{ padding: 8 }}>
           <Ionicons name="chevron-back" size={22} color={t.badan} />
-        </Pressable>
+        </Tekan>
         <Text style={[teks.kepala, { color: t.kuat }]}>{namaPeriode(bulan)}</Text>
-        <Pressable
+        <Tekan
           onPress={() => bolehMaju && setBulan((b) => geserBulan(b, 1))}
           hitSlop={12}
           disabled={!bolehMaju}
-          style={{ padding: 6, opacity: bolehMaju ? 1 : 0.3 }}
+          style={{ padding: 8, opacity: bolehMaju ? 1 : 0.3 }}
         >
           <Ionicons name="chevron-forward" size={22} color={t.badan} />
-        </Pressable>
+        </Tekan>
       </View>
 
       {galat ? <Galat pesan={galat} coba={() => muat(bulan)} /> : !data ? (
@@ -64,8 +72,8 @@ export default function LayarKehadiran() {
             {(['PRESENT', 'WFH', 'LATE', 'LEAVE', 'ABSENT'] as const)
               .filter((k) => data.ringkas[k])
               .map((k) => (
-                <Kartu key={k} rapat style={{ flexGrow: 1, minWidth: 92 }}>
-                  <Text style={[teks.kepala, { color: t.kuat }]}>{data.ringkas[k]}</Text>
+                <Kartu key={k} rapat style={{ flexGrow: 1, minWidth: 96 }}>
+                  <Text style={[teks.judul, angka, { color: t.kuat }]}>{data.ringkas[k]}</Text>
                   <View style={{ marginTop: 4 }}><Lencana status={k} /></View>
                 </Kartu>
               ))}
@@ -81,7 +89,10 @@ export default function LayarKehadiran() {
 
           {/* daftar hari */}
           {data.hari.length === 0 ? (
-            <Kosong pesan="Belum ada catatan kehadiran pada bulan ini." ikon="calendar-outline" />
+            <Kosong
+            pesan="Belum ada catatan kehadiran pada bulan ini. Absen masuk dari layar Beranda untuk mulai mencatat."
+            ikon="calendar-outline"
+          />
           ) : (
             <Kartu style={{ padding: 0, overflow: 'hidden' }}>
               {data.hari.map((h, i) => {
@@ -96,7 +107,7 @@ export default function LayarKehadiran() {
                     }}
                   >
                     <View style={{ width: 38, alignItems: 'center' }}>
-                      <Text style={[teks.sedang, { color: t.kuat }]}>{hk.angka}</Text>
+                      <Text style={[teks.sedang, angka, { color: t.kuat }]}>{hk.angka}</Text>
                       <Text style={[teks.mikro, { color: t.redup }]}>{hk.nama}</Text>
                     </View>
                     <View style={{ flex: 1 }}>

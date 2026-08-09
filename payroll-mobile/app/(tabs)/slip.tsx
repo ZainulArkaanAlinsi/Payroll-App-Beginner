@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type RingkasSlip } from '../../src/api';
 import { namaPeriode, rupiah, tanggal } from '../../src/format';
-import { Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatDaftar, Muncul, useTema } from '../../src/ui';
-import { jarak, teks } from '../../src/theme';
+import {
+  Badan, Galat, Kartu, KartuUtama, Kosong, Label, Lencana, MemuatDaftar, Muncul, Tekan, useRuangAtas, useRuangBawah, useTema,
+} from '../../src/ui';
+import { angka, jarak, teks } from '../../src/theme';
 
 export default function LayarSlip() {
   const t = useTema();
+  const ruangAtas = useRuangAtas();
+  const ruangBawah = useRuangBawah();
   const router = useRouter();
   const [daftar, setDaftar] = useState<RingkasSlip[] | null>(null);
   const [galat, setGalat] = useState('');
@@ -34,29 +38,40 @@ export default function LayarSlip() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: jarak.lg, gap: jarak.md, paddingBottom: jarak.xxl }}
+      contentContainerStyle={{
+        padding: jarak.lg,
+        paddingTop: ruangAtas + jarak.md,
+        paddingBottom: ruangBawah,
+        gap: jarak.md,
+      }}
       refreshControl={
         <RefreshControl refreshing={segar} tintColor={t.aksen}
           onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }} />
       }
     >
       {daftar.length === 0 ? (
-        <Kosong pesan="Belum ada slip gaji yang diterbitkan untuk Anda." ikon="receipt-outline" />
+        <Kosong
+          pesan="Belum ada slip gaji yang diterbitkan untuk Anda. Slip muncul di sini setelah periode gaji dibayarkan HRD."
+          ikon="receipt-outline"
+        />
       ) : (
         <>
           <Muncul>
-          <Kartu>
-            <Label>Diterima sepanjang {new Date().getFullYear()}</Label>
-            <Text style={[teks.judul, { color: t.kuat, marginTop: 4 }]}>{rupiah(totalTahunIni)}</Text>
-            <Badan style={{ fontSize: 12 }}>dari {daftar.length} slip</Badan>
-          </Kartu>
+            <KartuUtama>
+              <Label terang>Diterima sepanjang {new Date().getFullYear()}</Label>
+              <Text style={[teks.judul, angka, { color: '#ffffff', marginTop: 6, fontSize: 30 }]}>
+                {rupiah(totalTahunIni)}
+              </Text>
+              <Text style={[teks.label, { color: 'rgba(255,255,255,0.62)', marginTop: 3 }]}>
+                dari {daftar.length} slip yang sudah dibayarkan
+              </Text>
+            </KartuUtama>
           </Muncul>
 
           {daftar.map((s, i) => (
             <Muncul key={s.id} jeda={60 + i * 45}>
-            <Pressable onPress={() => router.push(`/slip/${s.id}`)}>
-              {({ pressed }) => (
-                <Kartu style={{ opacity: pressed ? 0.75 : 1 }}>
+              <Tekan onPress={() => router.push(`/slip/${s.id}`)}>
+                <Kartu>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.sm }}>
@@ -70,7 +85,7 @@ export default function LayarSlip() {
                       </Badan>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[teks.sedang, { color: t.kuat, fontVariant: ['tabular-nums'] }]}>
+                      <Text style={[teks.sedang, angka, { color: t.kuat }]}>
                         {rupiah(s.netPay)}
                       </Text>
                       <Badan style={{ fontSize: 11 }}>bersih</Badan>
@@ -78,8 +93,7 @@ export default function LayarSlip() {
                     <Ionicons name="chevron-forward" size={18} color={t.redup} />
                   </View>
                 </Kartu>
-              )}
-            </Pressable>
+              </Tekan>
             </Muncul>
           ))}
         </>
