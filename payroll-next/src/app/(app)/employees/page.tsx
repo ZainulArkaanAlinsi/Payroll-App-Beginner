@@ -10,6 +10,7 @@ import KepatuhanPanel from './KepatuhanPanel';
 import { periksaKepatuhan } from '@/lib/kepatuhan';
 import { tunjanganTetap } from '@/lib/components';
 import EmployeeDialog from './EmployeeDialog';
+import ImportDialog from './ImportDialog';
 
 export const metadata = { title: 'Karyawan' };
 
@@ -147,7 +148,12 @@ export default async function EmployeesPage({
           .filter(Boolean)
           .join(' · ')}
         aksi={[{ href: '/api/export/employees', teks: 'Ekspor CSV', ikon: <Download size={15} /> }]}
-        anak={<EmployeeDialog departments={departments} positions={positions} />}
+        anak={
+          <>
+            <ImportDialog />
+            <EmployeeDialog departments={departments} positions={positions} />
+          </>
+        }
         samping={
           /* Dua angka yang tidak bisa dibaca dari daftar karena keduanya soal
              yang HILANG: NPWP yang belum ada, dan orang baru yang datanya
