@@ -9,7 +9,7 @@ import {
   Bagian, BarisDaftar, Galat, Kartu, Label, MemuatLayar, Muncul, Panel,
   Tombol, useRuangBawah, useTema,
 } from '../../src/ui';
-import { jarak, teks } from '../../src/theme';
+import { HURUF, jarak, teks } from '../../src/theme';
 
 const JENIS_KERJA: Record<string, string> = {
   PERMANENT: 'Karyawan tetap',
@@ -86,7 +86,7 @@ export default function LayarProfil() {
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 26, fontWeight: '800', color: '#ffffff' }}>{inisial}</Text>
+              <Text style={{ fontSize: 26, fontFamily: HURUF.beratII, color: '#ffffff' }}>{inisial}</Text>
             </View>
 
             <Text style={[teks.judul, { color: '#ffffff', marginTop: 4 }]}>{p.fullName}</Text>

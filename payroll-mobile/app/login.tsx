@@ -8,7 +8,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSesi } from '../src/auth';
 import { ApiError, API } from '../src/api';
 import { Kartu, Label, Tekan, Tombol, useTema } from '../src/ui';
-import { jarak, lengkung, teks, SENTUH } from '../src/theme';
+import { HURUF, jarak, lengkung, teks, SENTUH } from '../src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Masuk() {
@@ -83,7 +83,7 @@ export default function Masuk() {
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 26, fontWeight: '800', color: '#ffffff' }}>R</Text>
+              <Text style={{ fontSize: 26, fontFamily: HURUF.beratII, color: '#ffffff' }}>R</Text>
             </View>
             <Text style={[teks.judul, { color: '#ffffff', marginTop: jarak.md }]}>Racik</Text>
             <Text style={[teks.kecil, { color: t.panelRedup, marginTop: 3 }]}>
@@ -171,7 +171,7 @@ export default function Masuk() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
                 <Ionicons name="person-circle-outline" size={22} color={t.merek} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[teks.kecil, { color: t.tinta, fontWeight: '700' }]}>
+                  <Text style={[teks.kecil, { color: t.tinta, fontFamily: HURUF.beratI }]}>
                     Akun contoh
                   </Text>
                   <Text style={[teks.kecil, { color: t.tintaRedup, marginTop: 1 }]} numberOfLines={1}>

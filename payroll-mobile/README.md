@@ -5,6 +5,10 @@ riwayat kehadiran, slip gaji, pengajuan cuti dan lembur.
 
 Dibuat dengan React Native (Expo SDK 57) dan expo-router.
 
+Hurufnya **Plus Jakarta Sans** — dirancang untuk identitas kota Jakarta,
+berlisensi SIL Open Font License sehingga boleh diedarkan maupun dijual
+bersama perangkat lunak ini.
+
 ---
 
 ## Menjalankan

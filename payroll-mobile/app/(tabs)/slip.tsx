@@ -8,7 +8,7 @@ import {
   Badan, Galat, Kosong, Label, Lencana, MemuatLayar, Muncul, Panel, Saldo,
   Struk, Tekan, useRuangBawah, useTema,
 } from '../../src/ui';
-import { jarak, tabular, teks } from '../../src/theme';
+import { HURUF, jarak, tabular, teks } from '../../src/theme';
 
 export default function LayarSlip() {
   const t = useTema();
@@ -99,12 +99,12 @@ export default function LayarSlip() {
                         <View style={{ flex: 1 }}>
                           <Label>Dibayar {tanggal(s.run.payDate)}</Label>
                           <Text style={[teks.saldoKecil, tabular, { color: t.tinta, marginTop: 2 }]}>
-                            <Text style={{ fontSize: 14, fontWeight: '700' }}>Rp </Text>
+                            <Text style={{ fontSize: 14, fontFamily: HURUF.beratI }}>Rp </Text>
                             {rupiah(s.netPay).replace('Rp ', '')}
                           </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingBottom: 3 }}>
-                          <Text style={[teks.kecil, { color: t.merek, fontWeight: '700' }]}>Rincian</Text>
+                          <Text style={[teks.kecil, { color: t.merek, fontFamily: HURUF.beratI }]}>Rincian</Text>
                           <Ionicons name="chevron-forward" size={14} color={t.merek} />
                         </View>
                       </View>

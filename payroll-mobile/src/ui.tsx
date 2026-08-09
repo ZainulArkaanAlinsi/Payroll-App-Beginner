@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { gelap, terang, teks, tabular, jarak, lengkung, bayangan, SENTUH, type Tema } from './theme';
+import { HURUF, gelap, terang, teks, tabular, jarak, lengkung, bayangan, SENTUH, type Tema } from './theme';
 import { getar } from './getar';
 import { useReduceMotion } from './gerak';
 
@@ -198,7 +198,7 @@ export function Saldo({
 
   return (
     <Text style={[gaya, tabular, { color: warna ?? t.tinta }, style]}>
-      <Text style={{ fontSize: gaya.fontSize * 0.55, fontWeight: '700' }}>Rp </Text>
+      <Text style={{ fontSize: gaya.fontSize * 0.55, fontFamily: HURUF.beratI }}>Rp </Text>
       {kepala}
       {ekor ? <Text style={{ color: redup ?? t.tintaRedup }}>{ekor}</Text> : null}
     </Text>
@@ -613,7 +613,7 @@ export function Bagian({
       <Text style={[teks.kepala, { color: t.tinta }]}>{judul}</Text>
       {aksi ? (
         <Tekan onPress={aksi.onPress} getarkan={false}>
-          <Text style={[teks.kecil, { color: t.merek, fontWeight: '700' }]}>{aksi.label}</Text>
+          <Text style={[teks.kecil, { color: t.merek, fontFamily: HURUF.beratI }]}>{aksi.label}</Text>
         </Tekan>
       ) : null}
     </View>

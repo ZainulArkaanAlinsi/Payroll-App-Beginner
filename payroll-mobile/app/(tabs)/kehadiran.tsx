@@ -7,7 +7,7 @@ import {
   Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatLayar, Muncul, Panel,
   Rangka, Tekan, useRuangBawah, useTema,
 } from '../../src/ui';
-import { jarak, lengkung, tabular, teks } from '../../src/theme';
+import { HURUF, jarak, lengkung, tabular, teks } from '../../src/theme';
 
 export default function LayarKehadiran() {
   const t = useTema();
@@ -103,14 +103,14 @@ export default function LayarKehadiran() {
                 <Label atas>Hadir</Label>
                 <Text style={[teks.saldoKecil, tabular, { color: '#ffffff', marginTop: 2 }]}>
                   {hadir}
-                  <Text style={{ fontSize: 14, color: t.panelRedup, fontWeight: '600' }}> hari</Text>
+                  <Text style={{ fontSize: 14, color: t.panelRedup, fontFamily: HURUF.tebal }}> hari</Text>
                 </Text>
               </View>
               <View>
                 <Label atas>Keterlambatan</Label>
                 <Text style={[teks.saldoKecil, tabular, { color: '#ffffff', marginTop: 2 }]}>
                   {data.totalMenitTelat}
-                  <Text style={{ fontSize: 14, color: t.panelRedup, fontWeight: '600' }}> menit</Text>
+                  <Text style={{ fontSize: 14, color: t.panelRedup, fontFamily: HURUF.tebal }}> menit</Text>
                 </Text>
               </View>
             </View>

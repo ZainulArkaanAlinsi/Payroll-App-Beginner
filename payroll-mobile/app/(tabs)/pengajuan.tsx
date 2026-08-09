@@ -11,7 +11,7 @@ import {
   Panel, Tekan, Tombol, useRuangBawah, useTema,
 } from '../../src/ui';
 import { getar } from '../../src/getar';
-import { jarak, lengkung, tabular, teks, SENTUH } from '../../src/theme';
+import { HURUF, jarak, lengkung, tabular, teks, SENTUH } from '../../src/theme';
 
 const JENIS_CUTI = [
   { nilai: 'ANNUAL', label: 'Tahunan' },
@@ -373,7 +373,7 @@ function FormulirCuti({ tutup, selesai }: { tutup: () => void; selesai: () => vo
                     backgroundColor: aktif ? t.merek : t.lembut,
                   }}
                 >
-                  <Text style={[teks.kecil, { color: aktif ? '#ffffff' : t.tintaSedang, fontWeight: '600' }]}>
+                  <Text style={[teks.kecil, { color: aktif ? '#ffffff' : t.tintaSedang, fontFamily: HURUF.tebal }]}>
                     {j.label}
                   </Text>
                 </View>

@@ -112,6 +112,27 @@ export const gelap: Tema = {
 };
 
 /**
+ * Keluarga huruf: Plus Jakarta Sans.
+ *
+ * Dipilih karena tiga hal. Bentuknya geometris-humanis, cocok dengan bahasa
+ * dompet digital yang dipakai aplikasi ini. Angkanya tegas dan lebarnya sama,
+ * penting untuk kolom rupiah. Dan lisensinya SIL Open Font License, yang
+ * mengizinkan huruf ini diedarkan maupun dijual bersama perangkat lunak —
+ * syarat yang tidak bisa ditawar untuk proyek yang akan dipindahtangankan.
+ *
+ * React Native tidak menurunkan `fontWeight` ke huruf yang dimuat sendiri:
+ * setiap ketebalan adalah berkas tersendiri dan harus disebut namanya. Karena
+ * itu setiap tingkat pada skala di bawah menyebut keluarganya secara eksplisit.
+ */
+export const HURUF = {
+  reguler: 'PlusJakartaSans_400Regular',
+  sedang: 'PlusJakartaSans_500Medium',
+  tebal: 'PlusJakartaSans_600SemiBold',
+  beratI: 'PlusJakartaSans_700Bold',
+  beratII: 'PlusJakartaSans_800ExtraBold',
+} as const;
+
+/**
  * Skala huruf.
  *
  * Angka saldo dibuat sangat besar dan tebal — itu satu-satunya hal yang
@@ -119,16 +140,16 @@ export const gelap: Tema = {
  * kecil supaya kontrasnya tidak hilang.
  */
 export const teks = {
-  saldo: { fontSize: 42, fontWeight: '800' as const, letterSpacing: -1.8 },
-  saldoKecil: { fontSize: 30, fontWeight: '800' as const, letterSpacing: -1.1 },
-  angka: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.5 },
+  saldo: { fontFamily: HURUF.beratII, fontSize: 42, letterSpacing: -1.8 },
+  saldoKecil: { fontFamily: HURUF.beratII, fontSize: 30, letterSpacing: -1.1 },
+  angka: { fontFamily: HURUF.beratI, fontSize: 24, letterSpacing: -0.5 },
 
-  judul: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.4 },
-  kepala: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
-  sedang: { fontSize: 15, fontWeight: '600' as const, letterSpacing: -0.1 },
-  badan: { fontSize: 14.5, fontWeight: '500' as const },
-  kecil: { fontSize: 12.5, fontWeight: '500' as const },
-  mikro: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.3 },
+  judul: { fontFamily: HURUF.beratI, fontSize: 22, letterSpacing: -0.4 },
+  kepala: { fontFamily: HURUF.beratI, fontSize: 18, letterSpacing: -0.3 },
+  sedang: { fontFamily: HURUF.tebal, fontSize: 15, letterSpacing: -0.1 },
+  badan: { fontFamily: HURUF.sedang, fontSize: 14.5 },
+  kecil: { fontFamily: HURUF.sedang, fontSize: 12.5 },
+  mikro: { fontFamily: HURUF.beratI, fontSize: 11, letterSpacing: 0.3 },
 };
 
 /** Digit berbaris rapi antar baris. */
