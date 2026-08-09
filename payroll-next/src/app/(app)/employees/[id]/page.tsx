@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { KartuBank } from '@/components/ui/KartuBank';
 import { calculatePayroll, workingDaysInPeriod, type TaxMethod } from '@/lib/payroll-engine';
 import { resolveAll, buildVariables } from '@/lib/components';
 import { pilihAturan, lateConfigDari, overtimeConfigDari, type PolicyRow } from '@/lib/policy';
@@ -286,14 +287,17 @@ export default async function EmployeeDetail({ params }: { params: Promise<{ id:
               label="NPWP"
               value={employee.npwp ?? 'Belum terdaftar'}
             />
-            <Info
-              icon={<CreditCard size={13} />}
-              label="Rekening"
-              value={
-                employee.bankAccount ? `${employee.bankName ?? ''} ${employee.bankAccount}` : '—'
-              }
-            />
           </dl>
+
+          {/* Kartu rekening gaji — persis yang dilihat karyawan di ponselnya.
+              Mengubah nomor rekening di halaman ini mengubah kartu itu juga. */}
+          <div className="mt-4">
+            <KartuBank
+              bank={employee.bankName}
+              nomor={employee.bankAccount}
+              pemilik={employee.bankHolder ?? employee.fullName}
+            />
+          </div>
           {!employee.npwp && (
             <p
               className="mt-3 rounded-lg px-3 py-2 t-micro"

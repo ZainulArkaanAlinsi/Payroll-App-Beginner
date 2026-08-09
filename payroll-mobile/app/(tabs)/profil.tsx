@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, API, ApiError, type Beranda } from '../../src/api';
 import { useSesi } from '../../src/auth';
 import { tanggal } from '../../src/format';
+import { KartuBank } from '../../src/KartuBank';
 import {
   Bagian, BarisDaftar, Galat, Kartu, Label, MemuatLayar, Muncul, Panel,
   Tombol, useRuangBawah, useTema,
@@ -56,13 +57,6 @@ export default function LayarProfil() {
     ]);
   }
 
-  // Rekening ditampilkan sebagian saja. Layar ini sering dibuka di tempat
-  // umum, dan nomor penuh tidak perlu terpampang hanya untuk memastikan yang
-  // tercatat sudah benar.
-  const rekening = p.bankAccount
-    ? `${p.bankName ?? ''} ···${p.bankAccount.slice(-4)}`
-    : 'Belum diisi';
-
   return (
     <View style={{ flex: 1, backgroundColor: t.latar }}>
       <ScrollView
@@ -111,32 +105,33 @@ export default function LayarProfil() {
             </Kartu>
           </Muncul>
 
+          {/* Kartu rekening gaji — data yang sama dengan berkas transfer bank */}
           <Muncul jeda={60}>
-            <Bagian judul="Kontak & rekening" />
-            <Kartu putih style={{ paddingVertical: jarak.xs }}>
-              <BarisDaftar ikon="mail-outline" judul="Surel" catatan={p.email} />
-              <BarisDaftar ikon="call-outline" judul="Telepon" catatan={p.phone || 'Belum diisi'} />
-              <BarisDaftar
-                ikon="card-outline"
-                judul="Rekening gaji"
-                catatan={rekening}
-                akhir
-              />
-            </Kartu>
+            <Bagian judul="Rekening gaji" />
+            <KartuBank bank={p.bankName} nomor={p.bankAccount} pemilik={p.bankHolder ?? p.fullName} />
             <View
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 7,
-                marginTop: jarak.sm, paddingHorizontal: jarak.xs,
+                marginTop: jarak.md, paddingHorizontal: jarak.xs,
               }}
             >
-              <Ionicons name="information-circle-outline" size={14} color={t.tintaRedup} />
+              <Ionicons name="shield-checkmark-outline" size={14} color={t.tintaRedup} />
               <Text style={[teks.kecil, { color: t.tintaRedup, flex: 1, fontSize: 11.5 }]}>
-                Dipakai untuk transfer gaji — hubungi HRD bila ada yang keliru.
+                Cocokkan empat digit terakhir dengan kartu Anda. Bila keliru, hubungi HRD
+                sebelum tanggal gajian.
               </Text>
             </View>
           </Muncul>
 
           <Muncul jeda={120}>
+            <Bagian judul="Kontak" />
+            <Kartu putih style={{ paddingVertical: jarak.xs }}>
+              <BarisDaftar ikon="mail-outline" judul="Surel" catatan={p.email} />
+              <BarisDaftar ikon="call-outline" judul="Telepon" catatan={p.phone || 'Belum diisi'} akhir />
+            </Kartu>
+          </Muncul>
+
+          <Muncul jeda={180}>
             <Tombol
               judul="Keluar"
               jenis="bahaya"
