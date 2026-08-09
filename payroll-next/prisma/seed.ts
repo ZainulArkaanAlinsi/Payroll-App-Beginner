@@ -158,7 +158,15 @@ function periodeMundur(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-async function main() {
+/**
+ * Mengisi ulang seluruh data contoh, dari nol.
+ *
+ * Diekspor supaya bisa dipanggil dari dua tempat: skrip baris perintah untuk
+ * pengembangan, dan rute pengaturan ulang demo yang berjalan terjadwal. Yang
+ * kedua itulah alasan fungsi ini tidak lagi memanggil process.exit — mematikan
+ * proses di dalam fungsi tanpa peladen akan menjatuhkan seluruh permintaan.
+ */
+export async function jalankanSeed() {
   console.log('› Membersihkan basis data…');
   // Jejak persetujuan dulu, karena menunjuk ke proses gaji dan tahapnya.
   await prisma.runApproval.deleteMany();
@@ -879,11 +887,19 @@ async function main() {
   console.log('  Karyawan : bagas.setiawan@nusantaradigital.id / password123');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+/*
+ * Hanya berjalan sendiri bila berkas ini dieksekusi langsung sebagai skrip.
+ * Saat diimpor oleh rute, pemanggilnya yang menentukan kapan seed dijalankan.
+ */
+const dijalankanLangsung = (process.argv[1] ?? '').endsWith('seed.ts');
+
+if (dijalankanLangsung) {
+  jalankanSeed()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

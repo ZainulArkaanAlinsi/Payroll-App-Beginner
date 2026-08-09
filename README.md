@@ -3,6 +3,10 @@
 **Demo langsung: <https://payroll-app-beginner.vercel.app>**
 Masuk dengan `admin@racik.id` / `password123`.
 
+> Demo publik. Datanya fiktif dan dikembalikan ke keadaan semula setiap hari
+> pukul 03.00 WIB, jadi silakan mencoba apa pun — termasuk memproses gaji dan
+> menghapus periode.
+
 Repositori ini memuat tiga bagian:
 
 | Folder           | Isi                                                                 |
