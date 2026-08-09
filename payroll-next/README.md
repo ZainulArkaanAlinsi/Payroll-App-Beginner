@@ -1,5 +1,8 @@
 # Racik — Payroll yang bisa diracik sendiri
 
+**Demo langsung: <https://payroll-app-beginner.vercel.app>**
+Masuk dengan `admin@racik.id` / `password123`.
+
 Mesin penggajian untuk perusahaan Indonesia. Menyatukan kehadiran, lembur, cuti,
 tunjangan, iuran BPJS, PPh 21, dan THR ke dalam satu proses yang bisa ditelusuri
 sampai rupiah terakhir.

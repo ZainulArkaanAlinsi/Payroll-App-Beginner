@@ -10,11 +10,19 @@
 import { bacaToken, hapusToken } from './storage';
 
 /**
- * Emulator dan perangkat asli tidak mengenal "localhost" milik komputer Anda.
- * Saat menjalankan di ponsel, isi EXPO_PUBLIC_API_URL dengan alamat IP jaringan
- * lokal komputer — misalnya http://192.168.1.5:3001 — atau alamat produksinya.
+ * Alamat server.
+ *
+ * Bawaannya menunjuk ke produksi, bukan localhost. Alasannya sederhana:
+ * perangkat asli tidak mengenal "localhost" milik komputer siapa pun, jadi
+ * bawaan localhost membuat aplikasi ini gagal pada percobaan pertama semua
+ * orang — termasuk yang cuma ingin memindai kode QR untuk melihat hasilnya.
+ *
+ * Untuk mengembangkan sambil menjalankan server sendiri, isi
+ * EXPO_PUBLIC_API_URL dengan alamat IP jaringan lokal komputer, misalnya
+ * http://192.168.1.5:3001. Alamat yang sedang dipakai selalu tampil di bagian
+ * bawah layar masuk, supaya tidak perlu menebak.
  */
-export const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://payroll-app-beginner.vercel.app';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {

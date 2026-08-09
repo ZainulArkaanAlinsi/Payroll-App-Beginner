@@ -9,14 +9,10 @@ Dibuat dengan React Native (Expo SDK 57) dan expo-router.
 
 ## Menjalankan
 
-Server webnya harus hidup lebih dulu — aplikasi ini tidak punya basis data
-sendiri, semuanya lewat API.
+Bawaannya sudah menunjuk ke server produksi, jadi tidak perlu menjalankan
+apa pun selain aplikasinya sendiri:
 
 ```bash
-# jendela pertama
-cd ../payroll-next && npm run dev
-
-# jendela kedua
 npm install
 npm start
 ```
@@ -25,10 +21,12 @@ Pindai kode QR yang muncul memakai **Expo Go** ([Android](https://play.google.co
 [iOS](https://apps.apple.com/app/expo-go/id982107779)), atau tekan `w` untuk
 membukanya di peramban.
 
-### Menghubungkan ke server
+### Menghubungkan ke server sendiri
 
-Perangkat asli dan emulator tidak mengenal `localhost` milik komputer Anda.
-Isi alamat IP jaringan lokal komputer, atau alamat produksinya:
+Bawaannya <https://payroll-app-beginner.vercel.app>. Untuk mengembangkan
+sambil menjalankan server web sendiri, jalankan `npm run dev` di
+`../payroll-next`, lalu arahkan aplikasinya ke alamat IP jaringan lokal
+komputer — perangkat asli tidak mengenal `localhost` milik komputer Anda:
 
 ```bash
 # .env

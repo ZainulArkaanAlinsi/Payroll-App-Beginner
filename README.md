@@ -1,5 +1,8 @@
 # Racik — Payroll yang bisa diracik sendiri
 
+**Demo langsung: <https://payroll-app-beginner.vercel.app>**
+Masuk dengan `admin@racik.id` / `password123`.
+
 Repositori ini memuat tiga bagian:
 
 | Folder           | Isi                                                                 |
