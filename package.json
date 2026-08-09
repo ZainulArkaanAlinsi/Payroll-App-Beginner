@@ -11,5 +11,7 @@
     "db:reset": "npm --prefix payroll-next run db:reset",
     "vercel-build": "npm --prefix payroll-next install && npm --prefix payroll-next run vercel-build",
     "test": "npm --prefix payroll-next run test"
-  }
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Zainul Arkaan"
 }

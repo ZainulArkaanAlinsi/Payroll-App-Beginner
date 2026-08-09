@@ -36,5 +36,7 @@
     "typecheck": "tsc --noEmit",
     "tunnel": "expo start --tunnel"
   },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Zainul Arkaan",
   "private": true
 }

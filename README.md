@@ -92,3 +92,20 @@ Versi pertama aplikasi ini: Laravel 12 + Livewire + Flux + MySQL. Disimpan
 sebagai arsip, tidak lagi dikembangkan. Perlu PHP 8.2, Composer, dan MySQL
 untuk menjalankannya. Alur kerja GitHub Actions miliknya ikut pindah ke
 `legacy/.github/`, jadi tidak lagi berjalan otomatis.
+
+---
+
+## Lisensi
+
+Racik memakai **PolyForm Noncommercial 1.0.0** — gratis untuk dibaca,
+dipelajari, diubah, dan dipakai lembaga nirlaba, sekolah, atau instansi
+pemerintah. Perusahaan yang memakainya untuk menggaji karyawan memerlukan
+lisensi komersial.
+
+Penjelasan ringkasnya dalam bahasa Indonesia ada di [`LISENSI.md`](LISENSI.md).
+Teks yang mengikat ada di [`LICENSE`](LICENSE).
+
+Daftar lisensi seluruh dependensi, termasuk tiga pustaka yang punya syarat
+khusus, ada di [`THIRD-PARTY.md`](THIRD-PARTY.md).
+
+Untuk lisensi komersial: <zainularkaan@gmail.com>
