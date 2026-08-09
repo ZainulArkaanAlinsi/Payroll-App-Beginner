@@ -4,9 +4,7 @@ import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { hariIni as tanggalHariIni } from '@/lib/waktu';
 import { upahLemburKaryawan } from '@/lib/self-service';
-import {
-  jamMenit, labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal,
-} from '@/lib/format';
+import { jamMenit, labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal, labelPeriodePendek } from '@/lib/format';
 import { PTKP_LABEL, type PtkpStatus } from '@/lib/tax';
 import {
   Avatar, Chip, EmptyState, GlassCard, MiniBar, SectionTitle, StatusChip, statusLabel,
@@ -66,7 +64,7 @@ export default async function MePage() {
     }),
     prisma.payrollItem.findMany({
       where: { employeeId: id, run: { status: { in: ['APPROVED', 'PAID'] } } },
-      include: { run: { select: { period: true, status: true, payDate: true } } },
+      include: { run: { select: { period: true, status: true, payDate: true, kind: true } } },
       orderBy: { run: { period: 'desc' } },
       take: 12,
     }),
@@ -100,7 +98,7 @@ export default async function MePage() {
 
   const slipTerakhir = slips[0];
   const tren = [...slips].reverse().slice(-6).map((s) => ({
-    label: labelPeriode(s.run.period).slice(0, 3),
+    label: labelPeriodePendek(s.run.period, s.run.kind),
     value: s.netPay,
   }));
 
@@ -113,7 +111,7 @@ export default async function MePage() {
       {/* ── kepala ── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Avatar name={employee.fullName} hue={session.avatarHue} size={52} />
+          <Avatar name={employee.fullName} size={52} />
           <div>
             <h1 className="t-title">
               {employee.fullName}

@@ -22,14 +22,31 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             sehingga tepi kirinya tidak segaris dan tampilan terasa acak. */}
         <header className="sticky top-0 z-20 px-3 pt-3 lg:px-5">
           <div className="page">
-            <div className="glass flex items-center gap-2 px-3 py-2" style={{ borderRadius: 14 }}>
-              {/* Sidebar memuat tombol hamburger, rel tetap, dan laci sekaligus.
-                  Rel & laci memakai posisi fixed, jadi tempatnya di DOM bebas. */}
+            <div
+              className="relative flex items-center gap-2 px-3 py-2"
+              style={{ borderRadius: 14 }}
+            >
+              {/*
+                Efek kaca dipasang sebagai lapisan anak, bukan pada bilah ini
+                sendiri. Sebabnya halus tetapi mahal: `backdrop-filter`
+                menjadikan elemen pemakainya containing block bagi keturunan
+                berposisi `fixed`. Sidebar di bawah memakai `fixed` untuk rel
+                navigasi dan laci — dan selama efek kaca menempel pada bilah,
+                keduanya terjepit ke dalam kotak setinggi bilah lalu lenyap:
+                rel kiri tidak pernah tergambar sementara ruang selebar 252px
+                tetap disisakan untuknya, dan lapisan gelap laci hanya menutupi
+                bilah atas. Sebagai saudara, tampilannya sama persis sedangkan
+                `fixed` kembali mengacu ke layar.
+              */}
+              <div
+                aria-hidden
+                className="glass absolute inset-0 -z-10"
+                style={{ borderRadius: 14 }}
+              />
               <Sidebar
                 role={session.role}
                 name={session.name}
                 email={session.email}
-                hue={session.avatarHue}
               />
               <CommandPalette role={session.role} />
               <div className="ml-auto flex items-center gap-2">

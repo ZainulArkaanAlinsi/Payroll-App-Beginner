@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { inisial, warnaAvatar } from '@/lib/avatar';
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
@@ -132,42 +133,59 @@ export function StatusChip({ status }: { status: string }) {
   );
 }
 
+/**
+ * Avatar karyawan.
+ *
+ * Memakai fotonya bila perusahaan sudah mengunggah; bila belum, inisial di
+ * atas warna yang dibangkitkan dari namanya sendiri.
+ *
+ * Warnanya diambil dari palet terpilih, bukan dari rona acak. Rona acak
+ * menempatkan kuning neon di sebelah cokelat lumpur, dan sederet avatar
+ * seperti itu membuat tabel tampak berantakan alih-alih hidup. Palet yang
+ * sama dipakai aplikasi ponsel, sehingga seorang karyawan berwarna sama di
+ * mana pun ia muncul — dan daftar panjang bisa dipindai lewat warna sebelum
+ * namanya sempat dibaca.
+ */
 export function Avatar({
   name,
-  hue,
+  photo,
   size = 36,
 }: {
   name: string;
-  hue?: number;
+  photo?: string | null;
   size?: number;
 }) {
-  const parts = name.trim().split(/\s+/);
-  const ini =
-    parts.length === 1
-      ? parts[0].slice(0, 2).toUpperCase()
-      : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const w = warnaAvatar(name);
 
-  let h = hue;
-  if (h === undefined) {
-    h = 0;
-    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  if (photo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photo}
+        alt={name}
+        loading="lazy"
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size, boxShadow: '0 1px 3px rgb(0 0 0 / .2)' }}
+      />
+    );
   }
 
   return (
     <span
+      role="img"
+      aria-label={name}
       className="inline-flex shrink-0 items-center justify-center rounded-full font-semibold select-none"
       style={{
         width: size,
         height: size,
-        fontSize: size * 0.36,
-        // saturasi rendah supaya avatar tidak berteriak di tengah tabel
-        background: `linear-gradient(145deg, hsl(${h} 26% 58% / .9), hsl(${(h + 28) % 360} 30% 42% / .95))`,
+        fontSize: size * 0.38,
+        background: `linear-gradient(140deg, ${w.dari}, ${w.ke})`,
         color: '#fff',
-        letterSpacing: '0.01em',
-        boxShadow: 'inset 0 1px 0 rgb(255 255 255 / .25), 0 1px 3px rgb(0 0 0 / .2)',
+        letterSpacing: '-0.02em',
+        boxShadow: 'inset 0 1px 0 rgb(255 255 255 / .22), 0 1px 3px rgb(0 0 0 / .2)',
       }}
     >
-      {ini}
+      {inisial(name)}
     </span>
   );
 }

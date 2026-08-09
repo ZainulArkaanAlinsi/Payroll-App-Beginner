@@ -5,12 +5,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, API, ApiError, type Beranda } from '../../src/api';
 import { useSesi } from '../../src/auth';
 import { tanggal } from '../../src/format';
+import { Avatar } from '../../src/Avatar';
 import { KartuBank } from '../../src/KartuBank';
 import {
   Bagian, BarisDaftar, Galat, Kartu, Label, MemuatLayar, Muncul, Panel,
   Tombol, useRuangBawah, useTema,
 } from '../../src/ui';
-import { HURUF, jarak, teks } from '../../src/theme';
+import { jarak, teks } from '../../src/theme';
 
 const JENIS_KERJA: Record<string, string> = {
   PERMANENT: 'Karyawan tetap',
@@ -44,7 +45,6 @@ export default function LayarProfil() {
   if (!data) return <MemuatLayar baris={5} />;
 
   const p = data.profil;
-  const inisial = p.fullName.split(' ').slice(0, 2).map((x) => x[0]).join('');
 
   function konfirmasiKeluar() {
     Alert.alert('Keluar', 'Anda akan keluar dari akun ini.', [
@@ -72,16 +72,7 @@ export default function LayarProfil() {
       >
         <Panel>
           <View style={{ alignItems: 'center', gap: jarak.sm, paddingTop: jarak.md }}>
-            <View
-              style={{
-                width: 76, height: 76, borderRadius: 999,
-                backgroundColor: 'rgba(255,255,255,0.16)',
-                borderWidth: 2, borderColor: 'rgba(255,255,255,0.22)',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 26, fontFamily: HURUF.beratII, color: '#ffffff' }}>{inisial}</Text>
-            </View>
+            <Avatar nama={p.fullName} foto={p.photoUrl} ukuran={76} cincin />
 
             <Text style={[teks.judul, { color: '#ffffff', marginTop: 4 }]}>{p.fullName}</Text>
             <Text style={[teks.kecil, { color: t.panelRedup }]}>

@@ -105,6 +105,15 @@ model Employee {
   phone        String?
   nik          String? // NIK KTP
   npwp         String? // NPWP — tanpa NPWP kena tarif +20%
+  /**
+   * Alamat foto karyawan.
+   *
+   * Kosong pada data contoh: memakai foto orang sungguhan untuk karyawan
+   * fiktif menimbulkan persoalan lisensi maupun kepatutan. Perusahaan yang
+   * memakai sistem ini mengisinya dengan foto karyawannya sendiri, dan
+   * tampilan akan memakainya begitu ada.
+   */
+  photoUrl     String?
   birthDate    DateTime?
   gender       String?  // M | F
   address      String?
@@ -465,6 +474,13 @@ model CompanySetting {
   lateToleranceMin Int @default(15)
 
   // payroll
+  // Rekening sumber yang dipakai membayarkan gaji. Berkas transfer bank
+  // membutuhkannya sebagai rekening pendebet, dan dasbor menampilkannya
+  // supaya keliru rekening ketahuan sebelum uangnya dikirim, bukan sesudah.
+  payoutBankName    String?
+  payoutBankAccount String?
+  payoutBankHolder  String?
+
   payDay      Int    @default(25)
   cutoffDay   Int    @default(20)
   currency    String @default("IDR")

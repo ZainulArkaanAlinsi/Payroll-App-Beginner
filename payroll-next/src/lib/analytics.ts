@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './prisma';
-import { labelPeriode, periodeSekarang, rupiahRingkas } from './format';
+import { labelPeriode, periodeSekarang, rupiahRingkas, labelPeriodePendek } from './format';
 
 /** Ringkasan yang dipakai dasbor & laporan. Satu tempat agar angkanya konsisten. */
 export async function companyOverview() {
@@ -49,7 +49,9 @@ export async function companyOverview() {
     attendanceDays: attTotal,
     pendingLeave,
     pendingOvertime,
-    trend: runs.slice(-6).map((r) => ({ label: labelPeriode(r.period).slice(0, 3), value: r.totalNet })),
+    trend: runs
+      .slice(-6)
+      .map((r) => ({ label: labelPeriodePendek(r.period, r.kind), value: r.totalNet })),
   };
 }
 

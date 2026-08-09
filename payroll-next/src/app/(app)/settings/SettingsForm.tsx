@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
-import { Building2, Clock, KeyRound, Percent, Save, Scale, Wallet } from 'lucide-react';
+import { useActionState, useState } from 'react';
+import { Building2, Clock, CreditCard, KeyRound, Percent, Save, Scale, Wallet } from 'lucide-react';
 import { SubmitButton, Toast } from '@/components/ui/Feedback';
 import { GlassCard, SectionTitle } from '@/components/ui/Glass';
+import { KartuBank } from '@/components/ui/KartuBank';
 import { changePassword, saveSettings } from '@/actions/settings';
 import type { ActionState } from '@/lib/types';
 
@@ -15,6 +16,9 @@ export interface SettingsData {
   phone: string;
   email: string;
   logoInitials: string;
+  payoutBankName: string | null;
+  payoutBankAccount: string | null;
+  payoutBankHolder: string | null;
   workStart: string;
   workEnd: string;
   workDays: number;
@@ -38,7 +42,7 @@ export interface SettingsData {
   enforceBasicRatio: boolean;
 }
 
-export default function SettingsForm({ data }: { data: SettingsData }) {
+export default function SettingsForm({ data, surel }: { data: SettingsData; surel: string }) {
   const [state, action] = useActionState<ActionState, FormData>(saveSettings, {});
 
   return (
@@ -80,6 +84,8 @@ export default function SettingsForm({ data }: { data: SettingsData }) {
             </F>
           </div>
         </GlassCard>
+
+        <RekeningPenyalur data={data} />
 
         <GlassCard>
           <SectionTitle
@@ -286,14 +292,14 @@ export default function SettingsForm({ data }: { data: SettingsData }) {
         </div>
       </form>
 
-      <PasswordCard />
+      <PasswordCard surel={surel} />
 
       <Toast state={state.error || state.ok ? state : null} />
     </>
   );
 }
 
-function PasswordCard() {
+function PasswordCard({ surel }: { surel: string }) {
   const [state, action] = useActionState<ActionState, FormData>(changePassword, {});
 
   return (
@@ -305,6 +311,27 @@ function PasswordCard() {
           action={<KeyRound size={15} style={{ color: 'var(--text-muted)' }} />}
         />
         <form action={action} className="grid gap-3 sm:grid-cols-3">
+          {/*
+            Medan surel tersembunyi. Pengelola kata sandi memerlukan nama
+            pengguna di dalam formulir yang sama untuk tahu kredensial mana
+            yang sedang diganti; tanpa itu ia menyimpan sandi baru sebagai
+            entri terpisah, dan pemakainya menemukan dua entri Racik dengan
+            sandi berbeda tanpa tahu mana yang berlaku.
+
+            Nilainya ikut terkirim bersama formulir, tetapi `changePassword`
+            mengabaikannya dan mengambil identitas dari sesi — surel dari
+            formulir tidak boleh menentukan akun siapa yang diubah.
+          */}
+          <input
+            type="text"
+            name="surel"
+            value={surel}
+            readOnly
+            hidden
+            autoComplete="username"
+            aria-hidden
+            tabIndex={-1}
+          />
           <F label="Kata sandi saat ini">
             <input name="current" type="password" required autoComplete="current-password" className="field" />
           </F>
@@ -321,6 +348,71 @@ function PasswordCard() {
       </GlassCard>
       <Toast state={state.error || state.ok ? state : null} />
     </>
+  );
+}
+
+/**
+ * Rekening penyalur gaji.
+ *
+ * Kartunya bukan hiasan: ia menggambar isi ketiga kotak di sebelahnya, huruf
+ * demi huruf, sebelum apa pun disimpan. Salah satu digit yang keliru terlihat
+ * di kartu — bentuk yang sama dengan kartu di dompet — jauh lebih cepat
+ * daripada memeriksa deretan angka di dalam kotak isian. Ini rekening yang
+ * mendebet seluruh gaji perusahaan; salah ketik di sini mahal.
+ */
+function RekeningPenyalur({ data }: { data: SettingsData }) {
+  const [bank, setBank] = useState(data.payoutBankName ?? '');
+  const [nomor, setNomor] = useState(data.payoutBankAccount ?? '');
+  const [pemilik, setPemilik] = useState(data.payoutBankHolder ?? '');
+
+  return (
+    <GlassCard>
+      <SectionTitle
+        title="Rekening penyalur gaji"
+        subtitle="Rekening yang didebet saat gaji dibayarkan, dan tampil di dasbor"
+        action={<CreditCard size={15} style={{ color: 'var(--text-muted)' }} />}
+      />
+      <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <F label="Bank" hint="Mis. BCA, BNI, BRI, Mandiri">
+            <input
+              name="payoutBankName"
+              value={bank}
+              onChange={(e) => setBank(e.target.value)}
+              className="field"
+              autoComplete="off"
+            />
+          </F>
+          <F label="Nomor rekening">
+            <input
+              name="payoutBankAccount"
+              value={nomor}
+              onChange={(e) => setNomor(e.target.value)}
+              inputMode="numeric"
+              className="field tnum"
+              autoComplete="off"
+            />
+          </F>
+          <F label="Atas nama" span2>
+            <input
+              name="payoutBankHolder"
+              value={pemilik}
+              onChange={(e) => setPemilik(e.target.value)}
+              className="field"
+              autoComplete="off"
+            />
+          </F>
+          <p className="t-small sm:col-span-2">
+            Dibiarkan kosong pun tidak apa-apa — hanya saja berkas transfer bank akan
+            terbit tanpa rekening pendebet, dan bank biasanya menolaknya.
+          </p>
+        </div>
+
+        <div className="lg:justify-self-end">
+          <KartuBank bank={bank} nomor={nomor} pemilik={pemilik} label="Penyalur gaji" />
+        </div>
+      </div>
+    </GlassCard>
   );
 }
 

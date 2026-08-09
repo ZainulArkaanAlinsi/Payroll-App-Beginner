@@ -6,6 +6,13 @@ import { prisma } from '@/lib/prisma';
 import { audit, hashPassword, requireRole, requireSession, verifyPassword } from '@/lib/auth';
 import { FAIL, OK, type ActionState } from '@/lib/types';
 
+/** Isian teks pilihan: kosong disimpan sebagai null, bukan string kosong. */
+const kosongJadiNull = z
+  .string()
+  .trim()
+  .default('')
+  .transform((v) => (v === '' ? null : v));
+
 const schema = z.object({
   name: z.string().min(3, 'Nama perusahaan minimal 3 karakter'),
   legalName: z.string().min(3, 'Nama badan hukum minimal 3 karakter'),
@@ -20,6 +27,24 @@ const schema = z.object({
   workEnd: z.string().regex(/^\d{2}:\d{2}$/, 'Format jam harus HH:MM'),
   workDays: z.coerce.number().int().min(1).max(7),
   lateToleranceMin: z.coerce.number().int().min(0).max(120),
+
+  /*
+   * Rekening penyalur boleh kosong: perusahaan yang baru memasang sistem ini
+   * belum tentu sudah memutuskan rekening mana yang dipakai. Kolomnya nullable
+   * di skema, jadi kosong disimpan sebagai null — bukan string kosong — supaya
+   * "belum diisi" hanya punya satu wujud dan pemeriksaannya cukup satu cara.
+   */
+  payoutBankName: kosongJadiNull,
+  payoutBankAccount: z
+    .string()
+    .trim()
+    .default('')
+    .refine(
+      (v) => v === '' || /^[0-9][0-9 -]{4,24}$/.test(v),
+      'Nomor rekening hanya boleh berisi angka, spasi, atau tanda hubung',
+    )
+    .transform((v) => (v === '' ? null : v)),
+  payoutBankHolder: kosongJadiNull,
 
   payDay: z.coerce.number().int().min(1).max(31),
   cutoffDay: z.coerce.number().int().min(1).max(31),

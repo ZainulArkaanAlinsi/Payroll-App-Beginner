@@ -191,7 +191,17 @@ export async function jalankanSeed() {
   await prisma.companySetting.deleteMany();
 
   console.log('› Profil perusahaan…');
-  const company = await prisma.companySetting.create({ data: { id: 'singleton' } });
+  const company = await prisma.companySetting.create({
+    data: {
+      id: 'singleton',
+      // Rekening penyalur gaji. Nomornya karangan, tetapi bentuknya mengikuti
+      // rekening giro BCA sungguhan (10 digit) supaya tampilan kartu dan
+      // berkas transfer teruji pada panjang yang benar-benar akan dipakai.
+      payoutBankName: 'BCA',
+      payoutBankAccount: '5270466881',
+      payoutBankHolder: 'PT NUSANTARA DIGITAL KARYA',
+    },
+  });
 
   console.log('› Departemen & posisi…');
   const deptMap: Record<string, string> = {};

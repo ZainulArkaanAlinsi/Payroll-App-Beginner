@@ -127,6 +127,7 @@ export interface Kuota { kuota: number; terpakai: number; sisa: number }
 export interface Beranda {
   profil: {
     id: string; employeeNo: string; fullName: string; email: string; phone: string | null;
+    photoUrl: string | null;
     joinDate: string; employmentType: string; status: string; ptkpStatus: string;
     bankName: string | null; bankAccount: string | null; bankHolder: string | null;
     department: { name: string } | null;

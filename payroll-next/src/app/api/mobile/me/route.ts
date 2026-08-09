@@ -12,7 +12,7 @@ export async function GET(req: Request) {
       prisma.employee.findUnique({
         where: { id: aktor.employeeId },
         select: {
-          id: true, employeeNo: true, fullName: true, email: true, phone: true,
+          id: true, employeeNo: true, fullName: true, email: true, phone: true, photoUrl: true,
           joinDate: true, employmentType: true, status: true, ptkpStatus: true,
           bankName: true, bankAccount: true, bankHolder: true,
           department: { select: { name: true } },

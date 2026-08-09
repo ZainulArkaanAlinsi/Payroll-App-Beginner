@@ -5,7 +5,7 @@ import SettingsForm from './SettingsForm';
 export const metadata = { title: 'Pengaturan' };
 
 export default async function SettingsPage() {
-  await requireRole('ADMIN');
+  const sesi = await requireRole('ADMIN');
 
   const setting =
     (await prisma.companySetting.findUnique({ where: { id: 'singleton' } })) ??
@@ -25,6 +25,7 @@ export default async function SettingsPage() {
 
       <div className="page-narrow">
       <SettingsForm
+        surel={sesi.email}
         data={{
           name: setting.name,
           legalName: setting.legalName,
@@ -33,6 +34,9 @@ export default async function SettingsPage() {
           phone: setting.phone,
           email: setting.email,
           logoInitials: setting.logoInitials,
+          payoutBankName: setting.payoutBankName,
+          payoutBankAccount: setting.payoutBankAccount,
+          payoutBankHolder: setting.payoutBankHolder,
           workStart: setting.workStart,
           workEnd: setting.workEnd,
           workDays: setting.workDays,

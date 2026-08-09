@@ -3,6 +3,7 @@ import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Beranda } from '../../src/api';
+import { Avatar } from '../../src/Avatar';
 import { jam, namaPeriode, rupiah, salam, tanggal } from '../../src/format';
 import {
   Bagian, Badan, BarisDaftar, Galat, Kartu, Kosong, Label, Lencana, MemuatLayar,
@@ -76,7 +77,6 @@ export default function LayarBeranda() {
   const { profil, hariIni, kuotaCuti, slipTerakhir, tertunda, kehadiranBulanIni } = data;
   const hadir = (kehadiranBulanIni.PRESENT ?? 0) + (kehadiranBulanIni.WFH ?? 0) + (kehadiranBulanIni.LATE ?? 0);
   const tertundaTotal = tertunda.cuti + tertunda.lembur;
-  const inisial = profil.fullName.split(' ').slice(0, 2).map((x) => x[0]).join('');
 
   const labelAbsen = !hariIni.sudahMasuk ? 'Absen masuk' : !hariIni.sudahPulang ? 'Absen pulang' : 'Selesai';
   const ikonAbsen = !hariIni.sudahMasuk ? 'finger-print' : !hariIni.sudahPulang ? 'exit-outline' : 'checkmark-circle';
@@ -97,15 +97,7 @@ export default function LayarBeranda() {
         {/* ══════════ panel utama ══════════ */}
         <Panel>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
-            <View
-              style={{
-                width: 40, height: 40, borderRadius: 999,
-                backgroundColor: t.panelIsian,
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Text style={[teks.sedang, { color: '#ffffff' }]}>{inisial}</Text>
-            </View>
+            <Avatar nama={profil.fullName} foto={profil.photoUrl} ukuran={40} cincin />
             <View style={{ flex: 1 }}>
               <Label atas>{salam()},</Label>
               <Text style={[teks.sedang, { color: '#ffffff', marginTop: 1 }]} numberOfLines={1}>

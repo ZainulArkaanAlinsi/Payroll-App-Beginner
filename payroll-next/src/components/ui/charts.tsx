@@ -332,7 +332,7 @@ export function BarRank({
           const color = colored ? seriesColor(d.colorIndex ?? i) : 'var(--series-1)';
           return (
             <li
-              key={d.label}
+              key={`${d.label}-${i}`}
               className="group -mx-1.5 rounded-lg px-1.5 py-1 transition-colors"
               style={{ background: hover === i ? 'var(--field-bg)' : 'transparent' }}
               onMouseEnter={() => setHover(i)}
@@ -475,7 +475,7 @@ export function Donut({
         <ul className="min-w-[9.5rem] flex-1 space-y-1">
           {data.map((d, i) => (
             <li
-              key={d.label}
+              key={`${d.label}-${i}`}
               className="flex items-center justify-between gap-2 rounded-md px-1.5 py-0.5 t-label transition-colors"
               style={{ background: hover === i ? 'var(--field-bg)' : 'transparent' }}
               onMouseEnter={() => setHover(i)}
@@ -634,7 +634,7 @@ export function StackedBars({
         {data.map((d, bi) => {
           const total = totals[bi];
           return (
-            <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+            <div key={`${d.label}-${bi}`} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
               <span className="tnum t-micro" style={{ color: 'var(--text-muted)' }}>
                 {formatter(total)}
               </span>

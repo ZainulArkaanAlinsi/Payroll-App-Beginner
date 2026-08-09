@@ -22,12 +22,10 @@ export default function Sidebar({
   role,
   name,
   email,
-  hue,
 }: {
   role: Role;
   name: string;
   email: string;
-  hue: number;
 }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -122,7 +120,7 @@ export default function Sidebar({
           onClick={() => setOpen(false)}
           className="mb-2 flex items-center gap-2.5 rounded-[10px] px-2 py-2 transition-colors hover:bg-[var(--field-bg)]"
         >
-          <Avatar name={name} hue={hue} size={32} />
+          <Avatar name={name} size={32} />
           <span className="min-w-0 flex-1">
             <span
               className="block truncate t-small font-medium"

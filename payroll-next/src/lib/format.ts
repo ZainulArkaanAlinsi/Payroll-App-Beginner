@@ -35,6 +35,19 @@ export function labelPeriode(period: string): string {
   return `${namaBulan(m)} ${y}`;
 }
 
+/**
+ * "Jun", "Jun THR" — label sumbu grafik.
+ *
+ * Jenisnya ikut disebut karena satu bulan bisa memuat dua proses gaji: gaji
+ * biasa dan THR, keduanya jatuh di bulan yang sama pada tahun Idulfitri. Tanpa
+ * penanda itu grafik menampilkan dua batang bernama sama yang tidak bisa
+ * dibedakan — dan bila labelnya dipakai sebagai kunci React, salah satunya
+ * bisa hilang tanpa peringatan.
+ */
+export function labelPeriodePendek(period: string, kind?: string | null): string {
+  return labelPeriode(period).slice(0, 3) + (kind === 'THR' ? ' THR' : '');
+}
+
 export function tanggal(d: Date | string | null | undefined): string {
   if (!d) return '—';
   const date = typeof d === 'string' ? new Date(d) : d;
