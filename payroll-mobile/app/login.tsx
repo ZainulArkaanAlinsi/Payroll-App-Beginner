@@ -4,10 +4,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSesi } from '../src/auth';
 import { ApiError, API } from '../src/api';
-import { Garis, Kertas, Kolom, Tekan, Tombol, useTema } from '../src/ui';
-import { jarak, teks, SENTUH } from '../src/theme';
+import { Kartu, Label, Tekan, Tombol, useTema } from '../src/ui';
+import { jarak, lengkung, teks, SENTUH } from '../src/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Masuk() {
   const t = useTema();
@@ -17,6 +19,7 @@ export default function Masuk() {
 
   const [email, setEmail] = useState('');
   const [sandi, setSandi] = useState('');
+  const [lihat, setLihat] = useState(false);
   const [galat, setGalat] = useState('');
   const [sibuk, setSibuk] = useState(false);
 
@@ -37,93 +40,123 @@ export default function Masuk() {
     }
   }
 
-  /**
-   * Isian bergaris bawah, bukan berkotak.
-   *
-   * Sejalan dengan konsep dokumen: formulir cetak punya garis untuk ditulisi,
-   * bukan kotak. Sasaran sentuhnya tetap setinggi tombol.
-   */
-  const gayaIsian = {
+  const isian = {
+    flex: 1,
     minHeight: SENTUH,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: t.isianGaris,
-    paddingVertical: jarak.sm,
     color: t.tinta,
-    fontSize: 16.5,
+    fontSize: 15.5,
+    paddingVertical: jarak.sm,
   };
 
   return (
-    <Kertas>
+    <View style={{ flex: 1, backgroundColor: t.latar }}>
+      {/* panel gelap menutupi puncak layar, sama seperti di dalam aplikasi */}
+      <LinearGradient
+        colors={t.panel}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: 300,
+          borderBottomLeftRadius: lengkung.xxl,
+          borderBottomRightRadius: lengkung.xxl,
+        }}
+      />
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingHorizontal: jarak.xl,
+            paddingHorizontal: jarak.lg,
             paddingTop: insets.top + jarak.xxl,
             paddingBottom: insets.bottom + jarak.xl,
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── kepala ── */}
-          <View style={{ marginBottom: jarak.xxl }}>
-            <Kolom atas>Portal karyawan</Kolom>
-            <Text
-              style={[
-                teks.judul,
-                { color: t.tinta, fontSize: 40, letterSpacing: -1.4, marginTop: jarak.sm },
-              ]}
+          <View style={{ alignItems: 'center', marginBottom: jarak.xl }}>
+            <View
+              style={{
+                width: 56, height: 56, borderRadius: lengkung.md,
+                backgroundColor: 'rgba(255,255,255,0.16)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              Racik
+              <Text style={{ fontSize: 26, fontWeight: '800', color: '#ffffff' }}>R</Text>
+            </View>
+            <Text style={[teks.judul, { color: '#ffffff', marginTop: jarak.md }]}>Racik</Text>
+            <Text style={[teks.kecil, { color: t.panelRedup, marginTop: 3 }]}>
+              Absen, slip gaji, cuti, dan lembur
             </Text>
-            <Text style={[teks.badan, { color: t.tintaSedang, marginTop: 6, lineHeight: 22 }]}>
-              Absen, slip gaji, cuti, dan lembur — semuanya di satu tempat.
-            </Text>
-            <Garis tegas style={{ marginTop: jarak.lg }} />
           </View>
 
-          {/* ── isian ── */}
-          <View style={{ gap: jarak.lg }}>
-            <View style={{ gap: jarak.xs }}>
-              <Kolom>Surel</Kolom>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="nama@perusahaan.id"
-                placeholderTextColor={t.tintaPudar}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                textContentType="username"
-                style={gayaIsian}
-              />
+          <Kartu putih style={{ padding: jarak.lg, gap: jarak.lg }}>
+            <View style={{ gap: 6 }}>
+              <Label>Surel</Label>
+              <View
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: jarak.sm,
+                  backgroundColor: t.lembut, borderRadius: lengkung.md,
+                  paddingHorizontal: jarak.md,
+                }}
+              >
+                <Ionicons name="mail-outline" size={17} color={t.tintaRedup} />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="nama@perusahaan.id"
+                  placeholderTextColor={t.tintaRedup}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="username"
+                  style={isian}
+                />
+              </View>
             </View>
 
-            <View style={{ gap: jarak.xs }}>
-              <Kolom>Kata sandi</Kolom>
-              <TextInput
-                value={sandi}
-                onChangeText={setSandi}
-                placeholder="••••••••"
-                placeholderTextColor={t.tintaPudar}
-                secureTextEntry
-                textContentType="password"
-                onSubmitEditing={kirim}
-                returnKeyType="go"
-                style={gayaIsian}
-              />
+            <View style={{ gap: 6 }}>
+              <Label>Kata sandi</Label>
+              <View
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: jarak.sm,
+                  backgroundColor: t.lembut, borderRadius: lengkung.md,
+                  paddingHorizontal: jarak.md,
+                }}
+              >
+                <Ionicons name="lock-closed-outline" size={17} color={t.tintaRedup} />
+                <TextInput
+                  value={sandi}
+                  onChangeText={setSandi}
+                  placeholder="••••••••"
+                  placeholderTextColor={t.tintaRedup}
+                  secureTextEntry={!lihat}
+                  textContentType="password"
+                  onSubmitEditing={kirim}
+                  returnKeyType="go"
+                  style={isian}
+                />
+                <Tekan onPress={() => setLihat((v) => !v)} hitSlop={12} getarkan={false}>
+                  <Ionicons name={lihat ? 'eye-off-outline' : 'eye-outline'} size={18} color={t.tintaRedup} />
+                </Tekan>
+              </View>
             </View>
 
             {galat ? (
-              <View style={{ flexDirection: 'row', gap: jarak.sm }}>
-                <View style={{ width: 2, backgroundColor: t.negatif, borderRadius: 1 }} />
-                <Text style={[teks.badan, { color: t.negatif, flex: 1 }]}>{galat}</Text>
+              <View
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 7,
+                  padding: jarak.md, borderRadius: lengkung.md, backgroundColor: t.turunLembut,
+                }}
+              >
+                <Ionicons name="alert-circle" size={16} color={t.turun} />
+                <Text style={[teks.kecil, { color: t.turun, flex: 1 }]}>{galat}</Text>
               </View>
             ) : null}
 
-            <Tombol judul="Masuk" onPress={kirim} memuat={sibuk} style={{ marginTop: jarak.sm }} />
-          </View>
+            <Tombol judul="Masuk" onPress={kirim} memuat={sibuk} />
+          </Kartu>
 
           {/* Akun contoh — proyek ini dipakai sebagai portofolio, jadi siapa pun
               yang membukanya harus bisa langsung masuk tanpa bertanya. */}
@@ -132,26 +165,29 @@ export default function Masuk() {
               setEmail('adit.prakoso@nusantaradigital.id');
               setSandi('password123');
             }}
-            style={{ marginTop: jarak.xxl }}
+            style={{ marginTop: jarak.lg }}
           >
-            <View>
-              <Garis />
-              <View style={{ paddingVertical: jarak.md }}>
-                <Kolom>Akun contoh — ketuk untuk mengisi</Kolom>
-                <Text style={[teks.badan, { color: t.tintaSedang, marginTop: 5 }]}>
-                  adit.prakoso@nusantaradigital.id
-                </Text>
-                <Text style={[teks.badan, { color: t.tintaSedang }]}>password123</Text>
+            <Kartu rapat>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
+                <Ionicons name="person-circle-outline" size={22} color={t.merek} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[teks.kecil, { color: t.tinta, fontWeight: '700' }]}>
+                    Akun contoh
+                  </Text>
+                  <Text style={[teks.kecil, { color: t.tintaRedup, marginTop: 1 }]} numberOfLines={1}>
+                    adit.prakoso@nusantaradigital.id · password123
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward" size={16} color={t.tintaRedup} />
               </View>
-              <Garis />
-            </View>
+            </Kartu>
           </Tekan>
 
-          <Text style={[teks.kolom, { color: t.tintaPudar, textAlign: 'center', marginTop: jarak.lg, opacity: 0.7 }]}>
+          <Text style={[teks.kecil, { color: t.tintaRedup, textAlign: 'center', marginTop: jarak.lg, fontSize: 11 }]}>
             {API.replace(/^https?:\/\//, '')}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </Kertas>
+    </View>
   );
 }

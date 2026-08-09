@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, RefreshControl, Modal, TextInput,
-  KeyboardAvoidingView, Platform, Alert, StyleSheet,
+  KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Cuti, type Kuota, type Lembur } from '../../src/api';
 import { isoHariIni, rupiah, tanggal } from '../../src/format';
 import {
-  Badan, Galat, Garis, Kertas, Kolom, Kosong, MemuatDaftar, Muncul, Status,
-  Tekan, Tombol, useRuangAtas, useRuangBawah, useTema,
+  Bagian, Badan, Galat, Kartu, Kosong, Label, Lencana, MemuatLayar, Muncul,
+  Panel, Tekan, Tombol, useRuangBawah, useTema,
 } from '../../src/ui';
 import { getar } from '../../src/getar';
-import { angka, jarak, lengkung, teks, SENTUH } from '../../src/theme';
+import { jarak, lengkung, tabular, teks, SENTUH } from '../../src/theme';
 
 const JENIS_CUTI = [
   { nilai: 'ANNUAL', label: 'Tahunan' },
@@ -25,7 +25,6 @@ const NAMA_CUTI: Record<string, string> = Object.fromEntries(JENIS_CUTI.map((j) 
 
 export default function LayarPengajuan() {
   const t = useTema();
-  const ruangAtas = useRuangAtas();
   const ruangBawah = useRuangBawah();
 
   const [tab, setTab] = useState<'cuti' | 'lembur'>('cuti');
@@ -51,73 +50,90 @@ export default function LayarPengajuan() {
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !cuti) return <Galat pesan={galat} coba={muat} />;
-  if (!cuti || !lembur) return <MemuatDaftar jumlah={4} />;
+  if (!cuti || !lembur) return <MemuatLayar baris={4} />;
 
   return (
-    <Kertas>
-      <View style={{ flex: 1 }}>
-        {/* ── pengalih: dua kata dengan garis penanda di bawahnya ── */}
-        <View style={{ paddingHorizontal: jarak.lg, paddingTop: ruangAtas + jarak.sm }}>
-          <View style={{ flexDirection: 'row', gap: jarak.xl }}>
+    <View style={{ flex: 1, backgroundColor: t.latar }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: ruangBawah + 70 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={segar}
+            tintColor={t.tintaRedup}
+            onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }}
+          />
+        }
+      >
+        <Panel style={{ paddingBottom: jarak.lg }}>
+          <Text style={[teks.sedang, { color: '#ffffff' }]}>Pengajuan</Text>
+
+          {/* pengalih tersegmen di dalam panel */}
+          <View
+            style={{
+              flexDirection: 'row', marginTop: jarak.lg, padding: 5,
+              backgroundColor: t.panelIsian, borderRadius: lengkung.pil,
+            }}
+          >
             {(['cuti', 'lembur'] as const).map((k) => {
               const aktif = tab === k;
               return (
                 <Tekan
                   key={k}
                   onPress={() => setTab(k)}
+                  style={{ flex: 1 }}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: aktif }}
                 >
-                  <View style={{ paddingBottom: jarak.md }}>
-                    <Text style={[teks.kepala, { color: aktif ? t.tinta : t.tintaPudar }]}>
+                  <View
+                    style={{
+                      minHeight: 38, alignItems: 'center', justifyContent: 'center',
+                      borderRadius: lengkung.pil,
+                      backgroundColor: aktif ? '#ffffff' : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={[
+                        teks.sedang,
+                        { color: aktif ? t.panel[1] : 'rgba(255,255,255,0.7)', fontSize: 14 },
+                      ]}
+                    >
                       {k === 'cuti' ? 'Cuti' : 'Lembur'}
                     </Text>
-                    <View
-                      style={{
-                        height: 2,
-                        marginTop: 7,
-                        borderRadius: 1,
-                        backgroundColor: aktif ? t.tinta : 'transparent',
-                      }}
-                    />
                   </View>
                 </Tekan>
               );
             })}
           </View>
-          <Garis tegas />
-        </View>
+        </Panel>
 
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: jarak.lg,
-            paddingBottom: ruangBawah + 60,
-          }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={segar}
-              tintColor={t.tintaPudar}
-              onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }}
-            />
-          }
-        >
+        <View style={{ padding: jarak.lg, gap: jarak.md }}>
           {tab === 'cuti' ? (
             <>
               {kuota ? (
                 <Muncul>
-                  <View style={{ paddingVertical: jarak.lg }}>
-                    <Kolom>Sisa cuti tahunan</Kolom>
+                  <Kartu putih>
+                    <Label>Sisa cuti tahunan</Label>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-                      <Text style={[teks.angkaBesar, angka, { color: t.tinta, fontSize: 38 }]}>
-                        {kuota.sisa}
-                      </Text>
-                      <Badan style={{ fontSize: 13.5 }}>
+                      <Text style={[teks.saldoKecil, tabular, { color: t.tinta }]}>{kuota.sisa}</Text>
+                      <Badan style={{ fontSize: 13 }}>
                         dari {kuota.kuota} hari · {kuota.terpakai} terpakai
                       </Badan>
                     </View>
-                  </View>
-                  <Garis />
+                    <View
+                      style={{
+                        height: 6, borderRadius: 999, backgroundColor: t.lembut,
+                        marginTop: jarak.md, overflow: 'hidden',
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 6, borderRadius: 999, backgroundColor: t.merek,
+                          width: `${Math.min(100, (kuota.terpakai / Math.max(1, kuota.kuota)) * 100)}%`,
+                        }}
+                      />
+                    </View>
+                  </Kartu>
                 </Muncul>
               ) : null}
 
@@ -127,38 +143,46 @@ export default function LayarPengajuan() {
                   ikon="sunny-outline"
                 />
               ) : (
-                cuti.map((c, i) => (
-                  <Muncul key={c.id} jeda={i * 50}>
-                    {i > 0 ? <Garis /> : null}
-                    <View style={{ paddingVertical: jarak.lg }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: jarak.md }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[teks.sedang, { color: t.tinta }]}>
-                            {NAMA_CUTI[c.type] ?? c.type} · {c.days} hari
-                          </Text>
-                          <Text style={[teks.kecil, angka, { color: t.tintaSedang, marginTop: 3 }]}>
-                            {tanggal(c.startDate)} – {tanggal(c.endDate)}
-                          </Text>
-                        </View>
-                        <Status status={c.status} />
-                      </View>
-
-                      <Badan style={{ fontSize: 13.5, marginTop: jarak.sm }}>{c.reason}</Badan>
-
-                      {c.reviewNote ? (
-                        <View style={{ flexDirection: 'row', gap: jarak.sm, marginTop: jarak.sm }}>
-                          <View style={{ width: 2, backgroundColor: t.garisTegas, borderRadius: 1 }} />
+                <>
+                  <Bagian judul="Riwayat" />
+                  {cuti.map((c, i) => (
+                    <Muncul key={c.id} jeda={i * 50}>
+                      <Kartu putih style={{ marginBottom: jarak.md }}>
+                        <View
+                          style={{
+                            flexDirection: 'row', justifyContent: 'space-between',
+                            alignItems: 'flex-start', gap: jarak.md,
+                          }}
+                        >
                           <View style={{ flex: 1 }}>
-                            <Kolom>Catatan {c.reviewedBy ?? 'peninjau'}</Kolom>
+                            <Text style={[teks.sedang, { color: t.tinta }]}>
+                              {NAMA_CUTI[c.type] ?? c.type} · {c.days} hari
+                            </Text>
+                            <Text style={[teks.kecil, tabular, { color: t.tintaRedup, marginTop: 3 }]}>
+                              {tanggal(c.startDate)} – {tanggal(c.endDate)}
+                            </Text>
+                          </View>
+                          <Lencana status={c.status} />
+                        </View>
+
+                        <Badan style={{ fontSize: 13.5, marginTop: jarak.sm }}>{c.reason}</Badan>
+
+                        {c.reviewNote ? (
+                          <View
+                            style={{
+                              marginTop: jarak.sm, padding: jarak.md,
+                              borderRadius: lengkung.md, backgroundColor: t.lembut,
+                            }}
+                          >
+                            <Label>Catatan {c.reviewedBy ?? 'peninjau'}</Label>
                             <Badan style={{ fontSize: 13, marginTop: 2 }}>{c.reviewNote}</Badan>
                           </View>
-                        </View>
-                      ) : null}
-                    </View>
-                  </Muncul>
-                ))
+                        ) : null}
+                      </Kartu>
+                    </Muncul>
+                  ))}
+                </>
               )}
-              {cuti.length > 0 ? <Garis /> : null}
             </>
           ) : (
             <>
@@ -168,53 +192,52 @@ export default function LayarPengajuan() {
                   ikon="moon-outline"
                 />
               ) : (
-                lembur.map((l, i) => (
-                  <Muncul key={l.id} jeda={i * 50}>
-                    {i > 0 ? <Garis /> : null}
-                    <View style={{ paddingVertical: jarak.lg }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: jarak.md }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[teks.sedang, { color: t.tinta }]}>
-                            {l.hours} jam{l.isHoliday ? ' · hari libur' : ''}
-                          </Text>
-                          <Text style={[teks.kecil, angka, { color: t.tintaSedang, marginTop: 3 }]}>
-                            {tanggal(l.date)}
-                          </Text>
+                <>
+                  <Bagian judul="Riwayat" />
+                  {lembur.map((l, i) => (
+                    <Muncul key={l.id} jeda={i * 50}>
+                      <Kartu putih style={{ marginBottom: jarak.md }}>
+                        <View
+                          style={{
+                            flexDirection: 'row', justifyContent: 'space-between',
+                            alignItems: 'flex-start', gap: jarak.md,
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={[teks.sedang, { color: t.tinta }]}>
+                              {l.hours} jam{l.isHoliday ? ' · hari libur' : ''}
+                            </Text>
+                            <Text style={[teks.kecil, tabular, { color: t.tintaRedup, marginTop: 3 }]}>
+                              {tanggal(l.date)}
+                            </Text>
+                          </View>
+                          <Lencana status={l.status} />
                         </View>
-                        <Status status={l.status} />
-                      </View>
 
-                      <Badan style={{ fontSize: 13.5, marginTop: jarak.sm }}>{l.reason}</Badan>
+                        <Badan style={{ fontSize: 13.5, marginTop: jarak.sm }}>{l.reason}</Badan>
 
-                      {l.status === 'APPROVED' && l.amount > 0 ? (
-                        <Text style={[teks.sedang, angka, { color: t.positif, marginTop: jarak.sm }]}>
-                          {rupiah(l.amount)}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </Muncul>
-                ))
+                        {l.status === 'APPROVED' && l.amount > 0 ? (
+                          <Text style={[teks.sedang, tabular, { color: t.naik, marginTop: jarak.sm }]}>
+                            {rupiah(l.amount)}
+                          </Text>
+                        ) : null}
+                      </Kartu>
+                    </Muncul>
+                  ))}
+                </>
               )}
-              {lembur.length > 0 ? <Garis /> : null}
             </>
           )}
-        </ScrollView>
-
-        {/* ── tombol ajukan, melekat di atas bilah tab ── */}
-        <View
-          style={{
-            position: 'absolute',
-            left: jarak.lg,
-            right: jarak.lg,
-            bottom: ruangBawah - jarak.sm,
-          }}
-        >
-          <Tombol
-            judul={`Ajukan ${tab === 'cuti' ? 'cuti' : 'lembur'}`}
-            onPress={() => setFormulir(tab)}
-            ikon={<Ionicons name="add" size={18} color={t.kertas} />}
-          />
         </View>
+      </ScrollView>
+
+      {/* tombol ajukan, mengambang di atas bilah tab */}
+      <View style={{ position: 'absolute', left: jarak.lg, right: jarak.lg, bottom: ruangBawah }}>
+        <Tombol
+          judul={`Ajukan ${tab === 'cuti' ? 'cuti' : 'lembur'}`}
+          onPress={() => setFormulir(tab)}
+          ikon={<Ionicons name="add" size={19} color="#ffffff" />}
+        />
       </View>
 
       {formulir === 'cuti' ? (
@@ -223,69 +246,89 @@ export default function LayarPengajuan() {
       {formulir === 'lembur' ? (
         <FormulirLembur tutup={() => setFormulir(null)} selesai={async () => { setFormulir(null); await muat(); }} />
       ) : null}
-    </Kertas>
+    </View>
   );
 }
 
 // ─────────────────────────── formulir ───────────────────────────
 
-function Bungkus({ judul, tutup, children }: { judul: string; tutup: () => void; children: React.ReactNode }) {
+function Bungkus({
+  judul, tutup, children,
+}: { judul: string; tutup: () => void; children: React.ReactNode }) {
   const t = useTema();
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={tutup}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <Kertas>
-          <View
-            style={{
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-              padding: jarak.lg,
-              borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.garisTegas,
-            }}
-          >
-            <Text style={[teks.kepala, { color: t.tinta }]}>{judul}</Text>
-            <Tekan onPress={tutup} hitSlop={14}>
-              <Ionicons name="close" size={23} color={t.tintaSedang} />
-            </Tekan>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: jarak.lg, gap: jarak.lg }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>
-        </Kertas>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1, backgroundColor: t.latar }}
+      >
+        <View
+          style={{
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            padding: jarak.lg,
+          }}
+        >
+          <Text style={[teks.kepala, { color: t.tinta }]}>{judul}</Text>
+          <Tekan onPress={tutup} hitSlop={14} getarkan={false}>
+            <View
+              style={{
+                width: 34, height: 34, borderRadius: 999,
+                backgroundColor: t.lembut, alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="close" size={19} color={t.tintaSedang} />
+            </View>
+          </Tekan>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ padding: jarak.lg, paddingTop: 0, gap: jarak.lg }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 function Isian({
-  label, nilai, ubah, petunjuk, banyakBaris, jenisPapan,
+  label, nilai, ubah, petunjuk, banyakBaris, jenisPapan, ikon,
 }: {
   label: string; nilai: string; ubah: (v: string) => void;
   petunjuk?: string; banyakBaris?: boolean; jenisPapan?: 'numeric' | 'default';
+  ikon?: keyof typeof Ionicons.glyphMap;
 }) {
   const t = useTema();
   return (
-    <View style={{ gap: jarak.sm }}>
-      <Kolom>{label}</Kolom>
-      <TextInput
-        value={nilai}
-        onChangeText={ubah}
-        placeholder={petunjuk}
-        placeholderTextColor={t.tintaPudar}
-        multiline={banyakBaris}
-        keyboardType={jenisPapan ?? 'default'}
+    <View style={{ gap: 6 }}>
+      <Label>{label}</Label>
+      <View
         style={{
-          minHeight: banyakBaris ? 88 : SENTUH,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderColor: t.isianGaris,
-          paddingVertical: jarak.sm,
-          color: t.tinta,
-          fontSize: 16,
-          textAlignVertical: banyakBaris ? 'top' : 'center',
+          flexDirection: 'row', alignItems: banyakBaris ? 'flex-start' : 'center',
+          gap: jarak.sm, backgroundColor: t.lembut,
+          borderRadius: lengkung.md, paddingHorizontal: jarak.md,
+          paddingVertical: banyakBaris ? jarak.md : 0,
         }}
-      />
+      >
+        {ikon ? <Ionicons name={ikon} size={17} color={t.tintaRedup} style={{ marginTop: banyakBaris ? 3 : 0 }} /> : null}
+        <TextInput
+          value={nilai}
+          onChangeText={ubah}
+          placeholder={petunjuk}
+          placeholderTextColor={t.tintaRedup}
+          multiline={banyakBaris}
+          keyboardType={jenisPapan ?? 'default'}
+          style={{
+            flex: 1,
+            minHeight: banyakBaris ? 80 : SENTUH,
+            color: t.tinta,
+            fontSize: 15.5,
+            textAlignVertical: banyakBaris ? 'top' : 'center',
+          }}
+        />
+      </View>
     </View>
   );
 }
@@ -316,8 +359,8 @@ function FormulirCuti({ tutup, selesai }: { tutup: () => void; selesai: () => vo
 
   return (
     <Bungkus judul="Ajukan cuti" tutup={tutup}>
-      <View style={{ gap: jarak.sm }}>
-        <Kolom>Jenis cuti</Kolom>
+      <View style={{ gap: 6 }}>
+        <Label>Jenis cuti</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: jarak.sm }}>
           {JENIS_CUTI.map((j) => {
             const aktif = jenis === j.nilai;
@@ -325,14 +368,12 @@ function FormulirCuti({ tutup, selesai }: { tutup: () => void; selesai: () => vo
               <Tekan key={j.nilai} onPress={() => setJenis(j.nilai)}>
                 <View
                   style={{
-                    minHeight: 40, paddingHorizontal: jarak.md, justifyContent: 'center',
-                    borderRadius: lengkung.sm,
-                    borderWidth: StyleSheet.hairlineWidth,
-                    borderColor: aktif ? t.tinta : t.garisTegas,
-                    backgroundColor: aktif ? t.tinta : 'transparent',
+                    minHeight: 40, paddingHorizontal: jarak.lg, justifyContent: 'center',
+                    borderRadius: lengkung.pil,
+                    backgroundColor: aktif ? t.merek : t.lembut,
                   }}
                 >
-                  <Text style={[teks.kecil, { color: aktif ? t.kertas : t.tintaSedang }]}>
+                  <Text style={[teks.kecil, { color: aktif ? '#ffffff' : t.tintaSedang, fontWeight: '600' }]}>
                     {j.label}
                   </Text>
                 </View>
@@ -342,19 +383,31 @@ function FormulirCuti({ tutup, selesai }: { tutup: () => void; selesai: () => vo
         </View>
       </View>
 
-      <Isian label="Tanggal mulai" nilai={mulai} ubah={setMulai} petunjuk="2026-08-10" />
-      <Isian label="Tanggal selesai" nilai={akhir} ubah={setAkhir} petunjuk="2026-08-12" />
-      <Isian label="Alasan" nilai={alasan} ubah={setAlasan} petunjuk="Ditulis singkat, minimal 6 karakter" banyakBaris />
+      <Isian label="Tanggal mulai" nilai={mulai} ubah={setMulai} petunjuk="2026-08-10" ikon="calendar-outline" />
+      <Isian label="Tanggal selesai" nilai={akhir} ubah={setAkhir} petunjuk="2026-08-12" ikon="calendar-outline" />
+      <Isian
+        label="Alasan"
+        nilai={alasan}
+        ubah={setAlasan}
+        petunjuk="Ditulis singkat, minimal 6 karakter"
+        banyakBaris
+        ikon="chatbox-outline"
+      />
 
       {galat ? (
-        <View style={{ flexDirection: 'row', gap: jarak.sm }}>
-          <View style={{ width: 2, backgroundColor: t.negatif, borderRadius: 1 }} />
-          <Text style={[teks.badan, { color: t.negatif, flex: 1 }]}>{galat}</Text>
+        <View
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 7,
+            padding: jarak.md, borderRadius: lengkung.md, backgroundColor: t.turunLembut,
+          }}
+        >
+          <Ionicons name="alert-circle" size={16} color={t.turun} />
+          <Text style={[teks.kecil, { color: t.turun, flex: 1 }]}>{galat}</Text>
         </View>
       ) : null}
 
       <Tombol judul="Kirim pengajuan" onPress={kirim} memuat={sibuk} />
-      <Text style={[teks.kecil, { color: t.tintaPudar, textAlign: 'center' }]}>
+      <Text style={[teks.kecil, { color: t.tintaRedup, textAlign: 'center', fontSize: 11.5 }]}>
         Hanya hari kerja Senin–Jumat yang dihitung.
       </Text>
     </Bungkus>
@@ -400,29 +453,38 @@ function FormulirLembur({ tutup, selesai }: { tutup: () => void; selesai: () => 
 
   return (
     <Bungkus judul="Ajukan lembur" tutup={tutup}>
-      <Isian label="Tanggal" nilai={tgl} ubah={setTgl} petunjuk="2026-08-10" />
-      <Isian label="Jumlah jam" nilai={jam} ubah={setJam} petunjuk="2" jenisPapan="numeric" />
-      <Isian label="Alasan" nilai={alasan} ubah={setAlasan} petunjuk="Ditulis singkat, minimal 6 karakter" banyakBaris />
+      <Isian label="Tanggal" nilai={tgl} ubah={setTgl} petunjuk="2026-08-10" ikon="calendar-outline" />
+      <Isian label="Jumlah jam" nilai={jam} ubah={setJam} petunjuk="2" jenisPapan="numeric" ikon="time-outline" />
+      <Isian
+        label="Alasan"
+        nilai={alasan}
+        ubah={setAlasan}
+        petunjuk="Ditulis singkat, minimal 6 karakter"
+        banyakBaris
+        ikon="chatbox-outline"
+      />
 
       {perkiraan !== null ? (
-        <View>
-          <Garis tegas />
-          <View style={{ paddingTop: jarak.md }}>
-            <Kolom atas>Perkiraan upah lembur</Kolom>
-            <Text style={[teks.angkaSedang, angka, { color: t.tinta, marginTop: 4 }]}>
-              {rupiah(perkiraan)}
-            </Text>
-            <Badan style={{ fontSize: 12.5, marginTop: 5, lineHeight: 19 }}>
-              Perhitungan Kepmenaker 102/2004. Nilai pastinya dikunci saat disetujui.
-            </Badan>
-          </View>
-        </View>
+        <Kartu putih>
+          <Label>Perkiraan upah lembur</Label>
+          <Text style={[teks.saldoKecil, tabular, { color: t.naik, marginTop: 3 }]}>
+            {rupiah(perkiraan)}
+          </Text>
+          <Badan style={{ fontSize: 12, marginTop: 5, lineHeight: 18 }}>
+            Perhitungan Kepmenaker 102/2004. Nilai pastinya dikunci saat disetujui.
+          </Badan>
+        </Kartu>
       ) : null}
 
       {galat ? (
-        <View style={{ flexDirection: 'row', gap: jarak.sm }}>
-          <View style={{ width: 2, backgroundColor: t.negatif, borderRadius: 1 }} />
-          <Text style={[teks.badan, { color: t.negatif, flex: 1 }]}>{galat}</Text>
+        <View
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 7,
+            padding: jarak.md, borderRadius: lengkung.md, backgroundColor: t.turunLembut,
+          }}
+        >
+          <Ionicons name="alert-circle" size={16} color={t.turun} />
+          <Text style={[teks.kecil, { color: t.turun, flex: 1 }]}>{galat}</Text>
         </View>
       ) : null}
 

@@ -12,20 +12,21 @@ export default function TataLetakAkar() {
   return (
     <SafeAreaProvider>
       <PenyediaSesi>
-        <StatusBar style={malam ? 'light' : 'dark'} />
+        {/*
+          Bilah status selalu terang: puncak layar ditempati panel gelap pada
+          hampir semua layar, jadi ikon gelap akan hilang di atasnya.
+        */}
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
-            headerTransparent: true,
-            headerTintColor: t.tinta,
-            headerTitleStyle: { fontSize: 16, fontWeight: '600' },
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: t.kertas },
+            headerShown: false,
+            contentStyle: { backgroundColor: t.latar },
           }}
         >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="slip/[id]" options={{ title: 'Slip gaji', presentation: 'card' }} />
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="slip/[id]" options={{ presentation: 'card' }} />
         </Stack>
       </PenyediaSesi>
     </SafeAreaProvider>

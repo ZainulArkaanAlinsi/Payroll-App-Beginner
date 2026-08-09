@@ -1,12 +1,12 @@
 import {
   useColorScheme, View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, Easing,
-  Platform, ImageBackground,
   type ViewStyle, type TextStyle, type PressableProps, type StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { gelap, terang, teks, angka, jarak, lengkung, bayangan, SENTUH, type Tema } from './theme';
+import { gelap, terang, teks, tabular, jarak, lengkung, bayangan, SENTUH, type Tema } from './theme';
 import { getar } from './getar';
 import { useReduceMotion } from './gerak';
 
@@ -14,76 +14,75 @@ export function useTema(): Tema {
   return useColorScheme() === 'dark' ? gelap : terang;
 }
 
-const BUTIRAN = require('../assets/butiran.png');
-
-/**
- * Tinggi bilah tab, di luar area aman.
- *
- * Header dan bilah tab keduanya tembus pandang agar isi terlihat bergulir di
- * belakangnya. Konsekuensinya isi tidak lagi otomatis diberi ruang: tanpa
- * kedua nilai di bawah ini, baris pertama tertutup judul dan baris terakhir
- * tertutup bilah tab.
- */
-export const TINGGI_TAB = 74;
-
-export function useRuangAtas() {
-  const insets = useSafeAreaInsets();
-  return insets.top + (Platform.OS === 'ios' ? 44 : 56);
-}
+/** Tinggi bilah tab mengambang, di luar area aman. */
+export const TINGGI_TAB = 64;
 
 export function useRuangBawah() {
   const insets = useSafeAreaInsets();
-  return TINGGI_TAB + insets.bottom + jarak.lg;
+  return TINGGI_TAB + insets.bottom + jarak.xl;
 }
 
-// ───────────────────────────── substrat ─────────────────────────────
+// ───────────────────────────── panel utama ─────────────────────────────
 
 /**
- * Latar halaman: kertas dengan butiran halus.
+ * Panel gelap membulat di puncak layar.
  *
- * Permukaan digital yang benar-benar rata terbaca sebagai "dihasilkan mesin".
- * Butiran tipis di atasnya memberi kesan bahan cetak — nyaris tidak terlihat
- * satu per satu, tetapi bedanya terasa begitu dimatikan.
+ * Memegang satu angka terpenting dan tindakan yang paling sering dipakai.
+ * Sudut bawahnya membulat besar sehingga lembar terang di bawahnya terbaca
+ * sebagai lapisan terpisah, bukan lanjutan halaman yang sama.
  */
-export function Kertas({ children }: { children?: ReactNode }) {
+export function Panel({
+  children, style,
+}: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const t = useTema();
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={{ flex: 1, backgroundColor: t.kertas }}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <ImageBackground
-          source={BUTIRAN}
-          resizeMode="repeat"
-          style={StyleSheet.absoluteFill}
-          imageStyle={{ opacity: t.butiran }}
-        />
-      </View>
+    <LinearGradient
+      colors={t.panel}
+      start={{ x: 0.15, y: 0 }}
+      end={{ x: 0.9, y: 1 }}
+      style={[
+        {
+          paddingTop: insets.top + jarak.md,
+          paddingHorizontal: jarak.lg,
+          paddingBottom: jarak.xl,
+          borderBottomLeftRadius: lengkung.xxl,
+          borderBottomRightRadius: lengkung.xxl,
+        },
+        style,
+      ]}
+    >
+      {/* pendar lembut di sudut kanan atas, memberi arah cahaya */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute', top: -110, right: -70,
+          width: 240, height: 240, borderRadius: 999,
+          backgroundColor: 'rgba(255,255,255,0.07)',
+        }}
+      />
       {children}
-    </View>
+    </LinearGradient>
   );
 }
 
-/**
- * Bidang terangkat.
- *
- * Dipakai hemat. Ketika semua hal diberi kotak, tidak ada yang menonjol — jadi
- * sebagian besar isi justru dipisahkan garis rambut dan ruang kosong, bukan
- * bingkai.
- */
-export function Bidang({
-  children, style, rapat, apung,
-}: { children: ReactNode; style?: StyleProp<ViewStyle>; rapat?: boolean; apung?: boolean }) {
+/** Kartu abu lembut di atas lembar terang. */
+export function Kartu({
+  children, style, rapat, putih,
+}: { children: ReactNode; style?: StyleProp<ViewStyle>; rapat?: boolean; putih?: boolean }) {
   const t = useTema();
   return (
     <View
       style={[
         {
-          backgroundColor: t.bidang,
+          backgroundColor: putih ? t.lembar : t.lembut,
           borderRadius: lengkung.lg,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: t.garis,
+          borderColor: t.lembutTepi,
           padding: rapat ? jarak.md : jarak.lg,
         },
-        bayangan(t, apung ? 'apung' : 'tipis'),
+        putih ? bayangan(t, 'lembut') : null,
         style,
       ]}
     >
@@ -93,76 +92,57 @@ export function Bidang({
 }
 
 /**
- * Bidang dengan tepi bawah berperforasi, seperti sobekan slip gaji.
+ * Kartu bergaya struk, dengan garis putus dan takik di kedua sisi.
  *
- * Satu-satunya hiasan berbentuk di aplikasi ini, dan hanya dipakai pada slip.
- * Bentuknya menjelaskan isinya: ini dokumen yang dirobek dari lembar yang
- * lebih besar.
+ * Dipakai khusus untuk slip gaji. Bentuknya menjelaskan isinya: ini bukti
+ * pembayaran, bukan sekadar baris daftar.
  */
-export function Sobekan({
-  children, style,
-}: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Struk({
+  atas, bawah, style,
+}: { atas: ReactNode; bawah: ReactNode; style?: StyleProp<ViewStyle> }) {
   const t = useTema();
   return (
-    <View style={style}>
-      <View
-        style={[
-          {
-            backgroundColor: t.bidang,
-            borderTopLeftRadius: lengkung.lg,
-            borderTopRightRadius: lengkung.lg,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderBottomWidth: 0,
-            borderColor: t.garis,
-            padding: jarak.lg,
-          },
-          bayangan(t, 'tipis'),
-        ]}
-      >
-        {children}
-      </View>
-
-      {/* deretan takik setengah lingkaran — tepi yang tersobek */}
+    <View style={[bayangan(t, 'lembut'), style]}>
       <View
         style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          backgroundColor: t.bidang,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderTopWidth: 0,
-          borderColor: t.garis,
-          height: 9,
-          overflow: 'hidden',
-          paddingHorizontal: 3,
+          backgroundColor: t.lembar,
+          borderTopLeftRadius: lengkung.lg,
+          borderTopRightRadius: lengkung.lg,
+          paddingHorizontal: jarak.lg,
+          paddingTop: jarak.lg,
+          paddingBottom: jarak.md,
         }}
       >
-        {Array.from({ length: 22 }).map((_, i) => (
-          <View
-            key={i}
-            style={{
-              width: 11, height: 11, borderRadius: 999,
-              marginTop: 3.5, backgroundColor: t.kertas,
-            }}
-          />
-        ))}
+        {atas}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.lembar }}>
+        <View style={{ width: 18, height: 18, borderRadius: 999, backgroundColor: t.latar, marginLeft: -9 }} />
+        <View style={{ flex: 1, flexDirection: 'row', overflow: 'hidden', gap: 5, paddingHorizontal: 6 }}>
+          {Array.from({ length: 26 }).map((_, i) => (
+            <View key={i} style={{ width: 6, height: 1.5, borderRadius: 1, backgroundColor: t.garis }} />
+          ))}
+        </View>
+        <View style={{ width: 18, height: 18, borderRadius: 999, backgroundColor: t.latar, marginRight: -9 }} />
+      </View>
+
+      <View
+        style={{
+          backgroundColor: t.lembar,
+          borderBottomLeftRadius: lengkung.lg,
+          borderBottomRightRadius: lengkung.lg,
+          paddingHorizontal: jarak.lg,
+          paddingTop: jarak.md,
+          paddingBottom: jarak.lg,
+        }}
+      >
+        {bawah}
       </View>
     </View>
   );
 }
 
 // ───────────────────────────── teks ─────────────────────────────
-
-/** Label kolom, seperti kepala kolom pada slip cetak. */
-export function Kolom({
-  children, style, atas,
-}: { children: ReactNode; style?: TextStyle; atas?: boolean }) {
-  const t = useTema();
-  return (
-    <Text style={[teks.kolom, { color: atas ? t.aksen : t.tintaPudar, textTransform: 'uppercase' }, style]}>
-      {children}
-    </Text>
-  );
-}
 
 export function Judul({ children, style }: { children: ReactNode; style?: TextStyle }) {
   const t = useTema();
@@ -185,82 +165,43 @@ export function Badan({
   );
 }
 
-/**
- * Angka rupiah besar.
- *
- * Awalan "Rp" ditulis kecil dan pudar: yang perlu dibaca lebih dulu adalah
- * angkanya, bukan satuannya. Bobot hurufnya ringan, karena ukuran sebesar ini
- * dengan huruf tebal terasa berteriak.
- */
-export function Uang({
-  nilai, ukuran = 'besar', warna, style,
-}: { nilai: string; ukuran?: 'besar' | 'sedang'; warna?: string; style?: TextStyle }) {
+export function Label({
+  children, style, atas,
+}: { children: ReactNode; style?: TextStyle; atas?: boolean }) {
   const t = useTema();
-  const gaya = ukuran === 'besar' ? teks.angkaBesar : teks.angkaSedang;
-  const bersih = nilai.replace(/^Rp\s*/, '');
-
   return (
-    <Text style={[gaya, angka, { color: warna ?? t.tinta }, style]}>
-      <Text
-        style={{
-          fontSize: gaya.fontSize * 0.42,
-          fontWeight: '600',
-          letterSpacing: 0.4,
-          color: warna ?? t.tintaPudar,
-        }}
-      >
-        Rp{'  '}
-      </Text>
-      {bersih}
+    <Text style={[teks.kecil, { color: atas ? t.panelRedup : t.tintaRedup }, style]}>
+      {children}
     </Text>
   );
 }
 
-// ───────────────────────────── garis ─────────────────────────────
-
-export function Garis({ tegas, style }: { tegas?: boolean; style?: ViewStyle }) {
-  const t = useTema();
-  return (
-    <View
-      style={[
-        { height: StyleSheet.hairlineWidth, backgroundColor: tegas ? t.garisTegas : t.garis },
-        style,
-      ]}
-    />
-  );
-}
-
 /**
- * Baris buku besar: keterangan di kiri, angka di kanan, dihubungkan titik.
+ * Angka rupiah besar.
  *
- * Titik penghubung dipakai supaya mata bisa menyusuri dari nama ke angkanya
- * tanpa tersesat — cara yang sama dipakai daftar isi dan slip cetak.
+ * Tiga digit terakhir diredupkan. Yang perlu ditangkap sekilas adalah besaran
+ * angkanya — lima puluh juta sekian — bukan rupiah terakhirnya, dan meredupkan
+ * ekornya membuat besaran itu terbaca lebih cepat.
  */
-export function BarisBuku({
-  kiri, kanan, tebal, warna, catatan,
-}: { kiri: string; kanan: string; tebal?: boolean; warna?: string; catatan?: string }) {
+export function Saldo({
+  nilai, ukuran = 'besar', warna, redup, style,
+}: {
+  nilai: string; ukuran?: 'besar' | 'kecil';
+  warna?: string; redup?: string; style?: TextStyle;
+}) {
   const t = useTema();
+  const gaya = ukuran === 'besar' ? teks.saldo : teks.saldoKecil;
+  const bersih = nilai.replace(/^Rp\s*/, '');
+  const potong = bersih.lastIndexOf('.');
+  const kepala = potong > 0 ? bersih.slice(0, potong) : bersih;
+  const ekor = potong > 0 ? bersih.slice(potong) : '';
+
   return (
-    <View style={{ paddingVertical: 9 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: jarak.sm }}>
-        <Text style={[teks.badan, { color: tebal ? t.tinta : t.tintaSedang }]} numberOfLines={1}>
-          {kiri}
-        </Text>
-        <View
-          style={{
-            flex: 1, minWidth: 12,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderColor: t.garis,
-            borderStyle: 'dotted',
-            transform: [{ translateY: -3 }],
-          }}
-        />
-        <Text style={[tebal ? teks.sedang : teks.badan, angka, { color: warna ?? t.tinta }]}>
-          {kanan}
-        </Text>
-      </View>
-      {catatan ? <Text style={[teks.kecil, { color: t.tintaPudar, marginTop: 2 }]}>{catatan}</Text> : null}
-    </View>
+    <Text style={[gaya, tabular, { color: warna ?? t.tinta }, style]}>
+      <Text style={{ fontSize: gaya.fontSize * 0.55, fontWeight: '700' }}>Rp </Text>
+      {kepala}
+      {ekor ? <Text style={{ color: redup ?? t.tintaRedup }}>{ekor}</Text> : null}
+    </Text>
   );
 }
 
@@ -279,22 +220,16 @@ export function Tekan({
 
   const ke = (nilai: number) => {
     if (kurangiGerak) return;
-    Animated.spring(skala, { toValue: nilai, useNativeDriver: true, speed: 44, bounciness: 3 }).start();
+    Animated.spring(skala, { toValue: nilai, useNativeDriver: true, speed: 44, bounciness: 4 }).start();
   };
 
-  /*
-   * Gaya dari pemanggil dipasang pada Pressable, bukan pada View di dalamnya:
-   * properti tata letak seperti `flex: 1` harus sampai ke elemen yang diukur
-   * induknya, kalau tidak dua tombol bersebelahan menciut ke kiri.
-   */
+  // Gaya dari pemanggil dipasang pada Pressable, bukan View di dalamnya:
+  // properti tata letak seperti `flex: 1` harus sampai ke elemen yang diukur.
   return (
     <Pressable
-      onPressIn={() => ke(0.975)}
+      onPressIn={() => ke(0.96)}
       onPressOut={() => ke(1)}
-      onPress={(e) => {
-        if (getarkan) getar.ketuk();
-        onPress?.(e);
-      }}
+      onPress={(e) => { if (getarkan) getar.ketuk(); onPress?.(e); }}
       style={style}
       {...sisa}
     >
@@ -304,26 +239,54 @@ export function Tekan({
 }
 
 /**
- * Tombol.
+ * Pil aksi di dalam panel: ikon bundar di atas, label kecil di bawahnya.
  *
- * Satu bentuk saja: bidang penuh berwarna tinta, sudut kecil. Tanpa gradien —
- * gradien pada tombol membuat setiap tombol tampak seperti ajakan berlangganan.
+ * Bentuk ini dipakai hampir semua dompet digital karena bekerja — sasaran
+ * sentuhnya besar, ikonnya terbaca sekilas, dan deretannya memberi tahu apa
+ * saja yang bisa dilakukan tanpa perlu menjelajah.
  */
+export function PilAksi({
+  ikon, label, onPress, sorot,
+}: {
+  ikon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  sorot?: boolean;
+}) {
+  const t = useTema();
+  return (
+    <Tekan onPress={onPress} style={{ flex: 1, alignItems: 'center' }} accessibilityLabel={label}>
+      <View style={{ alignItems: 'center', gap: 7 }}>
+        <View
+          style={{
+            width: 46, height: 46, borderRadius: lengkung.md,
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: sorot ? '#ffffff' : t.panelIsian,
+          }}
+        >
+          <Ionicons name={ikon} size={20} color={sorot ? t.panel[1] : t.panelTeks} />
+        </View>
+        <Text style={[teks.kecil, { color: t.panelRedup, fontSize: 11.5 }]}>{label}</Text>
+      </View>
+    </Tekan>
+  );
+}
+
 export function Tombol({
   judul, onPress, jenis = 'utama', memuat, nonaktif, ikon, style,
 }: {
   judul: string; onPress: () => void;
-  jenis?: 'utama' | 'garis' | 'bahaya' | 'atasAksen';
+  jenis?: 'utama' | 'garis' | 'bahaya' | 'terang';
   memuat?: boolean; nonaktif?: boolean; ikon?: ReactNode; style?: StyleProp<ViewStyle>;
 }) {
   const t = useTema();
   const mati = nonaktif || memuat;
 
-  const latar = jenis === 'utama' ? t.tinta : jenis === 'atasAksen' ? t.aksenAtas : 'transparent';
+  const latar = jenis === 'utama' ? t.merek : jenis === 'terang' ? '#ffffff' : 'transparent';
   const warnaTeks =
-    jenis === 'utama' ? t.kertas
-    : jenis === 'atasAksen' ? t.aksen
-    : jenis === 'bahaya' ? t.negatif
+    jenis === 'utama' ? '#ffffff'
+    : jenis === 'terang' ? t.panel[1]
+    : jenis === 'bahaya' ? t.turun
     : t.tinta;
 
   return (
@@ -337,28 +300,93 @@ export function Tombol({
     >
       <View
         style={{
-          minHeight: SENTUH,
+          minHeight: SENTUH + 4,
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-          gap: jarak.sm, paddingHorizontal: jarak.lg,
-          borderRadius: lengkung.md,
+          gap: jarak.sm, paddingHorizontal: jarak.xl,
+          borderRadius: lengkung.pil,
           backgroundColor: latar,
-          borderWidth: jenis === 'garis' || jenis === 'bahaya' ? StyleSheet.hairlineWidth : 0,
-          borderColor: jenis === 'bahaya' ? t.negatif : t.garisTegas,
+          borderWidth: jenis === 'garis' || jenis === 'bahaya' ? 1.4 : 0,
+          borderColor: jenis === 'bahaya' ? t.turun : t.garis,
         }}
       >
         {memuat ? <ActivityIndicator size="small" color={warnaTeks} /> : ikon}
-        <Text style={[teks.sedang, { color: warnaTeks }]}>{judul}</Text>
+        <Text style={[teks.sedang, { color: warnaTeks, fontSize: 15.5 }]}>{judul}</Text>
       </View>
     </Tekan>
   );
 }
 
+// ───────────────────────────── daftar ─────────────────────────────
+
+/**
+ * Baris daftar dengan ubin ikon di kiri.
+ *
+ * Ubin itu bukan hiasan: warnanya membedakan jenis catatan sekilas, dan
+ * ukurannya memberi baris ini titik jangkar sehingga daftar panjang tetap
+ * mudah dipindai.
+ */
+export function BarisDaftar({
+  ikon, warna, judul, catatan, nilai, subNilai, onPress, akhir,
+}: {
+  ikon: keyof typeof Ionicons.glyphMap;
+  warna?: string;
+  judul: string;
+  catatan?: string;
+  nilai?: string;
+  subNilai?: ReactNode;
+  onPress?: () => void;
+  akhir?: boolean;
+}) {
+  const t = useTema();
+  const w = warna ?? t.merek;
+
+  const isi = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md, paddingVertical: jarak.md }}>
+      <View
+        style={{
+          width: 42, height: 42, borderRadius: lengkung.sm,
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: t.gelap ? 'rgba(255,255,255,0.06)' : t.lembut,
+        }}
+      >
+        <Ionicons name={ikon} size={19} color={w} />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text style={[teks.sedang, { color: t.tinta }]} numberOfLines={1}>{judul}</Text>
+        {catatan ? (
+          <Text style={[teks.kecil, { color: t.tintaRedup, marginTop: 2 }]} numberOfLines={1}>
+            {catatan}
+          </Text>
+        ) : null}
+      </View>
+
+      {nilai ? (
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={[teks.sedang, tabular, { color: t.tinta }]}>{nilai}</Text>
+          {subNilai ? <View style={{ marginTop: 3 }}>{subNilai}</View> : null}
+        </View>
+      ) : onPress ? (
+        <Ionicons name="chevron-forward" size={17} color={t.tintaRedup} />
+      ) : null}
+    </View>
+  );
+
+  const bungkus = (
+    <View style={{ borderBottomWidth: akhir ? 0 : StyleSheet.hairlineWidth, borderColor: t.garis }}>
+      {isi}
+    </View>
+  );
+
+  return onPress ? <Tekan onPress={onPress}>{bungkus}</Tekan> : bungkus;
+}
+
 // ───────────────────────────── status ─────────────────────────────
 
-const RASA: Record<string, 'baik' | 'tunggu' | 'buruk'> = {
-  APPROVED: 'baik', PRESENT: 'baik', PAID: 'baik', SENT: 'baik', WFH: 'baik',
+const RASA: Record<string, 'naik' | 'tunggu' | 'turun'> = {
+  APPROVED: 'naik', PRESENT: 'naik', PAID: 'naik', SENT: 'naik', WFH: 'naik',
   PENDING: 'tunggu', LATE: 'tunggu', HOLD: 'tunggu',
-  REJECTED: 'buruk', ABSENT: 'buruk', FAILED: 'buruk',
+  REJECTED: 'turun', ABSENT: 'turun', FAILED: 'turun',
 };
 
 const NAMA: Record<string, string> = {
@@ -368,25 +396,29 @@ const NAMA: Record<string, string> = {
   SENT: 'Terkirim', FAILED: 'Gagal', HOLD: 'Ditahan',
 };
 
-/**
- * Penanda status.
- *
- * Teks berwarna dengan garis tegak di kirinya, bukan pil berlatar. Pil membuat
- * setiap status tampak seperti tombol yang bisa ditekan. Namanya selalu
- * tertulis, jadi warna tidak pernah menjadi satu-satunya penanda.
- */
-export function Status({ status, teks: label }: { status: string; teks?: string }) {
+/** Lencana pil. Namanya selalu tertulis, jadi warna bukan penanda tunggal. */
+export function Lencana({
+  status, teks: label, ikon,
+}: { status: string; teks?: string; ikon?: keyof typeof Ionicons.glyphMap }) {
   const t = useTema();
   const rasa = RASA[status];
-  const warna =
-    rasa === 'baik' ? t.positif : rasa === 'tunggu' ? t.tunggu : rasa === 'buruk' ? t.negatif : t.tintaPudar;
+  const warna = rasa === 'naik' ? t.naik : rasa === 'tunggu' ? t.tunggu : rasa === 'turun' ? t.turun : t.tintaRedup;
+  const latar =
+    rasa === 'naik' ? t.naikLembut
+    : rasa === 'tunggu' ? t.tungguLembut
+    : rasa === 'turun' ? t.turunLembut
+    : t.lembut;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      <View style={{ width: 2, height: 12, borderRadius: 1, backgroundColor: warna }} />
-      <Text style={[teks.kolom, { color: warna, textTransform: 'uppercase' }]}>
-        {label ?? NAMA[status] ?? status}
-      </Text>
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        paddingHorizontal: 9, paddingVertical: 4,
+        borderRadius: lengkung.pil, backgroundColor: latar, alignSelf: 'flex-start',
+      }}
+    >
+      {ikon ? <Ionicons name={ikon} size={11} color={warna} /> : null}
+      <Text style={[teks.mikro, { color: warna }]}>{label ?? NAMA[status] ?? status}</Text>
     </View>
   );
 }
@@ -394,7 +426,7 @@ export function Status({ status, teks: label }: { status: string; teks?: string 
 // ───────────────────────────── keadaan ─────────────────────────────
 
 export function Kosong({
-  pesan, ikon = 'document-text-outline', aksi,
+  pesan, ikon = 'file-tray-outline', aksi,
 }: {
   pesan: string;
   ikon?: keyof typeof Ionicons.glyphMap;
@@ -404,8 +436,15 @@ export function Kosong({
   return (
     <Muncul>
       <View style={{ alignItems: 'center', paddingVertical: jarak.xxl, gap: jarak.lg }}>
-        <Ionicons name={ikon} size={34} color={t.tintaPudar} />
-        <Text style={[teks.badan, { color: t.tintaSedang, textAlign: 'center', maxWidth: 270, lineHeight: 22 }]}>
+        <View
+          style={{
+            width: 64, height: 64, borderRadius: lengkung.lg,
+            backgroundColor: t.lembut, alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={ikon} size={26} color={t.tintaRedup} />
+        </View>
+        <Text style={[teks.badan, { color: t.tintaSedang, textAlign: 'center', maxWidth: 270, lineHeight: 21 }]}>
           {pesan}
         </Text>
         {aksi ? <Tombol judul={aksi.judul} jenis="garis" onPress={aksi.onPress} /> : null}
@@ -417,29 +456,42 @@ export function Kosong({
 export function Galat({ pesan, coba }: { pesan: string; coba?: () => void }) {
   const t = useTema();
   return (
-    <Kertas>
-      <View style={{ flex: 1, justifyContent: 'center', padding: jarak.xl, gap: jarak.lg, alignItems: 'center' }}>
-        <Ionicons name="cloud-offline-outline" size={34} color={t.tintaPudar} />
-        <Text style={[teks.badan, { color: t.tintaSedang, textAlign: 'center', maxWidth: 290, lineHeight: 22 }]}>
-          {pesan}
-        </Text>
-        {coba ? <Tombol judul="Coba lagi" jenis="garis" onPress={coba} /> : null}
+    <View
+      style={{
+        flex: 1, backgroundColor: t.latar, justifyContent: 'center',
+        padding: jarak.xl, gap: jarak.lg, alignItems: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: 64, height: 64, borderRadius: lengkung.lg,
+          backgroundColor: t.turunLembut, alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <Ionicons name="cloud-offline-outline" size={26} color={t.turun} />
       </View>
-    </Kertas>
+      <Text style={[teks.badan, { color: t.tintaSedang, textAlign: 'center', maxWidth: 290, lineHeight: 21 }]}>
+        {pesan}
+      </Text>
+      {coba ? <Tombol judul="Coba lagi" jenis="garis" onPress={coba} /> : null}
+    </View>
   );
 }
 
 export function Rangka({
-  tinggi = 15, lebar = '100%', style,
-}: { tinggi?: number; lebar?: number | string; style?: ViewStyle }) {
+  tinggi = 15, lebar = '100%', bulat = lengkung.sm, gelapkan, style,
+}: {
+  tinggi?: number; lebar?: number | string; bulat?: number;
+  gelapkan?: boolean; style?: ViewStyle;
+}) {
   const t = useTema();
-  const denyut = useRef(new Animated.Value(0.4)).current;
+  const denyut = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
     const gerak = Animated.loop(
       Animated.sequence([
-        Animated.timing(denyut, { toValue: 0.9, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(denyut, { toValue: 0.4, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(denyut, { toValue: 0.95, duration: 780, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(denyut, { toValue: 0.45, duration: 780, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ]),
     );
     gerak.start();
@@ -452,8 +504,8 @@ export function Rangka({
         {
           height: tinggi,
           width: lebar as ViewStyle['width'],
-          borderRadius: lengkung.sm,
-          backgroundColor: t.garis,
+          borderRadius: bulat,
+          backgroundColor: gelapkan ? 'rgba(255,255,255,0.14)' : t.lembut,
           opacity: denyut,
         },
         style,
@@ -462,26 +514,52 @@ export function Rangka({
   );
 }
 
-export function MemuatDaftar({ jumlah = 3 }: { jumlah?: number }) {
-  const ruangAtas = useRuangAtas();
+/** Keadaan muat yang meniru bentuk layar: panel gelap lalu daftar di bawahnya. */
+export function MemuatLayar({ baris = 3 }: { baris?: number }) {
+  const t = useTema();
   return (
-    <Kertas>
-      <View style={{ padding: jarak.lg, paddingTop: ruangAtas + jarak.lg, gap: jarak.xl }}>
-        <View style={{ gap: jarak.sm }}>
-          <Rangka tinggi={10} lebar="26%" />
-          <Rangka tinggi={38} lebar="62%" />
+    <View style={{ flex: 1, backgroundColor: t.latar }}>
+      <Panel>
+        <View style={{ gap: jarak.md }}>
+          <Rangka tinggi={11} lebar="34%" gelapkan />
+          <Rangka tinggi={34} lebar="66%" gelapkan bulat={lengkung.sm} />
+          <View style={{ flexDirection: 'row', gap: jarak.md, marginTop: jarak.sm }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <View key={i} style={{ flex: 1, alignItems: 'center', gap: 7 }}>
+                <Rangka tinggi={46} lebar={46} bulat={lengkung.md} gelapkan />
+                <Rangka tinggi={9} lebar="70%" gelapkan />
+              </View>
+            ))}
+          </View>
         </View>
-        {Array.from({ length: jumlah }).map((_, i) => (
-          <View key={i} style={{ gap: jarak.sm }}>
-            <Rangka tinggi={13} lebar="45%" />
-            <Rangka tinggi={13} lebar="88%" />
+      </Panel>
+
+      <View style={{ padding: jarak.lg, gap: jarak.lg }}>
+        {Array.from({ length: baris }).map((_, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
+            <Rangka tinggi={42} lebar={42} bulat={lengkung.sm} />
+            <View style={{ flex: 1, gap: 7 }}>
+              <Rangka tinggi={13} lebar="52%" />
+              <Rangka tinggi={11} lebar="34%" />
+            </View>
           </View>
         ))}
       </View>
-    </Kertas>
+    </View>
   );
 }
 
+/**
+ * Memunculkan isi dengan pudar naik singkat.
+ *
+ * Animasinya diberi jaring pengaman yang menyetel nilai akhir secara paksa
+ * setelah durasinya lewat. Alasannya ditemukan dengan cara yang pahit: ketika
+ * animasi tidak pernah berjalan — penggerak asli tidak tersedia, tab tidak
+ * terlihat, atau perangkat menahan pembaruan — isinya tersandera pada opacity
+ * nol dan layar tampak kosong sama sekali.
+ *
+ * Animasi masuk tidak boleh menjadi penentu apakah isi terlihat.
+ */
 export function Muncul({
   children, jeda = 0, style,
 }: { children: ReactNode; jeda?: number; style?: StyleProp<ViewStyle> }) {
@@ -489,16 +567,20 @@ export function Muncul({
   const maju = useRef(new Animated.Value(kurangiGerak ? 1 : 0)).current;
 
   useEffect(() => {
-    if (kurangiGerak) {
-      maju.setValue(1);
-      return;
-    }
+    if (kurangiGerak) { maju.setValue(1); return; }
+
+    const durasi = 330;
     const a = Animated.timing(maju, {
-      toValue: 1, duration: 340, delay: jeda,
+      toValue: 1, duration: durasi, delay: jeda,
       easing: Easing.out(Easing.cubic), useNativeDriver: true,
     });
     a.start();
-    return () => a.stop();
+
+    const pengaman = setTimeout(() => maju.setValue(1), jeda + durasi + 400);
+    return () => {
+      a.stop();
+      clearTimeout(pengaman);
+    };
   }, [maju, jeda, kurangiGerak]);
 
   return (
@@ -506,12 +588,34 @@ export function Muncul({
       style={[
         {
           opacity: maju,
-          transform: [{ translateY: maju.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+          transform: [{ translateY: maju.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
         },
         style,
       ]}
     >
       {children}
     </Animated.View>
+  );
+}
+
+/** Judul bagian di atas lembar, dengan tautan opsional di kanan. */
+export function Bagian({
+  judul, aksi,
+}: { judul: string; aksi?: { label: string; onPress: () => void } }) {
+  const t = useTema();
+  return (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: jarak.sm,
+      }}
+    >
+      <Text style={[teks.kepala, { color: t.tinta }]}>{judul}</Text>
+      {aksi ? (
+        <Tekan onPress={aksi.onPress} getarkan={false}>
+          <Text style={[teks.kecil, { color: t.merek, fontWeight: '700' }]}>{aksi.label}</Text>
+        </Tekan>
+      ) : null}
+    </View>
   );
 }

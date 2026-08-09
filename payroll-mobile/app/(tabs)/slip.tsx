@@ -5,14 +5,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type RingkasSlip } from '../../src/api';
 import { namaPeriode, rupiah, tanggal } from '../../src/format';
 import {
-  Badan, Galat, Garis, Kertas, Kolom, Kosong, MemuatDaftar, Muncul, Sobekan,
-  Tekan, Uang, useRuangAtas, useRuangBawah, useTema,
+  Badan, Galat, Kosong, Label, Lencana, MemuatLayar, Muncul, Panel, Saldo,
+  Struk, Tekan, useRuangBawah, useTema,
 } from '../../src/ui';
-import { angka, jarak, teks } from '../../src/theme';
+import { jarak, tabular, teks } from '../../src/theme';
 
 export default function LayarSlip() {
   const t = useTema();
-  const ruangAtas = useRuangAtas();
   const ruangBawah = useRuangBawah();
   const router = useRouter();
 
@@ -32,7 +31,7 @@ export default function LayarSlip() {
   useEffect(() => { muat(); }, [muat]);
 
   if (galat && !daftar) return <Galat pesan={galat} coba={muat} />;
-  if (!daftar) return <MemuatDaftar jumlah={4} />;
+  if (!daftar) return <MemuatLayar baris={4} />;
 
   const tahun = new Date().getFullYear();
   const totalTahunIni = daftar
@@ -40,78 +39,83 @@ export default function LayarSlip() {
     .reduce((a, s) => a + s.netPay, 0);
 
   return (
-    <Kertas>
+    <View style={{ flex: 1, backgroundColor: t.latar }}>
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: jarak.lg,
-          paddingTop: ruangAtas + jarak.sm,
-          paddingBottom: ruangBawah,
-        }}
+        contentContainerStyle={{ paddingBottom: ruangBawah }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={segar}
             onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }}
-            tintColor={t.tintaPudar}
+            tintColor={t.tintaRedup}
           />
         }
       >
-        {daftar.length === 0 ? (
-          <Kosong
-            pesan="Belum ada slip gaji yang diterbitkan untuk Anda. Slip muncul setelah periode gaji dibayarkan HRD."
-            ikon="document-text-outline"
-          />
-        ) : (
-          <>
-            {/* ── jumlah setahun ── */}
-            <Muncul>
-              <Kolom atas>Diterima sepanjang {tahun}</Kolom>
-              <Uang nilai={rupiah(totalTahunIni)} style={{ marginTop: jarak.sm }} />
-              <Badan style={{ fontSize: 13.5, marginTop: 6 }}>
-                dari {daftar.length} slip yang sudah dibayarkan
-              </Badan>
-              <Garis tegas style={{ marginTop: jarak.lg }} />
-            </Muncul>
+        <Panel>
+          <Text style={[teks.sedang, { color: '#ffffff' }]}>Slip gaji</Text>
 
-            {/* ── daftar slip, masing-masing sobekan ── */}
-            <View style={{ gap: jarak.lg, marginTop: jarak.lg }}>
-              {daftar.map((s, i) => (
-                <Muncul key={s.id} jeda={60 + i * 55}>
-                  <Tekan onPress={() => router.push(`/slip/${s.id}`)}>
-                    <Sobekan>
+          <View style={{ marginTop: jarak.xl }}>
+            <Label atas>Diterima sepanjang {tahun}</Label>
+            <Saldo
+              nilai={rupiah(totalTahunIni)}
+              warna="#ffffff"
+              redup="rgba(255,255,255,0.45)"
+              style={{ marginTop: 4 }}
+            />
+            <Text style={[teks.kecil, { color: t.panelRedup, marginTop: 4 }]}>
+              dari {daftar.length} slip yang sudah dibayarkan
+            </Text>
+          </View>
+        </Panel>
+
+        <View style={{ padding: jarak.lg, gap: jarak.lg }}>
+          {daftar.length === 0 ? (
+            <Kosong
+              pesan="Belum ada slip gaji yang diterbitkan untuk Anda. Slip muncul setelah periode gaji dibayarkan HRD."
+              ikon="receipt-outline"
+            />
+          ) : (
+            daftar.map((s, i) => (
+              <Muncul key={s.id} jeda={i * 55}>
+                <Tekan onPress={() => router.push(`/slip/${s.id}`)}>
+                  <Struk
+                    atas={
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                         <View style={{ flex: 1 }}>
-                          <Kolom>
+                          <Label>
                             {s.run.kind === 'THR' ? 'Tunjangan hari raya' : 'Gaji bulanan'}
-                          </Kolom>
-                          <Text style={[teks.kepala, { color: t.tinta, marginTop: 4 }]}>
+                          </Label>
+                          <Text style={[teks.kepala, { color: t.tinta, marginTop: 3 }]}>
                             {s.run.kind === 'THR'
                               ? s.run.holidayName ?? 'THR'
                               : namaPeriode(s.run.period)}
                           </Text>
-                          <Badan style={{ fontSize: 13, marginTop: 3 }}>
-                            Dibayar {tanggal(s.run.payDate)}
-                          </Badan>
                         </View>
-
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={[teks.angkaSedang, angka, { color: t.tinta, fontSize: 23 }]}>
+                        <Lencana status="PAID" teks="Diterima" ikon="checkmark" />
+                      </View>
+                    }
+                    bawah={
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                        <View style={{ flex: 1 }}>
+                          <Label>Dibayar {tanggal(s.run.payDate)}</Label>
+                          <Text style={[teks.saldoKecil, tabular, { color: t.tinta, marginTop: 2 }]}>
+                            <Text style={{ fontSize: 14, fontWeight: '700' }}>Rp </Text>
                             {rupiah(s.netPay).replace('Rp ', '')}
                           </Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                            <Text style={[teks.kolom, { color: t.tintaPudar }]}>Diterima</Text>
-                            <Ionicons name="chevron-forward" size={13} color={t.tintaPudar} />
-                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingBottom: 3 }}>
+                          <Text style={[teks.kecil, { color: t.merek, fontWeight: '700' }]}>Rincian</Text>
+                          <Ionicons name="chevron-forward" size={14} color={t.merek} />
                         </View>
                       </View>
-                    </Sobekan>
-                  </Tekan>
-                </Muncul>
-              ))}
-            </View>
-          </>
-        )}
+                    }
+                  />
+                </Tekan>
+              </Muncul>
+            ))
+          )}
+        </View>
       </ScrollView>
-    </Kertas>
+    </View>
   );
 }

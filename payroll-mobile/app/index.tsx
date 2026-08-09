@@ -10,8 +10,8 @@ export default function Gerbang() {
 
   if (memuat) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.kertas }}>
-        <ActivityIndicator color={t.tintaPudar} />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.latar }}>
+        <ActivityIndicator color={t.merek} />
       </View>
     );
   }

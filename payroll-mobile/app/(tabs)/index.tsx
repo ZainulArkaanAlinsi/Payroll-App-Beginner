@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api, ApiError, type Beranda } from '../../src/api';
-import { jam, namaPeriode, rupiah, salam, tanggal, tanggalPanjang } from '../../src/format';
+import { jam, namaPeriode, rupiah, salam, tanggal } from '../../src/format';
 import {
-  Badan, Galat, Garis, Judul, Kepala, Kertas, Kolom, Kosong, MemuatDaftar, Muncul,
-  Status, Tekan, Tombol, Uang, useRuangAtas, useRuangBawah, useTema,
+  Bagian, Badan, BarisDaftar, Galat, Kartu, Kosong, Label, Lencana, MemuatLayar,
+  Muncul, Panel, PilAksi, Saldo, Tekan, useRuangBawah, useTema,
 } from '../../src/ui';
 import { getar } from '../../src/getar';
-import { angka, jarak, lengkung, teks } from '../../src/theme';
+import { jarak, lengkung, tabular, teks } from '../../src/theme';
 
 export default function LayarBeranda() {
   const t = useTema();
-  const ruangAtas = useRuangAtas();
   const ruangBawah = useRuangBawah();
   const router = useRouter();
 
@@ -21,7 +20,6 @@ export default function LayarBeranda() {
   const [galat, setGalat] = useState('');
   const [segar, setSegar] = useState(false);
   const [absenSibuk, setAbsenSibuk] = useState(false);
-  const [sekarang, setSekarang] = useState(new Date());
 
   const muat = useCallback(async () => {
     try {
@@ -33,12 +31,6 @@ export default function LayarBeranda() {
   }, []);
 
   useEffect(() => { muat(); }, [muat]);
-
-  useEffect(() => {
-    const id = setInterval(() => setSekarang(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
   useFocusEffect(useCallback(() => { muat(); }, [muat]));
 
   async function absen(kind: 'IN' | 'OUT') {
@@ -62,221 +54,274 @@ export default function LayarBeranda() {
    * Masuk kepagian tidak merugikan, tetapi jam pulang yang terlanjur tercatat
    * memotong jam kerja hari itu dan hanya bisa diperbaiki lewat HRD.
    */
-  function mintaPulang() {
-    Alert.alert(
-      'Absen pulang sekarang?',
-      'Jam pulang akan tercatat dan tidak bisa Anda ubah sendiri.',
-      [
-        { text: 'Belum', style: 'cancel' },
-        { text: 'Absen pulang', onPress: () => absen('OUT') },
-      ],
-    );
+  function tekanAbsen() {
+    if (absenSibuk) return;
+    if (!data?.hariIni.sudahMasuk) return absen('IN');
+    if (!data.hariIni.sudahPulang) {
+      return Alert.alert(
+        'Absen pulang sekarang?',
+        'Jam pulang akan tercatat dan tidak bisa Anda ubah sendiri.',
+        [
+          { text: 'Belum', style: 'cancel' },
+          { text: 'Absen pulang', onPress: () => absen('OUT') },
+        ],
+      );
+    }
+    Alert.alert('Sudah lengkap', 'Absen masuk dan pulang hari ini sudah tercatat.');
   }
 
   if (galat && !data) return <Galat pesan={galat} coba={muat} />;
-  if (!data) return <MemuatDaftar jumlah={3} />;
+  if (!data) return <MemuatLayar />;
 
   const { profil, hariIni, kuotaCuti, slipTerakhir, tertunda, kehadiranBulanIni } = data;
   const hadir = (kehadiranBulanIni.PRESENT ?? 0) + (kehadiranBulanIni.WFH ?? 0) + (kehadiranBulanIni.LATE ?? 0);
   const tertundaTotal = tertunda.cuti + tertunda.lembur;
+  const inisial = profil.fullName.split(' ').slice(0, 2).map((x) => x[0]).join('');
 
-  const jj = String(sekarang.getHours()).padStart(2, '0');
-  const mm = String(sekarang.getMinutes()).padStart(2, '0');
+  const labelAbsen = !hariIni.sudahMasuk ? 'Absen masuk' : !hariIni.sudahPulang ? 'Absen pulang' : 'Selesai';
+  const ikonAbsen = !hariIni.sudahMasuk ? 'finger-print' : !hariIni.sudahPulang ? 'exit-outline' : 'checkmark-circle';
 
   return (
-    <Kertas>
+    <View style={{ flex: 1, backgroundColor: t.latar }}>
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: jarak.lg,
-          paddingTop: ruangAtas + jarak.sm,
-          paddingBottom: ruangBawah,
-        }}
+        contentContainerStyle={{ paddingBottom: ruangBawah }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={segar}
             onRefresh={async () => { setSegar(true); await muat(); setSegar(false); }}
-            tintColor={t.tintaPudar}
+            tintColor={t.tintaRedup}
           />
         }
       >
-        {/* ── kepala: sapaan dan jam berjalan ── */}
-        <Muncul>
-          <Kolom>{tanggalPanjang(sekarang)}</Kolom>
-
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: jarak.md, marginTop: jarak.sm }}>
-            <Text
-              style={[
-                teks.angkaBesar, angka,
-                { color: t.tinta, fontSize: 64, letterSpacing: -3.5, lineHeight: 66 },
-              ]}
+        {/* ══════════ panel utama ══════════ */}
+        <Panel>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.md }}>
+            <View
+              style={{
+                width: 40, height: 40, borderRadius: 999,
+                backgroundColor: t.panelIsian,
+                alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              {jj}
-              <Text style={{ color: t.tintaPudar }}>.</Text>
-              {mm}
-            </Text>
-
-            <View style={{ paddingBottom: 10, flex: 1 }}>
-              <Badan style={{ fontSize: 13.5 }}>{salam()},</Badan>
-              <Kepala>{profil.fullName.split(' ')[0]}</Kepala>
+              <Text style={[teks.sedang, { color: '#ffffff' }]}>{inisial}</Text>
             </View>
-          </View>
-        </Muncul>
-
-        {/* ── absen hari ini ── */}
-        <Muncul jeda={60}>
-          <Garis tegas style={{ marginTop: jarak.lg }} />
-
-          <View style={{ flexDirection: 'row', paddingVertical: jarak.lg, gap: jarak.xl }}>
-            {([
-              ['Masuk', hariIni.clockIn],
-              ['Pulang', hariIni.clockOut],
-            ] as const).map(([label, nilai]) => (
-              <View key={label} style={{ flex: 1 }}>
-                <Kolom>{label}</Kolom>
-                <Text
-                  style={[
-                    teks.angkaSedang, angka,
-                    { color: nilai ? t.tinta : t.tintaPudar, marginTop: 3, fontSize: 26 },
-                  ]}
+            <View style={{ flex: 1 }}>
+              <Label atas>{salam()},</Label>
+              <Text style={[teks.sedang, { color: '#ffffff', marginTop: 1 }]} numberOfLines={1}>
+                {profil.fullName.split(' ').slice(0, 2).join(' ')}
+              </Text>
+            </View>
+            {tertundaTotal > 0 ? (
+              <Tekan onPress={() => router.push('/(tabs)/pengajuan')} getarkan={false}>
+                <View
+                  style={{
+                    width: 38, height: 38, borderRadius: 999,
+                    backgroundColor: t.panelIsian,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
                 >
-                  {jam(nilai)}
-                </Text>
-              </View>
-            ))}
-
-            {hariIni.status ? (
-              <View style={{ justifyContent: 'flex-end', paddingBottom: 5 }}>
-                <Status status={hariIni.status} />
-              </View>
+                  <Ionicons name="notifications-outline" size={18} color="#ffffff" />
+                  <View
+                    style={{
+                      position: 'absolute', top: 8, right: 9,
+                      width: 8, height: 8, borderRadius: 999, backgroundColor: t.merek,
+                    }}
+                  />
+                </View>
+              </Tekan>
             ) : null}
           </View>
 
-          {hariIni.lateMinutes > 0 ? (
-            <View style={{ flexDirection: 'row', gap: jarak.sm, marginBottom: jarak.lg }}>
-              <View style={{ width: 2, backgroundColor: t.tunggu, borderRadius: 1 }} />
-              <Badan style={{ flex: 1, fontSize: 13.5 }}>
-                Tercatat terlambat {hariIni.lateMinutes} menit hari ini.
-              </Badan>
-            </View>
-          ) : null}
-
-          {!hariIni.sudahMasuk ? (
-            <Tombol
-              judul="Absen masuk"
-              onPress={() => absen('IN')}
-              memuat={absenSibuk}
-              ikon={<Ionicons name="arrow-forward" size={17} color={t.kertas} />}
+          {/* angka terbesar di seluruh aplikasi */}
+          <View style={{ marginTop: jarak.xl }}>
+            <Label atas>Gaji terakhir diterima</Label>
+            <Saldo
+              nilai={rupiah(slipTerakhir?.netPay ?? 0)}
+              warna="#ffffff"
+              redup="rgba(255,255,255,0.45)"
+              style={{ marginTop: 4 }}
             />
-          ) : !hariIni.sudahPulang ? (
-            <Tombol
-              judul="Absen pulang"
-              jenis="garis"
-              onPress={mintaPulang}
-              memuat={absenSibuk}
-              ikon={<Ionicons name="arrow-back" size={17} color={t.tinta} />}
-            />
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: jarak.sm, paddingVertical: jarak.sm }}>
-              <Ionicons name="checkmark" size={16} color={t.positif} />
-              <Badan style={{ fontSize: 13.5 }}>Absen hari ini lengkap. Terima kasih.</Badan>
-            </View>
-          )}
-
-          <Garis tegas style={{ marginTop: jarak.lg }} />
-        </Muncul>
-
-        {/* ── dua angka ringkas, dipisah garis bukan kotak ── */}
-        <Muncul jeda={120}>
-          <View style={{ flexDirection: 'row', paddingVertical: jarak.lg }}>
-            <View style={{ flex: 1 }}>
-              <Kolom>Sisa cuti</Kolom>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 4 }}>
-                <Text style={[teks.angkaSedang, angka, { color: t.tinta }]}>{kuotaCuti.sisa}</Text>
-                <Badan style={{ fontSize: 13 }}>/ {kuotaCuti.kuota} hari</Badan>
-              </View>
-            </View>
-
-            <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: t.garis, marginHorizontal: jarak.lg }} />
-
-            <View style={{ flex: 1 }}>
-              <Kolom>Hadir bulan ini</Kolom>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 4 }}>
-                <Text style={[teks.angkaSedang, angka, { color: t.tinta }]}>{hadir}</Text>
-                <Badan style={{ fontSize: 13 }}>
-                  {kehadiranBulanIni.LATE ? `· ${kehadiranBulanIni.LATE} telat` : 'hari'}
-                </Badan>
-              </View>
-            </View>
+            {slipTerakhir ? (
+              <Text style={[teks.kecil, { color: t.panelRedup, marginTop: 4 }]}>
+                {namaPeriode(slipTerakhir.run.period)} · dibayar {tanggal(slipTerakhir.run.payDate)}
+              </Text>
+            ) : (
+              <Text style={[teks.kecil, { color: t.panelRedup, marginTop: 4 }]}>
+                Belum ada slip yang diterbitkan
+              </Text>
+            )}
           </View>
 
-          <Garis />
-        </Muncul>
+          {/* deret pil aksi */}
+          <View style={{ flexDirection: 'row', marginTop: jarak.xl }}>
+            <PilAksi ikon={ikonAbsen as never} label={labelAbsen} onPress={tekanAbsen} sorot />
+            <PilAksi ikon="sunny-outline" label="Cuti" onPress={() => router.push('/(tabs)/pengajuan')} />
+            <PilAksi ikon="moon-outline" label="Lembur" onPress={() => router.push('/(tabs)/pengajuan')} />
+            <PilAksi ikon="receipt-outline" label="Slip" onPress={() => router.push('/(tabs)/slip')} />
+          </View>
+        </Panel>
 
-        {/* ── slip terakhir: angka terbesar di layar ini ── */}
-        {slipTerakhir ? (
-          <Muncul jeda={180}>
-            <Tekan onPress={() => router.push(`/slip/${slipTerakhir.id}`)}>
-              <View style={{ paddingTop: jarak.xl, paddingBottom: jarak.lg }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Kolom atas>Diterima terakhir</Kolom>
-                  <Ionicons name="arrow-forward" size={15} color={t.tintaPudar} />
-                </View>
-
-                <Uang nilai={rupiah(slipTerakhir.netPay)} style={{ marginTop: jarak.sm }} />
-
-                <Badan style={{ fontSize: 13.5, marginTop: 6 }}>
-                  {namaPeriode(slipTerakhir.run.period)} · dibayar {tanggal(slipTerakhir.run.payDate)}
-                </Badan>
+        {/* ══════════ lembar isi ══════════ */}
+        <View style={{ padding: jarak.lg, gap: jarak.lg }}>
+          {/* absen hari ini */}
+          <Muncul>
+            <Kartu putih>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Bagian judul="Hari ini" />
+                {hariIni.status ? <Lencana status={hariIni.status} /> : null}
               </View>
-            </Tekan>
-            <Garis />
-          </Muncul>
-        ) : (
-          <Kosong
-            pesan="Belum ada slip gaji untuk Anda. Slip muncul di sini setelah periode gaji dibayarkan."
-            ikon="document-text-outline"
-          />
-        )}
 
-        {/* ── pintasan, sebagai baris teks bukan ubin ── */}
-        <Muncul jeda={240}>
-          {([
-            ['Ajukan cuti atau lembur', 'paper-plane-outline', '/(tabs)/pengajuan'],
-            ['Riwayat kehadiran', 'calendar-outline', '/(tabs)/kehadiran'],
-            ['Semua slip gaji', 'documents-outline', '/(tabs)/slip'],
-          ] as const).map(([label, ikon, tujuan], i) => (
-            <View key={label}>
-              {i > 0 ? <Garis /> : null}
-              <Tekan onPress={() => router.push(tujuan)}>
+              <View style={{ flexDirection: 'row', gap: jarak.md, marginTop: jarak.xs }}>
+                {([
+                  ['Masuk', hariIni.clockIn, 'log-in-outline'],
+                  ['Pulang', hariIni.clockOut, 'log-out-outline'],
+                ] as const).map(([label, nilai, ikon]) => (
+                  <View
+                    key={label}
+                    style={{
+                      flex: 1, backgroundColor: t.lembut,
+                      borderRadius: lengkung.md, padding: jarak.md,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name={ikon} size={13} color={t.tintaRedup} />
+                      <Label>{label}</Label>
+                    </View>
+                    <Text
+                      style={[
+                        teks.angka, tabular,
+                        { color: nilai ? t.tinta : t.tintaRedup, marginTop: 3 },
+                      ]}
+                    >
+                      {jam(nilai)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {hariIni.lateMinutes > 0 ? (
                 <View
                   style={{
-                    flexDirection: 'row', alignItems: 'center', gap: jarak.md,
-                    paddingVertical: jarak.lg,
+                    flexDirection: 'row', alignItems: 'center', gap: 7,
+                    marginTop: jarak.md, padding: jarak.md,
+                    borderRadius: lengkung.md, backgroundColor: t.tungguLembut,
                   }}
                 >
-                  <Ionicons name={ikon} size={17} color={t.tintaPudar} />
-                  <Text style={[teks.badan, { color: t.tinta, flex: 1 }]}>{label}</Text>
-                  {label.startsWith('Ajukan') && tertundaTotal > 0 ? (
-                    <Text style={[teks.kolom, { color: t.tunggu }]}>{tertundaTotal} MENUNGGU</Text>
-                  ) : null}
-                  <Ionicons name="chevron-forward" size={15} color={t.tintaPudar} />
+                  <Ionicons name="alert-circle" size={15} color={t.tunggu} />
+                  <Text style={[teks.kecil, { color: t.tunggu, flex: 1 }]}>
+                    Tercatat terlambat {hariIni.lateMinutes} menit.
+                  </Text>
                 </View>
-              </Tekan>
-            </View>
-          ))}
-          <Garis />
-        </Muncul>
+              ) : null}
+            </Kartu>
+          </Muncul>
 
-        <Text
-          style={[
-            teks.kolom,
-            { color: t.tintaPudar, textAlign: 'center', marginTop: jarak.xl, opacity: 0.7 },
-          ]}
-        >
-          {profil.employeeNo} · {profil.department?.name ?? '—'}
-        </Text>
+          {/* dua ubin ringkas */}
+          <Muncul jeda={60}>
+            <View style={{ flexDirection: 'row', gap: jarak.md }}>
+              <Kartu putih style={{ flex: 1 }}>
+                <Label>Sisa cuti</Label>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 4 }}>
+                  <Text style={[teks.angka, tabular, { color: t.tinta, fontSize: 25 }]}>
+                    {kuotaCuti.sisa}
+                  </Text>
+                  <Badan style={{ fontSize: 12.5 }}>/ {kuotaCuti.kuota} hari</Badan>
+                </View>
+                <View
+                  style={{
+                    height: 6, borderRadius: 999, backgroundColor: t.lembut,
+                    marginTop: jarak.md, overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      height: 6, borderRadius: 999, backgroundColor: t.merek,
+                      width: `${Math.min(100, (kuotaCuti.terpakai / Math.max(1, kuotaCuti.kuota)) * 100)}%`,
+                    }}
+                  />
+                </View>
+              </Kartu>
+
+              <Kartu putih style={{ flex: 1 }}>
+                <Label>Hadir bulan ini</Label>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 4 }}>
+                  <Text style={[teks.angka, tabular, { color: t.tinta, fontSize: 25 }]}>{hadir}</Text>
+                  <Badan style={{ fontSize: 12.5 }}>hari</Badan>
+                </View>
+                <View style={{ marginTop: jarak.md }}>
+                  {kehadiranBulanIni.LATE ? (
+                    <Lencana status="LATE" teks={`${kehadiranBulanIni.LATE}× terlambat`} />
+                  ) : (
+                    <Lencana status="PRESENT" teks="Tepat waktu" ikon="checkmark" />
+                  )}
+                </View>
+              </Kartu>
+            </View>
+          </Muncul>
+
+          {/* slip terakhir */}
+          <Muncul jeda={120}>
+            <Bagian
+              judul="Slip terakhir"
+              aksi={{ label: 'Lihat semua', onPress: () => router.push('/(tabs)/slip') }}
+            />
+            <Kartu putih style={{ paddingVertical: jarak.xs }}>
+              {slipTerakhir ? (
+                <BarisDaftar
+                  ikon="receipt"
+                  judul={
+                    slipTerakhir.run.kind === 'THR'
+                      ? 'Tunjangan hari raya'
+                      : namaPeriode(slipTerakhir.run.period)
+                  }
+                  catatan={`Dibayar ${tanggal(slipTerakhir.run.payDate)}`}
+                  nilai={rupiah(slipTerakhir.netPay)}
+                  subNilai={<Lencana status="PAID" teks="Diterima" />}
+                  onPress={() => router.push(`/slip/${slipTerakhir.id}`)}
+                  akhir
+                />
+              ) : (
+                <Kosong
+                  pesan="Slip gaji akan muncul di sini setelah periode gaji dibayarkan HRD."
+                  ikon="receipt-outline"
+                />
+              )}
+            </Kartu>
+          </Muncul>
+
+          {/* pintasan */}
+          <Muncul jeda={180}>
+            <Bagian judul="Lainnya" />
+            <Kartu putih style={{ paddingVertical: jarak.xs }}>
+              <BarisDaftar
+                ikon="paper-plane"
+                warna={tertundaTotal > 0 ? t.tunggu : t.merek}
+                judul="Pengajuan cuti & lembur"
+                catatan={
+                  tertundaTotal > 0
+                    ? `${tertundaTotal} menunggu ditinjau`
+                    : 'Semua pengajuan sudah ditinjau'
+                }
+                onPress={() => router.push('/(tabs)/pengajuan')}
+              />
+              <BarisDaftar
+                ikon="calendar"
+                judul="Riwayat kehadiran"
+                catatan="Rekap per bulan"
+                onPress={() => router.push('/(tabs)/kehadiran')}
+              />
+              <BarisDaftar
+                ikon="person"
+                judul="Profil & rekening"
+                catatan={`${profil.employeeNo} · ${profil.department?.name ?? '—'}`}
+                onPress={() => router.push('/(tabs)/profil')}
+                akhir
+              />
+            </Kartu>
+          </Muncul>
+        </View>
       </ScrollView>
-    </Kertas>
+    </View>
   );
 }
