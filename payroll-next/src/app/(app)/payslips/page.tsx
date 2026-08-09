@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { Receipt } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { labelPeriode, rupiah } from '@/lib/format';
+import { labelPeriode, rupiah, rupiahRingkas } from '@/lib/format';
 import {
   Avatar, EmptyState, GlassCard, SectionTitle, StatusChip,
 } from '@/components/ui/Glass';
 import TableToolbar from '@/components/ui/TableToolbar';
+import PanelUtama from '@/components/ui/PanelUtama';
 
 export const metadata = { title: 'Slip Gaji' };
 
@@ -34,7 +35,7 @@ export default async function PayslipsPage({
       : {}),
   };
 
-  const [items, total, runs] = await Promise.all([
+  const [items, total, runs, jumlah] = await Promise.all([
     prisma.payrollItem.findMany({
       where,
       include: {
@@ -55,6 +56,13 @@ export default async function PayslipsPage({
     }),
     prisma.payrollItem.count({ where }),
     prisma.payrollRun.findMany({ orderBy: { period: 'desc' }, select: { id: true, period: true } }),
+    /*
+     * Dijumlahkan atas `where` yang sama dengan daftarnya, bukan atas halaman
+     * yang sedang tampil. Angka yang hanya menjumlah 25 baris terlihat masuk
+     * akal namun salah, dan tidak ada yang akan curiga sampai dipakai
+     * mencocokkan dengan mutasi bank.
+     */
+    prisma.payrollItem.aggregate({ where, _sum: { netPay: true, grossPay: true } }),
   ]);
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -68,12 +76,18 @@ export default async function PayslipsPage({
 
   return (
     <div className="page">
-      <div>
-        <h1 className="t-display">
-          Slip gaji
-        </h1>
-        <p className="mt-1 t-small">{total} slip tersimpan di arsip</p>
-      </div>
+      <PanelUtama
+        judul="Slip gaji"
+        nilai={rupiah(jumlah._sum.netPay ?? 0)}
+        nilaiLabel={
+          runId || q ? 'gaji bersih pada slip tersaring' : 'gaji bersih seluruh arsip'
+        }
+        keterangan={[
+          `${total} slip${runId || q ? ' cocok dengan saringan' : ' tersimpan di arsip'}`,
+          `bruto ${rupiahRingkas(jumlah._sum.grossPay ?? 0)}`,
+          `potongan ${rupiahRingkas((jumlah._sum.grossPay ?? 0) - (jumlah._sum.netPay ?? 0))}`,
+        ].join(' · ')}
+      />
 
       <GlassCard>
         <SectionTitle title="Arsip slip" subtitle="Klik baris untuk membuka slip yang bisa dicetak" />

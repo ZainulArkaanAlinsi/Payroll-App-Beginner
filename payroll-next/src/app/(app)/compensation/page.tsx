@@ -9,6 +9,7 @@ import {
 import { ActionButton } from '@/components/ui/Feedback';
 import { assignToAll, deleteComponent, settleLoan } from '@/actions/compensation';
 import { ComponentDialog, LoanDialog } from './Dialogs';
+import PanelUtama from '@/components/ui/PanelUtama';
 
 export const metadata = { title: 'Komponen Gaji' };
 
@@ -142,21 +143,22 @@ export default async function CompensationPage() {
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Komponen gaji
-          </h1>
-          <p className="mt-1 t-small">
-            {tunjangan.length} tunjangan · {potongan.length} potongan · {pinjamanAktif.length} pinjaman
-            berjalan
-          </p>
-        </div>
-        <div className="page-head-actions">
-          <LoanDialog employees={employees} currentPeriod={periodeSekarang()} />
-          <ComponentDialog />
-        </div>
-      </div>
+      <PanelUtama
+        judul="Komponen gaji"
+        nilai={rupiah(sisaPinjaman)}
+        nilaiLabel="sisa pinjaman karyawan yang masih dicicil"
+        keterangan={[
+          `${pinjamanAktif.length} pinjaman berjalan`,
+          `${tunjangan.length} tunjangan`,
+          `${potongan.length} potongan`,
+        ].join(' · ')}
+        anak={
+          <>
+            <LoanDialog employees={employees} currentPeriod={periodeSekarang()} />
+            <ComponentDialog />
+          </>
+        }
+      />
 
       <div className="grid gap-3 lg:grid-cols-2">
         <GlassCard>

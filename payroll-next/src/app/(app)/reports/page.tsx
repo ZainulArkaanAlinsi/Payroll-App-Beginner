@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import {
-  ArrowDownRight, ArrowUpRight, ChartColumn, CircleAlert, Info, Minus, TrendingUp,
+  ArrowDownRight, ArrowUpRight, ChartColumn, CircleAlert, Info, Minus,
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { costTerrain, departmentComparison, susunSorotan } from '@/lib/analytics';
-import { labelPeriode, rupiah, rupiahRingkas } from '@/lib/format';
+import { labelPeriode, rupiah, rupiahRingkas, labelPeriodePendek } from '@/lib/format';
 import { Chip, EmptyState, GlassCard, MiniBar, SectionTitle } from '@/components/ui/Glass';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import { Donut, LineChart, StackedBars } from '@/components/ui/charts';
 import { seriesColor } from '@/lib/series';
 import TerrainPanel from '@/components/three/TerrainPanel';
@@ -102,11 +102,11 @@ export default async function ReportsPage({
 
   const kronologis = [...runs].reverse();
   const tren = kronologis.map((r) => ({
-    label: labelPeriode(r.period).slice(0, 3),
+    label: labelPeriodePendek(r.period, r.kind),
     value: r.totalEmployerCost,
   }));
   const tumpuk = kronologis.slice(-6).map((r) => ({
-    label: labelPeriode(r.period).slice(0, 3),
+    label: labelPeriodePendek(r.period, r.kind),
     values: [r.totalNet, r.totalTax, r.totalDeduction - r.totalTax],
   }));
 
@@ -136,19 +136,39 @@ export default async function ReportsPage({
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div className="min-w-0">
-          <h1 className="t-display">Laporan</h1>
-          <p className="mt-1 t-small">
-            Biaya tenaga kerja dan kepatuhan pajak · {labelPeriode(selected.period)}
-            {sebelumnya && ` dibanding ${labelPeriode(sebelumnya.period)}`}
-          </p>
-        </div>
-        <RunPicker
-          runs={runs.map((r) => ({ id: r.id, label: labelPeriode(r.period) }))}
-          selectedId={selected.id}
-        />
-      </div>
+      <PanelUtama
+        judul="Laporan"
+        nilai={rupiah(selected.totalEmployerCost)}
+        nilaiLabel={`biaya tenaga kerja ${labelPeriode(selected.period)}`}
+        delta={
+          pct(selected.totalEmployerCost, sebelumnya?.totalEmployerCost ?? null) != null
+            ? {
+                persen: pct(selected.totalEmployerCost, sebelumnya?.totalEmployerCost ?? null)!,
+                catatan: sebelumnya ? `dari ${labelPeriode(sebelumnya.period)}` : '',
+              }
+            : null
+        }
+        keterangan={[
+          `${selected.headcount} karyawan · ${rupiahRingkas(perKaryawan)} per orang`,
+          `PPh 21 ${rupiahRingkas(selected.totalTax)} (${(
+            (selected.totalTax / (selected.totalEmployerCost || 1)) *
+            100
+          ).toFixed(1)}% dari biaya)`,
+        ].join(' · ')}
+        anak={
+          <RunPicker
+            runs={runs.map((r) => ({ id: r.id, label: labelPeriode(r.period) }))}
+            selectedId={selected.id}
+          />
+        }
+        samping={
+          <RingkasPanel
+            nilai={rupiahRingkas(ytd.cost)}
+            label={`akumulasi ${new Date().getFullYear()}`}
+            catatan={`${tahunIni.length} periode · pajak ${rupiahRingkas(ytd.tax)}`}
+          />
+        }
+      />
 
       {/* ── ringkasan otomatis ── */}
       <GlassCard>
@@ -170,36 +190,6 @@ export default async function ReportsPage({
       </GlassCard>
 
       {/* ── angka kunci ── */}
-      <div className="tiles">
-        <StatTile
-          label="Biaya tenaga kerja"
-          value={rupiahRingkas(selected.totalEmployerCost)}
-          delta={pct(selected.totalEmployerCost, sebelumnya?.totalEmployerCost ?? null)}
-          invertDelta
-          sub={`${selected.headcount} karyawan pada ${labelPeriode(selected.period)}`}
-          icon={<TrendingUp size={14} />}
-        />
-        <StatTile
-          label="Biaya per karyawan"
-          value={rupiahRingkas(perKaryawan)}
-          delta={pct(perKaryawan, perKaryawanLalu)}
-          invertDelta
-          sub="rata-rata seluruh departemen"
-        />
-        <StatTile
-          label="PPh 21 disetor"
-          value={rupiahRingkas(selected.totalTax)}
-          delta={pct(selected.totalTax, sebelumnya?.totalTax ?? null)}
-          invertDelta
-          sub={`${((selected.totalTax / (selected.totalEmployerCost || 1)) * 100).toFixed(1)}% dari biaya tenaga kerja`}
-        />
-        <StatTile
-          label={`Akumulasi ${new Date().getFullYear()}`}
-          value={rupiahRingkas(ytd.cost)}
-          sub={`${tahunIni.length} periode · pajak ${rupiahRingkas(ytd.tax)}`}
-        />
-      </div>
-
       {/* ── tren & aliran ── */}
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
         <GlassCard>

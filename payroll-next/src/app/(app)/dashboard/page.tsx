@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ArrowRight, Banknote, CalendarCheck, ChevronRight, CircleAlert,
+  ArrowRight, CalendarCheck, ChevronRight, CircleAlert,
   Palmtree, Timer, TrendingUp, Users, Wallet,
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
@@ -9,6 +9,8 @@ import { companyOverview, costByDepartment, costTerrain, deductionBreakdown } fr
 import { labelPeriode, periodeSekarang, rupiah, rupiahRingkas, sejak, tanggal } from '@/lib/format';
 import { GlassCard, SectionTitle, StatusChip, Chip, Avatar, EmptyState } from '@/components/ui/Glass';
 import StatTile from '@/components/ui/StatTile';
+import PanelUtama from '@/components/ui/PanelUtama';
+import { KartuBank } from '@/components/ui/KartuBank';
 import { BarRank, Donut, LineChart, Sparkline } from '@/components/ui/charts';
 import TerrainPanel from '@/components/three/TerrainPanel';
 
@@ -18,7 +20,8 @@ export default async function DashboardPage() {
   const session = await requireRole('ADMIN', 'HR');
   const o = await companyOverview();
 
-  const [byDept, deductions, terrain, activity, topEarners, currentRun] = await Promise.all([
+  const [byDept, deductions, terrain, activity, topEarners, currentRun, perusahaan] =
+    await Promise.all([
     o.latest ? costByDepartment(o.latest.id) : Promise.resolve([]),
     o.latest ? deductionBreakdown(o.latest.id) : Promise.resolve([]),
     costTerrain(4),
@@ -37,6 +40,10 @@ export default async function DashboardPage() {
         })
       : Promise.resolve([]),
     prisma.payrollRun.findUnique({ where: { period: periodeSekarang() } }),
+    prisma.companySetting.findUnique({
+      where: { id: 'singleton' },
+      select: { payoutBankName: true, payoutBankAccount: true, payoutBankHolder: true },
+    }),
   ]);
 
   const pct = (now: number, before: number) => (before > 0 ? ((now - before) / before) * 100 : null);
@@ -46,40 +53,56 @@ export default async function DashboardPage() {
     o.latest && o.previous ? pct(o.latest.totalEmployerCost, o.previous.totalEmployerCost) : null;
   const taxDelta = o.latest && o.previous ? pct(o.latest.totalTax, o.previous.totalTax) : null;
 
-  const trendValues = o.runs.map((r) => r.totalNet);
   const pendingTotal = o.pendingLeave + o.pendingOvertime;
 
   return (
     <div className="page">
-      {/* ── kepala halaman ── */}
-      <div className="page-head">
-        <div>
-          <p className="label !mb-1">
-            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-          <h1 className="t-display">
-            Selamat datang, {session.name.split(' ')[0]}
-          </h1>
-          <p className="mt-1 t-small">
-            {o.latest
-              ? `Proses gaji terakhir: ${labelPeriode(o.latest.period)} · ${o.latest.headcount} karyawan`
-              : 'Belum ada proses gaji yang diselesaikan.'}
-          </p>
-        </div>
-
-        <div className="page-head-actions">
-          {pendingTotal > 0 && (
-            <Link href="/leave" className="btn btn-ghost btn-sm">
-              <CircleAlert size={14} style={{ color: 'var(--color-brass-500)' }} />
-              {pendingTotal} menunggu persetujuan
-            </Link>
-          )}
-          <Link href="/payroll" className="btn btn-primary btn-sm">
-            <Wallet size={14} />
-            Kelola proses gaji
-          </Link>
-        </div>
-      </div>
+      {/* Angka utama sengaja ditulis penuh, bukan dibulatkan jadi "Rp 385 jt".
+          Bentuk ringkas enak dipindai sekilas, tetapi orang yang membuka dasbor
+          gaji justru sedang mencocokkan angka dengan mutasi bank atau berkas
+          transfer — dan pembulatan memaksanya mencari angka aslinya di tempat
+          lain. */}
+      <PanelUtama
+        eyebrow={new Date().toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}
+        judul={`Selamat datang, ${session.name.split(' ')[0]}`}
+        nilai={rupiah(o.latest?.totalNet ?? 0)}
+        nilaiLabel={
+          o.latest ? `dibayarkan ${labelPeriode(o.latest.period)}` : 'belum ada gaji dibayarkan'
+        }
+        delta={netDelta != null ? { persen: netDelta, catatan: 'dari periode lalu' } : null}
+        keterangan={
+          o.latest
+            ? `${o.latest.headcount} karyawan · biaya perusahaan ${rupiahRingkas(o.latest.totalEmployerCost)}`
+            : 'Belum ada proses gaji yang diselesaikan.'
+        }
+        aksi={[
+          { href: '/payroll', teks: 'Kelola proses gaji', utama: true, ikon: <Wallet size={15} /> },
+          ...(pendingTotal > 0
+            ? [
+                {
+                  href: '/leave',
+                  teks: `${pendingTotal} menunggu persetujuan`,
+                  ikon: <CircleAlert size={15} />,
+                },
+              ]
+            : []),
+        ]}
+        samping={
+          perusahaan && (
+            <KartuBank
+              bank={perusahaan.payoutBankName}
+              nomor={perusahaan.payoutBankAccount}
+              pemilik={perusahaan.payoutBankHolder}
+              label="Penyalur gaji"
+            />
+          )
+        }
+      />
 
       {/* ── peringatan periode berjalan ── */}
       {!currentRun && (
@@ -106,15 +129,7 @@ export default async function DashboardPage() {
       )}
 
       {/* ── kartu angka ── */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          label="Gaji dibayarkan"
-          value={rupiahRingkas(o.latest?.totalNet ?? 0)}
-          sub={o.latest ? labelPeriode(o.latest.period) : '—'}
-          delta={netDelta}
-          icon={<Banknote size={14} />}
-          chart={trendValues.length > 1 ? <Sparkline values={trendValues} /> : undefined}
-        />
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatTile
           label="Biaya perusahaan"
           value={rupiahRingkas(o.latest?.totalEmployerCost ?? 0)}

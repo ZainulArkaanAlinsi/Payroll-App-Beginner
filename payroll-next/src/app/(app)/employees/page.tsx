@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { ChevronRight, Download, TriangleAlert, Users } from 'lucide-react';
+import { ChevronRight, Download, Users } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { rupiah, rupiahRingkas, tanggal } from '@/lib/format';
 import { Avatar, Chip, EmptyState, GlassCard, StatusChip } from '@/components/ui/Glass';
 import TableToolbar from '@/components/ui/TableToolbar';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import KepatuhanPanel from './KepatuhanPanel';
 import { periksaKepatuhan } from '@/lib/kepatuhan';
 import { tunjanganTetap } from '@/lib/components';
@@ -134,49 +134,40 @@ export default async function EmployeesPage({
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Karyawan
-          </h1>
-          <p className="mt-1 t-small">
-            {total} data ditemukan
-            {jml('RESIGNED') > 0 && ` · ${jml('RESIGNED')} sudah tidak aktif`}
-          </p>
-        </div>
-        <div className="page-head-actions">
-          <a href="/api/export/employees" className="btn btn-ghost btn-sm">
-            <Download size={14} />
-            Ekspor CSV
-          </a>
-          <EmployeeDialog departments={departments} positions={positions} />
-        </div>
-      </div>
-
-      <div className="tiles">
-        <StatTile
-          label="Karyawan aktif"
-          value={String(jml('ACTIVE'))}
-          sub={kontrak > 0 ? `${kontrak} di antaranya kontrak` : 'seluruhnya karyawan tetap'}
-          icon={<Users size={14} />}
-        />
-        <StatTile
-          label="Beban gaji pokok"
-          value={rupiahRingkas(gajiAktif._sum.baseSalary ?? 0)}
-          sub={`rata-rata ${rupiahRingkas(gajiAktif._avg.baseSalary ?? 0)} per orang`}
-        />
-        <StatTile
-          label="Belum punya NPWP"
-          value={String(tanpaNpwp)}
-          sub={tanpaNpwp > 0 ? 'membayar PPh 21 20% lebih tinggi' : 'seluruh karyawan terdaftar'}
-          icon={<TriangleAlert size={14} />}
-        />
-        <StatTile
-          label="Bergabung 90 hari terakhir"
-          value={String(barusanMasuk)}
-          sub={barusanMasuk > 0 ? 'periksa kelengkapan datanya' : 'tidak ada karyawan baru'}
-        />
-      </div>
+      <PanelUtama
+        judul="Karyawan"
+        nilai={rupiah(gajiAktif._sum.baseSalary ?? 0)}
+        nilaiLabel="beban gaji pokok per bulan"
+        keterangan={[
+          `${jml('ACTIVE')} karyawan aktif`,
+          kontrak > 0 ? `${kontrak} di antaranya kontrak` : 'seluruhnya karyawan tetap',
+          `rata-rata ${rupiahRingkas(gajiAktif._avg.baseSalary ?? 0)} per orang`,
+          jml('RESIGNED') > 0 ? `${jml('RESIGNED')} sudah tidak aktif` : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        aksi={[{ href: '/api/export/employees', teks: 'Ekspor CSV', ikon: <Download size={15} /> }]}
+        anak={<EmployeeDialog departments={departments} positions={positions} />}
+        samping={
+          /* Dua angka yang tidak bisa dibaca dari daftar karena keduanya soal
+             yang HILANG: NPWP yang belum ada, dan orang baru yang datanya
+             mungkin belum lengkap. Keduanya berbiaya nyata — tanpa NPWP,
+             PPh 21 dipotong 20% lebih tinggi. */
+          <div className="grid grid-cols-2 gap-2">
+            <RingkasPanel
+              nilai={String(tanpaNpwp)}
+              label="belum punya NPWP"
+              catatan={tanpaNpwp > 0 ? 'PPh 21 +20%' : 'semua terdaftar'}
+              tegang={tanpaNpwp > 0}
+            />
+            <RingkasPanel
+              nilai={String(barusanMasuk)}
+              label="masuk 90 hari terakhir"
+              catatan={barusanMasuk > 0 ? 'periksa kelengkapan' : 'tidak ada'}
+            />
+          </div>
+        }
+      />
 
       {temuanKepatuhan.length > 0 && <KepatuhanPanel temuan={temuanKepatuhan} />}
 

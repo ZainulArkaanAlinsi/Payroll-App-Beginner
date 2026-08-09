@@ -6,7 +6,7 @@ import { sejak, tanggal } from '@/lib/format';
 import {
   Avatar, Chip, EmptyState, GlassCard, MiniBar, SectionTitle, StatusChip, statusLabel,
 } from '@/components/ui/Glass';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import TableToolbar from '@/components/ui/TableToolbar';
 import { LeaveDialog, ReviewLeave } from './LeaveControls';
 
@@ -81,24 +81,26 @@ export default async function LeavePage({
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Cuti
-          </h1>
-          <p className="mt-1 t-small">
-            {pending.length} pengajuan menunggu ditinjau
-          </p>
-        </div>
-        <LeaveDialog employees={employees} label="Ajukan atas nama karyawan" />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Menunggu" value={String(jml('PENDING'))} sub="perlu ditinjau" />
-        <StatTile label="Disetujui" value={String(jml('APPROVED'))} sub={`${hari('APPROVED')} hari total`} />
-        <StatTile label="Ditolak" value={String(jml('REJECTED'))} />
-        <StatTile label="Dibatalkan" value={String(jml('CANCELLED'))} />
-      </div>
+      <PanelUtama
+        judul="Cuti"
+        nilai={String(jml('PENDING'))}
+        nilaiLabel="pengajuan menunggu ditinjau"
+        keterangan={`${jml('REJECTED')} ditolak · ${jml('CANCELLED')} dibatalkan`}
+        anak={<LeaveDialog employees={employees} label="Ajukan atas nama karyawan" />}
+        samping={
+          <div className="grid grid-cols-2 gap-2">
+            <RingkasPanel
+              nilai={String(hari('APPROVED'))}
+              label="hari cuti disetujui"
+              catatan="dipotong dari kuota tahunan"
+            />
+            <RingkasPanel
+              nilai={String(jml('APPROVED'))}
+              label="pengajuan disetujui"
+            />
+          </div>
+        }
+      />
 
       {/* ── antrean persetujuan ── */}
       <GlassCard>

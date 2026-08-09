@@ -8,6 +8,7 @@ import { ActionButton } from '@/components/ui/Feedback';
 import { BarRank } from '@/components/ui/charts';
 import { deleteDepartment, deletePosition } from '@/actions/org';
 import { DepartmentDialog, PositionDialog } from './OrgDialogs';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 
 export const metadata = { title: 'Organisasi' };
 
@@ -38,17 +39,19 @@ export default async function OrgPage() {
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Organisasi
-          </h1>
-          <p className="mt-1 t-small">
-            {departments.length} departemen · {totalPosisi} posisi · {totalKaryawan} karyawan aktif
-          </p>
-        </div>
-        <DepartmentDialog />
-      </div>
+      <PanelUtama
+        judul="Organisasi"
+        nilai={String(totalKaryawan)}
+        nilaiLabel="karyawan aktif di dalam struktur"
+        keterangan={`Departemen dan posisi menentukan kebijakan lembur serta pengelompokan biaya di laporan.`}
+        anak={<DepartmentDialog />}
+        samping={
+          <div className="grid grid-cols-2 gap-2">
+            <RingkasPanel nilai={String(departments.length)} label="departemen" />
+            <RingkasPanel nilai={String(totalPosisi)} label="posisi" />
+          </div>
+        }
+      />
 
       {ringkas.length > 0 && (
         <div className="grid gap-3 xl:grid-cols-2">

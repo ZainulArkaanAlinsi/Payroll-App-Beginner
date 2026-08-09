@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import {
-  ArrowRight, BadgeCheck, Calculator, CircleCheck, CircleDashed, Wallet,
+  ArrowRight, Calculator, CircleCheck, CircleDashed, Wallet,
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal } from '@/lib/format';
+import { labelPeriode, periodeSekarang, rupiah, rupiahRingkas, tanggal, labelPeriodePendek } from '@/lib/format';
 import { Chip, EmptyState, GlassCard, SectionTitle, StatusChip } from '@/components/ui/Glass';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import { LineChart, StackedBars } from '@/components/ui/charts';
 import RunDialog from './RunDialog';
 
@@ -47,9 +47,9 @@ export default async function PayrollPage() {
 
   const selesai = runs.filter((r) => ['APPROVED', 'PAID'].includes(r.status));
   const urut = [...selesai].reverse().slice(-6);
-  const tren = urut.map((r) => ({ label: labelPeriode(r.period).slice(0, 3), value: r.totalNet }));
+  const tren = urut.map((r) => ({ label: labelPeriodePendek(r.period, r.kind), value: r.totalNet }));
   const tumpuk = urut.map((r) => ({
-    label: labelPeriode(r.period).slice(0, 3),
+    label: labelPeriodePendek(r.period, r.kind),
     values: [r.totalNet, r.totalTax, r.totalDeduction - r.totalTax],
   }));
 
@@ -105,20 +105,43 @@ export default async function PayrollPage() {
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div className="min-w-0">
-          <h1 className="t-display">Proses gaji</h1>
-          <p className="mt-1 t-small">
-            {runs.length} periode tercatat · {activeCount} karyawan aktif · gajian setiap tanggal{' '}
-            {setting?.payDay ?? 25}
-          </p>
-        </div>
-        <RunDialog
-          suggestedPeriod={periodeKini}
-          payDay={setting?.payDay ?? 25}
-          takenPeriods={runs.map((r) => r.period)}
-        />
-      </div>
+      <PanelUtama
+        judul="Proses gaji"
+        nilai={rupiah(biayaTahunIni)}
+        nilaiLabel={`biaya tenaga kerja ${new Date().getFullYear()}`}
+        keterangan={[
+          `${tahunIni.length} periode selesai tahun ini`,
+          `${activeCount} karyawan aktif`,
+          `gajian setiap tanggal ${setting?.payDay ?? 25}`,
+          tahapAlur > 0 ? `persetujuan ${tahapAlur} tahap` : 'persetujuan sekali klik',
+        ].join(' · ')}
+        anak={
+          <RunDialog
+            suggestedPeriod={periodeKini}
+            payDay={setting?.payDay ?? 25}
+            takenPeriods={runs.map((r) => r.period)}
+          />
+        }
+        samping={
+          <div className="grid grid-cols-2 gap-2">
+            <RingkasPanel
+              nilai={terakhir ? rupiahRingkas(terakhir.totalNet) : '—'}
+              label="gaji terakhir dibayarkan"
+              catatan={terakhir ? labelPeriode(terakhir.period) : 'belum ada'}
+            />
+            <RingkasPanel
+              nilai={String(menunggu.length)}
+              label="menunggu diproses"
+              catatan={
+                menunggu.length > 0
+                  ? menunggu.map((r) => labelPeriode(r.period)).join(', ')
+                  : 'semua periode selesai'
+              }
+              tegang={menunggu.length > 0}
+            />
+          </div>
+        }
+      />
 
       {/* ── Langkah berikutnya ── */}
       <GlassCard
@@ -154,37 +177,6 @@ export default async function PayrollPage() {
       </GlassCard>
 
       {/* ── Angka kunci ── */}
-      <div className="tiles">
-        <StatTile
-          label="Gaji terakhir dibayarkan"
-          value={terakhir ? rupiahRingkas(terakhir.totalNet) : '—'}
-          sub={
-            terakhir ? `${labelPeriode(terakhir.period)} · ${terakhir.headcount} karyawan` : 'belum ada'
-          }
-          icon={<Wallet size={14} />}
-        />
-        <StatTile
-          label={`Biaya tenaga kerja ${new Date().getFullYear()}`}
-          value={rupiahRingkas(biayaTahunIni)}
-          sub={`${tahunIni.length} periode selesai`}
-        />
-        <StatTile
-          label="Menunggu diproses"
-          value={String(menunggu.length)}
-          sub={
-            menunggu.length > 0
-              ? menunggu.map((r) => labelPeriode(r.period)).join(', ')
-              : 'semua periode selesai'
-          }
-        />
-        <StatTile
-          label="Alur persetujuan"
-          value={tahapAlur > 0 ? `${tahapAlur} tahap` : 'Sekali klik'}
-          sub={tahapAlur > 0 ? 'dilalui berurutan' : 'belum disusun di Racik'}
-          icon={<BadgeCheck size={14} />}
-        />
-      </div>
-
       {selesai.length > 1 && (
         <div className="grid gap-3 xl:grid-cols-2">
           <GlassCard>

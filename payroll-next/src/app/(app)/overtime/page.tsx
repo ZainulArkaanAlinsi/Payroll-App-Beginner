@@ -7,7 +7,7 @@ import { rupiah, rupiahRingkas, sejak, tanggal } from '@/lib/format';
 import {
   Avatar, Chip, EmptyState, GlassCard, SectionTitle, StatusChip,
 } from '@/components/ui/Glass';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import TableToolbar from '@/components/ui/TableToolbar';
 import { OvertimeDialog, ReviewOvertime } from './OvertimeControls';
 
@@ -89,26 +89,29 @@ export default async function OvertimePage({
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Lembur
-          </h1>
-          <p className="mt-1 t-small">{pending.length} pengajuan menunggu ditinjau</p>
-        </div>
-        <OvertimeDialog employees={employees.map((e) => ({ ...e, upahLembur: upah(e.id) }))} label="Ajukan atas nama karyawan" />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Menunggu" value={String(jml('PENDING'))} sub={`${jam('PENDING')} jam`} />
-        <StatTile label="Disetujui" value={String(jml('APPROVED'))} sub={`${jam('APPROVED')} jam`} />
-        <StatTile label="Ditolak" value={String(jml('REJECTED'))} />
-        <StatTile
-          label="Nilai disetujui"
-          value={rupiahRingkas(totalDisetujui._sum.amount ?? 0)}
-          sub="akumulasi seluruh periode"
-        />
-      </div>
+      <PanelUtama
+        judul="Lembur"
+        nilai={rupiah(totalDisetujui._sum.amount ?? 0)}
+        nilaiLabel="nilai lembur disetujui, seluruh periode"
+        keterangan={[
+          `${jml('APPROVED')} pengajuan disetujui · ${jam('APPROVED')} jam`,
+          `${jml('REJECTED')} ditolak`,
+        ].join(' · ')}
+        anak={
+          <OvertimeDialog
+            employees={employees.map((e) => ({ ...e, upahLembur: upah(e.id) }))}
+            label="Ajukan atas nama karyawan"
+          />
+        }
+        samping={
+          <RingkasPanel
+            nilai={String(jml('PENDING'))}
+            label="menunggu ditinjau"
+            catatan={`${jam('PENDING')} jam belum dinilai`}
+            tegang={jml('PENDING') > 0}
+          />
+        }
+      />
 
       <GlassCard>
         <SectionTitle

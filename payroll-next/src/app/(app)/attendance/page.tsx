@@ -6,7 +6,7 @@ import { jamMenit, labelPeriode, periodeSekarang } from '@/lib/format';
 import {
   Avatar, Chip, EmptyState, GlassCard, MiniBar, SectionTitle,
 } from '@/components/ui/Glass';
-import StatTile from '@/components/ui/StatTile';
+import PanelUtama, { RingkasPanel } from '@/components/ui/PanelUtama';
 import PeriodPicker from '@/components/ui/PeriodPicker';
 import { Donut, Heatmap } from '@/components/ui/charts';
 
@@ -119,28 +119,34 @@ export default async function AttendancePage({
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <h1 className="t-display">
-            Kehadiran
-          </h1>
-          <p className="mt-1 t-small">
-            {employees.length} karyawan · {hariKerja} hari kerja pada {labelPeriode(period)}
-          </p>
-        </div>
-        <PeriodPicker period={period} max={periodeSekarang()} />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          label="Tingkat kehadiran"
-          value={total > 0 ? `${((hadirTotal / total) * 100).toFixed(1)}%` : '—'}
-          sub={`${hadirTotal} dari ${total} catatan`}
-        />
-        <StatTile label="Keterlambatan" value={String(telatTotal)} sub={jamMenit(menitTelatTotal)} />
-        <StatTile label="Mangkir" value={String(mangkirTotal)} sub="tanpa keterangan" />
-        <StatTile label="Kerja jarak jauh" value={String(wfhTotal)} sub="hari kerja" />
-      </div>
+      <PanelUtama
+        judul="Kehadiran"
+        nilai={total > 0 ? `${((hadirTotal / total) * 100).toFixed(1)}%` : '—'}
+        nilaiLabel={`tingkat kehadiran ${labelPeriode(period)}`}
+        keterangan={[
+          `${hadirTotal} dari ${total} catatan`,
+          `${employees.length} karyawan`,
+          `${hariKerja} hari kerja`,
+          `${wfhTotal} hari kerja jarak jauh`,
+        ].join(' · ')}
+        anak={<PeriodPicker period={period} max={periodeSekarang()} />}
+        samping={
+          <div className="grid grid-cols-2 gap-2">
+            <RingkasPanel
+              nilai={String(telatTotal)}
+              label="keterlambatan"
+              catatan={jamMenit(menitTelatTotal)}
+              tegang={telatTotal > 0}
+            />
+            <RingkasPanel
+              nilai={String(mangkirTotal)}
+              label="mangkir"
+              catatan="tanpa keterangan"
+              tegang={mangkirTotal > 0}
+            />
+          </div>
+        }
+      />
 
       {total === 0 ? (
         <GlassCard>
